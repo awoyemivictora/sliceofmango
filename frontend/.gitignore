@@ -1,3 +1,26 @@
 node_modules
 .env
 config.js
+
+package-lock.json
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+.DS_Store
+Thumbs.db
+
+# Optional: if using TypeScript
+*.tsbuildinfo
+
+# Optional: if using testing tools
+coverage/
+jest-test-results.json
+
+# Optional: if using IDEs
+.vscode/
+.idea/
+
