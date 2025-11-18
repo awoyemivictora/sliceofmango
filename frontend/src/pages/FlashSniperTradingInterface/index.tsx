@@ -524,7 +524,9 @@ const FlashSniperTradingInterface: React.FC = () => {
       id: `${logData.timestamp}-${Math.random().toString(36).substr(2, 9)}`
     };
 
-    setLogs(prev => [...prev.slice(-199), newLog]); // Keep last 200 logs
+    // setLogs(prev => [...prev.slice(-199), newLog]); // Keep last 200 logs
+    // FIX: Prepend new logs and keep only the most recent 200
+    setLogs(prev => [newLog, ...prev.slice(0, 199)]);
   };
 
   const handleTradeUpdate = (trade: any) => {
@@ -545,6 +547,8 @@ const FlashSniperTradingInterface: React.FC = () => {
       } : undefined
     };
 
+    // setTransactions(prev => [newTx, ...prev.slice(0, 49)]);
+    // FIX: Prepend new transactions and keep only the most recent 50
     setTransactions(prev => [newTx, ...prev.slice(0, 49)]);
   };
 

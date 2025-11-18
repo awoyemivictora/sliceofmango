@@ -3285,3 +3285,866 @@ DETAIL:  Key (wallet_address)=(DCzg9xLcTzWx3XBcVKosHA3MNaXNgcudbcTgSgzxp6BP) alr
 2025-11-17 23:48:41,956 - app.utils.webacy_api - ERROR - Webacy API error for DRAG1Twc5JwWJRudJZyjMX9gUjEUvmcRiDocFpR47pnS: 403
 2025-11-17 23:48:49,874 - app.utils.webacy_api - ERROR - Webacy API error for DRAG1Twc5JwWJRudJZyjMX9gUjEUvmcRiDocFpR47pnS: 403
 2025-11-18 01:26:00,634 - app.utils.webacy_api - ERROR - Webacy API error for DRAG1Twc5JwWJRudJZyjMX9gUjEUvmcRiDocFpR47pnS: 403
+2025-11-18 03:14:01,048 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:14:07,506 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:14:07,960 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:14:14,210 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:14:14,321 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:14:20,548 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:14:53,927 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:15:01,142 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:15:07,838 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:15:42,145 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:15:49,331 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:15:56,842 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:16:30,182 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:16:37,494 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:16:45,222 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:17:19,084 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:17:25,892 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:17:33,040 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:18:06,578 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:18:13,852 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:18:20,815 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:18:54,194 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:19:01,365 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:19:08,112 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:19:42,018 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:19:48,765 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:19:56,119 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:20:29,658 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:20:37,321 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:20:44,062 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:21:17,870 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:21:24,827 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:21:32,022 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:22:09,368 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:22:16,468 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:22:23,208 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:22:56,782 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:23:07,360 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:23:14,162 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:23:50,055 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:23:57,601 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:24:06,000 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:24:39,453 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:24:46,718 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:24:53,978 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:25:27,220 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:25:35,008 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:25:42,232 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:26:15,042 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:26:22,500 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:26:29,714 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:27:03,074 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:27:09,181 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:27:20,461 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:27:54,150 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:28:01,374 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:28:08,282 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:28:41,775 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:28:49,042 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:28:56,271 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:29:29,333 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:29:36,653 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:29:44,155 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:30:18,116 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:30:24,914 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:30:31,957 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:31:06,572 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:31:14,183 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:31:21,763 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:31:58,914 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:32:07,749 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:32:14,811 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:32:49,283 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:32:56,659 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:33:04,160 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:33:37,423 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:33:45,530 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:33:53,005 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:34:27,190 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:34:34,722 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:34:41,683 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:35:15,391 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:35:22,082 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:35:31,720 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:36:04,943 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:36:11,902 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:36:18,996 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:36:52,709 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:37:00,079 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:37:07,338 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:37:40,871 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:37:48,590 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:37:55,500 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:38:29,193 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:38:36,063 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:38:43,411 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:39:17,306 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:39:24,110 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:39:30,988 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:40:04,445 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:40:11,269 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:40:17,998 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:40:51,514 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:40:58,982 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:41:06,499 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:41:40,462 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:41:47,246 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:41:56,258 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:42:29,347 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:42:36,375 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:42:43,507 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:43:17,742 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:43:25,833 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:43:33,102 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:44:06,494 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:44:13,482 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:44:20,923 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:44:54,728 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:45:02,155 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:45:09,685 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:45:43,475 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:45:50,661 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:45:57,949 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:46:32,109 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:46:39,483 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:46:45,582 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:47:19,278 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:47:26,640 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:47:33,615 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:48:07,406 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:48:14,307 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:48:21,832 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:48:55,679 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:49:03,152 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:49:10,320 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:49:44,170 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:49:51,383 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:50:01,780 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:50:37,769 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:50:45,308 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:50:52,515 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:51:26,339 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:51:33,578 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:51:42,982 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:52:16,787 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:52:24,384 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:52:32,459 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:53:09,753 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:53:17,726 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 03:53:24,960 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:10:18,957 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:10:26,249 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:10:33,640 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:18:51,278 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:18:57,241 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:19:04,559 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:19:36,928 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:19:44,227 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:19:51,318 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:28:14,794 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:28:21,297 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:28:29,181 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:45:11,427 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:45:18,542 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:45:24,823 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:45:59,332 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:46:06,340 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:46:13,565 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:46:47,255 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:46:54,537 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:47:02,139 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:47:35,330 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:47:42,573 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:47:50,351 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:48:25,875 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:48:35,765 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:48:42,968 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:49:17,326 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:49:24,644 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:49:31,639 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:50:05,944 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:50:13,510 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:50:20,444 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:50:54,315 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:51:01,841 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:51:08,284 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:51:41,860 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:51:49,129 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:51:56,308 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:52:30,510 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:52:38,353 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:52:45,575 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:53:19,141 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:53:26,029 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:53:33,350 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:54:07,938 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:54:14,928 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:54:22,111 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:54:55,850 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:55:03,080 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:55:10,448 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:55:43,805 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:55:50,564 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:55:57,774 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:56:31,539 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:56:39,231 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:56:46,756 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:57:20,854 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:57:28,431 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:57:35,410 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:58:10,981 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:58:18,351 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:58:25,516 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:58:42,620 - app.utils.webacy_api - ERROR - Webacy API error for 92iUBaBVuwHJvc9xL9WuQuw9wyFtnKmknjPenunHSQ4A: 403
+2025-11-18 04:58:49,173 - app.utils.webacy_api - ERROR - Webacy API error for 92iUBaBVuwHJvc9xL9WuQuw9wyFtnKmknjPenunHSQ4A: 403
+2025-11-18 04:58:55,237 - app.utils.webacy_api - ERROR - Webacy API error for 92iUBaBVuwHJvc9xL9WuQuw9wyFtnKmknjPenunHSQ4A: 403
+2025-11-18 04:59:01,361 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:59:08,976 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:59:16,209 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:59:49,692 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 04:59:57,057 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:00:04,008 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:00:37,717 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:00:45,186 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:00:52,504 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:01:25,958 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:01:35,661 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:01:43,059 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:02:17,027 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:02:24,443 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:02:31,791 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:03:05,191 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:03:12,252 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:03:19,642 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:03:54,136 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:04:01,735 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:04:11,641 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:04:45,170 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:04:57,018 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:05:13,611 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:05:47,912 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:05:58,477 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:06:05,661 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:06:39,112 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:06:48,380 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:06:56,087 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:07:28,978 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:07:36,314 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:07:45,234 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:08:18,464 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:08:25,861 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:08:32,724 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:09:05,934 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:09:13,941 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:09:21,168 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:09:54,277 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:10:01,299 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:10:07,796 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:10:42,146 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:10:49,315 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:10:56,724 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:11:29,990 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:11:37,018 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:11:44,337 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:12:18,060 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:12:25,296 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:12:33,313 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:13:06,629 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:13:14,309 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:13:21,728 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:13:55,760 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:14:02,755 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:14:10,004 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:14:43,464 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:14:50,849 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:15:00,769 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:15:34,561 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:15:41,711 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:15:49,008 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:16:22,725 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:16:30,778 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:16:37,269 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:17:11,165 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:17:18,432 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:17:25,908 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:17:59,496 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:18:07,392 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:18:14,914 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:18:48,697 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:18:55,929 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:19:03,394 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:19:36,781 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:19:44,021 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:19:51,718 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:20:25,194 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:20:36,129 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:20:42,724 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:21:15,899 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:21:22,803 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:21:34,126 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:22:07,834 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:22:15,138 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:22:22,562 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:22:59,042 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:23:06,389 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:23:12,841 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:23:46,428 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:23:54,414 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:24:01,622 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:24:35,121 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:24:42,666 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:24:50,220 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:25:24,630 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:25:32,467 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:25:42,853 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:26:16,338 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:26:23,842 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:26:30,686 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:27:04,544 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:27:11,442 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:27:19,035 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:27:52,391 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:27:59,929 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:28:07,186 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:28:41,957 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:28:48,217 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:28:55,526 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:29:29,057 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:29:36,844 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:29:44,626 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:30:18,435 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:30:27,748 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:30:34,938 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:31:08,313 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:31:15,863 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:31:23,090 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:31:56,927 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:32:04,818 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:32:12,087 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:32:45,275 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:32:52,697 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:32:59,825 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:33:33,591 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:33:41,203 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:33:48,444 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:34:26,200 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:34:34,215 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:34:41,514 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:35:15,032 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:35:21,923 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:35:29,249 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:36:02,917 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:36:09,279 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:36:16,530 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:36:50,044 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:36:56,965 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:37:04,265 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:37:39,046 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:37:45,965 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:37:53,212 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:38:27,072 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:38:34,444 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:38:41,676 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:39:15,405 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:39:22,491 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:39:29,723 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:40:03,672 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:40:10,608 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:40:18,030 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:40:51,233 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:40:58,521 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:41:05,010 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:41:37,625 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:41:44,931 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:41:52,248 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:42:28,066 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:42:36,212 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:42:43,320 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:43:17,041 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:43:24,504 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:43:32,119 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:44:05,610 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:44:13,223 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:44:20,579 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:44:54,445 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:45:01,130 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:45:08,686 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:45:47,028 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 05:45:54,196 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:01:39,895 - app.utils.webacy_api - ERROR - Webacy check failed for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 
+2025-11-18 06:02:14,841 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:02:21,822 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:19:17,351 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:19:51,814 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:19:59,237 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:29:15,009 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:29:48,733 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:29:56,038 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:46:10,675 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:46:44,129 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:46:51,501 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:46:59,068 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:47:36,480 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:47:44,337 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:47:55,784 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:48:29,423 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:48:36,754 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:48:44,188 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:49:17,099 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:49:25,124 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:49:33,245 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:50:06,471 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:50:13,664 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:50:20,333 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:50:54,333 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:51:01,667 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:51:09,429 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:51:43,121 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:51:50,652 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:51:58,273 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:52:33,534 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:52:41,383 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:52:48,961 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:53:22,506 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:53:30,030 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:53:37,051 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:54:10,931 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:54:18,462 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:54:25,947 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:54:59,415 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:55:06,891 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:55:14,571 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:55:48,305 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:55:55,943 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:56:03,015 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:56:36,296 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:56:43,861 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:56:50,094 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:57:26,014 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:57:34,072 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:57:41,716 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:58:15,244 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:58:22,658 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:58:30,012 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:59:04,237 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:59:11,316 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:59:18,687 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 06:59:52,454 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:00:00,047 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:00:07,603 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:00:42,654 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:00:50,096 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:00:57,361 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:01:30,885 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:01:38,780 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:01:46,942 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:02:20,713 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:02:27,989 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:02:35,467 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:03:09,102 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:03:16,022 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:03:23,032 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:03:57,173 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:04:04,548 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:04:11,812 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:04:44,789 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:04:52,354 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:04:59,678 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:05:36,581 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:05:44,020 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:05:51,350 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:06:24,775 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:06:31,859 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:06:39,365 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:07:13,104 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:07:20,740 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:07:27,714 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:08:01,599 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:08:09,099 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:08:16,652 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:08:50,241 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:08:58,130 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:09:05,590 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:09:39,081 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:09:46,807 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:09:54,381 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:10:28,336 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:11:01,823 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:15:25,433 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:15:59,585 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:16:07,576 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:16:14,970 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:16:48,898 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:16:56,335 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:17:04,017 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:17:38,103 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:17:45,898 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:17:53,869 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:18:27,829 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:18:35,218 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:18:42,717 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:19:16,421 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:19:23,893 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:19:31,370 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:20:05,365 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:20:13,023 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:20:20,458 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:20:54,721 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:21:01,828 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:21:09,315 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:21:43,318 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:21:50,701 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:21:58,539 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:22:32,865 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:22:40,579 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:22:47,499 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:23:21,533 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:23:29,033 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:23:40,216 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:24:13,906 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:24:21,468 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:24:28,913 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:25:02,447 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:25:10,103 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:25:17,202 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:25:50,907 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:25:59,530 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:26:07,167 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:26:40,744 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:26:47,849 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:26:55,613 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:27:29,458 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:27:36,581 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:27:44,101 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:28:17,690 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:28:24,717 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:28:32,144 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:29:06,232 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:29:14,008 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:29:21,083 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:29:53,782 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:30:01,622 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:30:08,591 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:30:42,695 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:30:52,618 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:31:00,035 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:31:26,542 - app.routers.auth - INFO - Generated nonce: ICb-g2sFJPlvF044Rwg7aA==
+2025-11-18 07:31:26,578 - app.routers.auth - INFO - Wallet verified successfully: 6ANsGCDwweA5YcRMAfu8TYxAhh28BHFYgPbpiCZdmAVn
+2025-11-18 07:31:26,592 - app.routers.auth - INFO - Generated frontend encryption key: APhp45FhOGoiJ3aj5VAZiA==
+2025-11-18 07:31:26,596 - app.routers.auth - INFO - Generated frontend encryption key: zE12lvh4_8DeQEOFJ4QmSQ==
+2025-11-18 07:31:26,615 - app.security - INFO - Encrypting private key with backend master key
+2025-11-18 07:31:26,616 - app.routers.auth - INFO - Private key encrypted with backend master key for 6ANsGCDwweA5YcRMAfu8TYxAhh28BHFYgPbpiCZdmAVn
+2025-11-18 07:31:26,620 - app.security - INFO - Encrypting private key with backend master key
+2025-11-18 07:31:26,620 - app.routers.auth - INFO - Private key encrypted with backend master key for 6ANsGCDwweA5YcRMAfu8TYxAhh28BHFYgPbpiCZdmAVn
+2025-11-18 07:31:26,650 - app.routers.auth - INFO - New user registered: 6ANsGCDwweA5YcRMAfu8TYxAhh28BHFYgPbpiCZdmAVn
+2025-11-18 07:31:26,651 - app.security - INFO - Created JWT for wallet: 6ANsGCDwweA5YcRMAfu8TYxAhh28BHFYgPbpiCZdmAVn
+2025-11-18 07:31:26,690 - app.routers.auth - ERROR - Unexpected error in register-or-login: Traceback (most recent call last):
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 545, in _prepare_and_execute
+    self._rows = deque(await prepared_stmt.fetch(*parameters))
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/asyncpg/prepared_stmt.py", line 176, in fetch
+    data = await self.__bind_execute(args, 0, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/asyncpg/prepared_stmt.py", line 267, in __bind_execute
+    data, status, _ = await self.__do_execute(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^
+        lambda protocol: protocol.bind_execute(
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            self._state, args, '', limit, True, timeout))
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/asyncpg/prepared_stmt.py", line 256, in __do_execute
+    return await executor(protocol)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "asyncpg/protocol/protocol.pyx", line 206, in bind_execute
+asyncpg.exceptions.UniqueViolationError: duplicate key value violates unique constraint "users_pkey"
+DETAIL:  Key (wallet_address)=(6ANsGCDwweA5YcRMAfu8TYxAhh28BHFYgPbpiCZdmAVn) already exists.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1963, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/engine/default.py", line 943, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 580, in execute
+    self._adapt_connection.await_(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self._prepare_and_execute(operation, parameters)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 132, in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 196, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 558, in _prepare_and_execute
+    self._handle_exception(error)
+    ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 508, in _handle_exception
+    self._adapt_connection._handle_exception(error)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 792, in _handle_exception
+    raise translated_error from error
+sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_dbapi.IntegrityError: <class 'asyncpg.exceptions.UniqueViolationError'>: duplicate key value violates unique constraint "users_pkey"
+DETAIL:  Key (wallet_address)=(6ANsGCDwweA5YcRMAfu8TYxAhh28BHFYgPbpiCZdmAVn) already exists.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/user/clients/flashsnipper.com/backend/app/routers/auth.py", line 174, in register_or_login_wallet
+    await db.commit()
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/ext/asyncio/session.py", line 1014, in commit
+    await greenlet_spawn(self.sync_session.commit)
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 203, in greenlet_spawn
+    result = context.switch(value)
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 2032, in commit
+    trans.commit(_to_root=True)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "<string>", line 2, in commit
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/orm/state_changes.py", line 139, in _go
+    ret_value = fn(self, *arg, **kw)
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 1313, in commit
+    self._prepare_impl()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "<string>", line 2, in _prepare_impl
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/orm/state_changes.py", line 139, in _go
+    ret_value = fn(self, *arg, **kw)
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 1288, in _prepare_impl
+    self.session.flush()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 4345, in flush
+    self._flush(objects)
+    ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 4480, in _flush
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 4441, in _flush
+    flush_context.execute()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/orm/unitofwork.py", line 466, in execute
+    rec.execute(self)
+    ~~~~~~~~~~~^^^^^^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/orm/unitofwork.py", line 642, in execute
+    util.preloaded.orm_persistence.save_obj(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self.mapper,
+        ^^^^^^^^^^^^
+        uow.states_for_mapper_hierarchy(self.mapper, False, False),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        uow,
+        ^^^^
+    )
+    ^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/orm/persistence.py", line 93, in save_obj
+    _emit_insert_statements(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        base_mapper,
+        ^^^^^^^^^^^^
+    ...<3 lines>...
+        insert,
+        ^^^^^^^
+    )
+    ^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/orm/persistence.py", line 1048, in _emit_insert_statements
+    result = connection.execute(
+        statement, multiparams, execution_options=execution_options
+    )
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1415, in execute
+    return meth(
+        self,
+        distilled_parameters,
+        execution_options or NO_OPTIONS,
+    )
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/sql/elements.py", line 523, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, distilled_params, execution_options
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1637, in _execute_clauseelement
+    ret = self._execute_context(
+        dialect,
+    ...<8 lines>...
+        cache_hit=cache_hit,
+    )
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1842, in _execute_context
+    return self._exec_single_context(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        dialect, context, statement, parameters
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1982, in _exec_single_context
+    self._handle_dbapi_exception(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        e, str_statement, effective_parameters, cursor, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 2351, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1963, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/engine/default.py", line 943, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 580, in execute
+    self._adapt_connection.await_(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self._prepare_and_execute(operation, parameters)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 132, in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 196, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 558, in _prepare_and_execute
+    self._handle_exception(error)
+    ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 508, in _handle_exception
+    self._adapt_connection._handle_exception(error)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 792, in _handle_exception
+    raise translated_error from error
+sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) <class 'asyncpg.exceptions.UniqueViolationError'>: duplicate key value violates unique constraint "users_pkey"
+DETAIL:  Key (wallet_address)=(6ANsGCDwweA5YcRMAfu8TYxAhh28BHFYgPbpiCZdmAVn) already exists.
+[SQL: INSERT INTO users (wallet_address, encrypted_private_key, is_premium, premium_start_date, premium_end_date, custom_rpc_https, custom_rpc_wss, filter_socials_added, filter_liquidity_burnt, filter_immutable_metadata, filter_mint_authority_renounced, filter_freeze_authority_revoked, filter_check_pool_size_min_sol, filter_top_holders_max_pct, filter_safety_check_period_seconds, buy_amount_sol, buy_slippage_bps, sell_take_profit_pct, sell_stop_loss_pct, sell_timeout_seconds, trailing_stop_loss_pct, bot_check_interval_seconds) VALUES ($1::VARCHAR, $2::VARCHAR, $3::BOOLEAN, $4::TIMESTAMP WITHOUT TIME ZONE, $5::TIMESTAMP WITHOUT TIME ZONE, $6::VARCHAR, $7::VARCHAR, $8::BOOLEAN, $9::BOOLEAN, $10::BOOLEAN, $11::BOOLEAN, $12::BOOLEAN, $13::FLOAT, $14::FLOAT, $15::INTEGER, $16::FLOAT, $17::INTEGER, $18::FLOAT, $19::FLOAT, $20::INTEGER, $21::FLOAT, $22::INTEGER)]
+[parameters: ('6ANsGCDwweA5YcRMAfu8TYxAhh28BHFYgPbpiCZdmAVn', 'gAAAAABpHBK-4f6X1GRC5irkokJ46GMxGebsRIucJ9wIffe35GVudEjuLVS0DCd6BgzM-L1hOe7BAfTdLGx6JxXyaYT212cGr-Nnftta94iI728bk9zvgDQjg6YfSzKQ_l_WXFF4ELhKcdbgRzSlw2CcEfM3DGFx-tJTogqZ9ew9l5HyZnSak5w=', False, None, None, None, None, True, True, True, True, True, 10.0, 30.0, 300, 0.1, 1000, 50.0, 20.0, 3600, 10.0, 10)]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+
+2025-11-18 07:31:34,569 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:31:42,892 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:31:50,369 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:32:23,870 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:32:30,835 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:32:38,589 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:33:12,621 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:33:20,348 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:33:27,724 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:34:01,619 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:34:09,561 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:34:17,205 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:34:51,189 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:34:58,363 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:35:05,485 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:35:39,354 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:35:46,437 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:35:53,797 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:36:27,577 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:36:34,808 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:36:41,745 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:37:16,365 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:37:23,877 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:37:31,452 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:38:05,315 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:38:12,340 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:38:19,666 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:38:53,306 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:39:00,672 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:39:07,608 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:39:41,010 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:39:48,192 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:39:55,659 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:40:29,945 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:40:37,283 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:40:44,173 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:41:17,816 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:41:26,045 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:41:33,482 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:42:07,607 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:42:14,980 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:42:22,583 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:42:56,337 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:43:04,274 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:43:11,600 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:43:45,486 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:43:52,797 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:44:00,175 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:44:33,236 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:44:40,781 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:44:48,413 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:45:22,459 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:45:29,799 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:45:37,267 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:46:10,862 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:46:18,414 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:46:25,841 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:47:00,042 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:47:07,456 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:47:14,990 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:47:48,916 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:47:56,048 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:48:03,468 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:48:38,389 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:48:45,790 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:48:53,900 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:49:31,900 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:49:39,785 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:49:47,189 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:50:20,845 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:50:28,304 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:50:35,796 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:51:09,071 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:51:16,785 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:51:27,694 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:52:01,426 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:52:08,876 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:52:17,124 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:52:51,064 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:52:58,428 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:53:06,118 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:53:39,757 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:53:47,821 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:53:55,541 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:54:29,472 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:54:37,027 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:54:44,834 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:55:18,584 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:55:25,976 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:55:33,398 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:56:07,054 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:56:14,142 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:56:21,506 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:56:55,726 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:57:03,096 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:57:10,728 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:57:44,558 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:57:51,998 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:57:59,324 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:58:33,383 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:58:40,829 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:58:48,325 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:59:21,907 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:59:29,533 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 07:59:36,848 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 08:00:10,412 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 08:00:18,086 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 08:00:25,194 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 08:00:58,853 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 08:01:06,054 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 08:01:13,528 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 08:01:51,107 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 08:01:58,123 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
+2025-11-18 08:02:05,539 - app.utils.webacy_api - ERROR - Webacy API error for 6J5Axed6sKhY7n7PjnmmUoFTxJR6rNoZ4azcQ1cKBqcx: 403
