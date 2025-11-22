@@ -7,6 +7,18 @@ import { debounce } from 'lodash';
 import { apiService } from '@/services/api';
 import { registerWallet, verifyWallet, getNonce } from '@/services/auth';
 import { config } from '@/config/production';
+import EnhancedTradingChart from '@/components/EnhancedTradingChart';
+
+// Add these interfaces
+interface ActiveTrade {
+  mintAddress: string;
+  pairAddress?: string;
+  tokenSymbol: string;
+  entryPrice?: number;
+  takeProfit?: number;
+  stopLoss?: number;
+  buyTimestamp: string;
+}
 
 // Enhanced interfaces
 interface LogEntry {
@@ -34,6 +46,7 @@ interface TransactionItem {
   tx_hash?: string;
   timestamp: string;
   profit_sol?: number;
+  mint_address?: string;
   explorer_urls?: {
     solscan: string;
     dexScreener: string;
@@ -77,19 +90,28 @@ interface ProfessionalInputProps {
   label: string;
 }
 
-// Enhanced log display component
+// Enhanced log display component with safe date handling
 const LogEntryComponent: React.FC<{ log: LogEntry }> = ({ log }) => {
   const formatTimestamp = (timestamp: string) => {
-    const date = new Date(timestamp);
-    return date.toLocaleString('en-US', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: true
-    });
+    try {
+      const date = new Date(timestamp);
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        return 'Invalid date';
+      }
+      return date.toLocaleString('en-US', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true
+      });
+    } catch (error) {
+      console.error('Error formatting timestamp:', error, timestamp);
+      return 'Invalid date';
+    }
   };
 
   const getLogTypeColor = (type: string) => {
@@ -149,19 +171,31 @@ const LogEntryComponent: React.FC<{ log: LogEntry }> = ({ log }) => {
   );
 };
 
-// Enhanced transaction display component
-const TransactionItemComponent: React.FC<{ transaction: TransactionItem }> = ({ transaction }) => {
+// Enhanced transaction display component with safe date handling
+const TransactionItemComponent: React.FC<{ 
+  transaction: TransactionItem;
+  onOpenChart?: (mintAddress: string) => void;
+}> = ({ transaction, onOpenChart }) => {
   const formatTimestamp = (timestamp: string) => {
-    const date = new Date(timestamp);
-    return date.toLocaleString('en-US', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: true
-    });
+    try {
+      const date = new Date(timestamp);
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        return 'Invalid date';
+      }
+      return date.toLocaleString('en-US', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true
+      });
+    } catch (error) {
+      console.error('Error formatting timestamp:', error, timestamp);
+      return 'Invalid date';
+    }
   };
 
   return (
@@ -195,6 +229,19 @@ const TransactionItemComponent: React.FC<{ transaction: TransactionItem }> = ({ 
       </div>
 
       <div className="flex items-center gap-3">
+        {/* FIXED: Chart button with proper mint_address check */}
+        {transaction.type === "buy" && onOpenChart && transaction.mint_address && (
+          <button
+            onClick={() => onOpenChart(transaction.mint_address!)}
+            className="p-2 text-blue-400 hover:text-blue-300 transition-colors"
+            title="Open Chart"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          </button>
+        )}
+
         <span className="text-xs text-gray-500">
           {formatTimestamp(transaction.timestamp)}
         </span>
@@ -414,8 +461,150 @@ const FlashSniperTradingInterface: React.FC = () => {
   const [totalProfit, setTotalProfit] = useState(0);
   const [transactions, setTransactions] = useState<TransactionItem[]>([]);
   const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [activeTrades, setActiveTrades] = useState<ActiveTrade[]>([]);
+  const [selectedTrade, setSelectedTrade] = useState<ActiveTrade | null>(null);
+  const [showChart, setShowChart] = useState(false);
+
+
+  // Update the bot status check on component mount
+  useEffect(() => {
+    const checkBotStatus = async () => {
+      if (!authToken) return;
+      
+      try {
+        const statusResponse = await apiService.request('/trade/bot/status', {
+          headers: { Authorization: `Bearer ${authToken}` },
+        });
+        
+        setIsBotRunning(statusResponse.is_running);
+        
+        // Update localStorage to match actual status
+        if (statusResponse.is_running) {
+          localStorage.setItem(`bot_running_${walletAddress}`, 'true');
+        } else {
+          localStorage.removeItem(`bot_running_${walletAddress}`);
+        }
+      } catch (error) {
+        console.error('Error checking bot status:', error);
+      }
+    };
+
+    checkBotStatus();
+  }, [authToken, walletAddress]);
+
+  // Add this function to handle new trades
+  const handleNewTrade = (tradeData: any) => {
+    if (tradeData.trade_type === 'buy') {
+      const newTrade: ActiveTrade = {
+        mintAddress: tradeData.mint_address,
+        pairAddress: tradeData.pair_address,
+        tokenSymbol: tradeData.token_symbol || 'UNKNOWN',
+        entryPrice: tradeData.price_usd_at_trade,
+        takeProfit: tradeData.take_profit ? tradeData.entry_price * (1 + tradeData.take_profit / 100) : undefined,
+        stopLoss: tradeData.stop_loss ? tradeData.entry_price * (1 - tradeData.stop_loss / 100) : undefined,
+        buyTimestamp: tradeData.buy_timestamp || new Date().toISOString()
+      };
+
+      setActiveTrades(prev => [...prev, newTrade]);
+      
+      // Auto-open chart for new trades
+      setSelectedTrade(newTrade);
+      setShowChart(true);
+
+      // Notify user
+      const notificationLog: LogEntry = {
+        id: `chart-${Date.now()}`,
+        type: 'log',
+        log_type: 'success',
+        message: `📈 Chart opened for ${tradeData.token_symbol}. Monitoring price movements...`,
+        timestamp: new Date().toISOString()
+      };
+      handleLogMessage(notificationLog);
+    }
+
+    // Remove trade when sold
+    if (tradeData.trade_type === 'sell') {
+      setActiveTrades(prev => prev.filter(trade => trade.mintAddress !== tradeData.mint_address));
+      
+      // Close chart if this was the selected trade
+      if (selectedTrade?.mintAddress === tradeData.mint_address) {
+        setShowChart(false);
+        setSelectedTrade(null);
+      }
+    }
+  };
+
 
   // Enhanced WebSocket connection with auto-reconnect
+  // useEffect(() => {
+  //   if (!walletAddress || !authToken) {
+  //     if (websocket) {
+  //       websocket.close();
+  //       setWebsocket(null);
+  //     }
+  //     return;
+  //   }
+
+  //   let ws: WebSocket;
+  //   let reconnectAttempts = 0;
+  //   const maxReconnectAttempts = 5;
+
+  //   const connect = () => {
+  //     try {
+  //       ws = apiService.createWebSocket(walletAddress);
+
+  //       ws.onopen = () => {
+  //         console.log('WebSocket connected');
+  //         reconnectAttempts = 0;
+  //         // Send initial connection message
+  //         if (ws.readyState === WebSocket.OPEN) {
+  //           ws.send(JSON.stringify({ 
+  //             type: 'connection_init', 
+  //             wallet_address: walletAddress 
+  //           }));
+  //         }
+  //       };
+
+  //       ws.onmessage = async (event) => {
+  //         try {
+  //           const data = JSON.parse(event.data);
+  //           await handleWebSocketMessage(data);
+  //         } catch (err) {
+  //           console.error('WS message error:', err);
+  //         }
+  //       };
+
+  //       ws.onclose = (event) => {
+  //         console.log(`WebSocket disconnected: ${event.code} - ${event.reason}`);
+  //         setWebsocket(null);
+          
+  //         if (reconnectAttempts < maxReconnectAttempts) {
+  //           const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+  //           reconnectAttempts++;
+  //           setTimeout(connect, delay);
+  //         }
+  //       };
+
+  //       ws.onerror = (err) => {
+  //         console.error('WebSocket error:', err);
+  //       };
+
+  //       setWebsocket(ws);
+  //     } catch (error) {
+  //       console.error('WebSocket connection error:', error);
+  //     }
+  //   };
+
+  //   connect();
+
+  //   return () => {
+  //     if (ws) {
+  //       ws.close(1000, 'Component unmount');
+  //     }
+  //   };
+  // }, [walletAddress, authToken]);
+
+  // Enhanced WebSocket connection with single instance
   useEffect(() => {
     if (!walletAddress || !authToken) {
       if (websocket) {
@@ -425,17 +614,29 @@ const FlashSniperTradingInterface: React.FC = () => {
       return;
     }
 
+    // Prevent multiple WebSocket connections
+        if (websocket && (websocket.readyState === WebSocket.OPEN || websocket.readyState === WebSocket.CONNECTING)) {
+          console.log('WebSocket already connected or connecting');
+          return;
+        }
+
     let ws: WebSocket;
     let reconnectAttempts = 0;
     const maxReconnectAttempts = 5;
 
     const connect = () => {
       try {
+        // Close existing connection if any
+        if (websocket) {
+          websocket.close();
+        }
+
         ws = apiService.createWebSocket(walletAddress);
 
         ws.onopen = () => {
           console.log('WebSocket connected');
           reconnectAttempts = 0;
+          setWebsocket(ws);
           // Send initial connection message
           if (ws.readyState === WebSocket.OPEN) {
             ws.send(JSON.stringify({ 
@@ -469,7 +670,6 @@ const FlashSniperTradingInterface: React.FC = () => {
           console.error('WebSocket error:', err);
         };
 
-        setWebsocket(ws);
       } catch (error) {
         console.error('WebSocket connection error:', error);
       }
@@ -506,9 +706,20 @@ const FlashSniperTradingInterface: React.FC = () => {
         break;
       case 'trade_update':
         handleTradeUpdate(data.trade);
+        handleNewTrade(data.trade); 
         break;
       case 'bot_status':
         setIsBotRunning(data.is_running);
+        if (data.is_running) {
+          const successLog: LogEntry = {
+            id: `log-${Date.now()}`,
+            type: 'log',
+            log_type: 'success',
+            message: '🤖 Persistent bot is running - continues even after browser close',
+            timestamp: new Date().toISOString()
+          };
+          handleLogMessage(successLog);
+        }
         break;
       case 'pong':
         // Handle ping-pong for connection health
@@ -518,14 +729,63 @@ const FlashSniperTradingInterface: React.FC = () => {
     }
   };
 
+  // Add manual chart open function
+  const openTradeChart = (trade: ActiveTrade) => {
+    setSelectedTrade(trade);
+    setShowChart(true);
+  };
+
+  // Add close chart function
+  const closeChart = () => {
+    setShowChart(false);
+    setSelectedTrade(null);
+  };
+
+  // Add manual sell function
+  const handleManualSell = async () => {
+    if (!selectedTrade) return;
+    
+    try {
+      // Implement manual sell logic here
+      const response = await apiService.request('/trade/manual-sell', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}` 
+        },
+        body: JSON.stringify({
+          mint_address: selectedTrade.mintAddress,
+          amount_percentage: 100 // Sell 100%
+        })
+      });
+      
+      // Close chart after sell
+      closeChart();
+    } catch (error) {
+      console.error('Manual sell error:', error);
+    }
+  };
+
   const handleLogMessage = (logData: LogEntry) => {
+    // Ensure timestamp is valid
+    let timestamp = logData.timestamp;
+    try {
+      const date = new Date(timestamp);
+      if (isNaN(date.getTime())) {
+        // If timestamp is invalid, use current time
+        timestamp = new Date().toISOString();
+      }
+    } catch (error) {
+      // If there's any error parsing, use current time
+      timestamp = new Date().toISOString();
+    }
+
     const newLog: LogEntry = {
       ...logData,
-      id: `${logData.timestamp}-${Math.random().toString(36).substr(2, 9)}`
+      timestamp: timestamp,
+      id: `${timestamp}-${Math.random().toString(36).substr(2, 9)}`
     };
 
-    // setLogs(prev => [...prev.slice(-199), newLog]); // Keep last 200 logs
-    // FIX: Prepend new logs and keep only the most recent 200
     setLogs(prev => [newLog, ...prev.slice(0, 199)]);
   };
 
@@ -540,6 +800,7 @@ const FlashSniperTradingInterface: React.FC = () => {
       tx_hash: trade.tx_hash,
       timestamp: trade.timestamp || new Date().toISOString(),
       profit_sol: trade.profit_sol,
+      mint_address: trade.mint_address,
       explorer_urls: trade.tx_hash ? {
         solscan: `https://solscan.io/tx/${trade.tx_hash}`,
         dexScreener: `https://dexscreener.com/solana/${trade.tx_hash}`,
@@ -557,9 +818,10 @@ const FlashSniperTradingInterface: React.FC = () => {
     console.log('New pool detected:', pool);
   };
 
+  // Also update your sendSettingsUpdate to be more robust
   const sendSettingsUpdate = useCallback(
     debounce((settings: any) => {
-      if (websocket && websocket.readyState === WebSocket.OPEN) {
+      if (websocket && websocket.readyState === WebSocket.OPEN && walletAddress) {
         websocket.send(
           JSON.stringify({
             type: 'settings_update',
@@ -568,7 +830,7 @@ const FlashSniperTradingInterface: React.FC = () => {
           })
         );
       }
-    }, 500),
+    }, 1000), // Increased debounce to 1 second
     [websocket, walletAddress]
   );
 
@@ -644,35 +906,26 @@ const FlashSniperTradingInterface: React.FC = () => {
     }
 
     try {
-      console.log('Starting bot...'); // Debug log
-      
-      // Update bot settings first
-      await updateBotSettings();
-      
       // Start bot via API
       const response = await apiService.request('/trade/bot/start', {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}` 
+          'Authorization': `Bearer ${authToken}`
         },
       });
-      
-      console.log('Bot start response:', response); // Debug log
-      
+
       setIsBotRunning(true);
       
       // Send WebSocket message
       if (websocket && websocket.readyState === WebSocket.OPEN) {
-        websocket.send(JSON.stringify({ 
+        websocket.send(JSON.stringify({
           type: 'start_bot',
-          wallet_address: walletAddress 
+          wallet_address: walletAddress
         }));
       }
-      
-      startBotHealthCheck();
-      
-      // Store bot state for persistence
+
+      // Store in localStorage for UI persistence
       localStorage.setItem(`bot_running_${walletAddress}`, 'true');
       
       // Add success log
@@ -708,25 +961,23 @@ const FlashSniperTradingInterface: React.FC = () => {
     try {
       const response = await apiService.request('/trade/bot/stop', {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}` 
+          'Authorization': `Bearer ${authToken}`
         },
       });
-      
-      console.log('Bot stop response:', response); // Debug log
-      
+
       setIsBotRunning(false);
       
       // Send WebSocket message
       if (websocket && websocket.readyState === WebSocket.OPEN) {
-        websocket.send(JSON.stringify({ 
+        websocket.send(JSON.stringify({
           type: 'stop_bot',
-          wallet_address: walletAddress 
+          wallet_address: walletAddress
         }));
       }
-      
-      // Remove bot state
+
+      // Remove from localStorage
       localStorage.removeItem(`bot_running_${walletAddress}`);
       
       // Add stop log
@@ -792,6 +1043,7 @@ const FlashSniperTradingInterface: React.FC = () => {
           tx_hash: t.tx_hash,
           timestamp: t.timestamp,
           profit_sol: t.profit_sol,
+          mint_address: t.mint_address,
           explorer_urls: t.tx_hash ? {
             solscan: `https://solscan.io/tx/${t.tx_hash}`,
             dexScreener: `https://dexscreener.com/solana/${t.tx_hash}`,
@@ -1026,6 +1278,13 @@ const FlashSniperTradingInterface: React.FC = () => {
     }
   }, [balance, hasCheckedBalance]);
 
+  // Add this useEffect to send settings when forms change
+  useEffect(() => {
+    if (isBotRunning) {
+      updateBotSettings();
+    }
+  }, [buyForm, sellForm, safetyForm, isBotRunning, updateBotSettings]);
+
   // Enhanced tab components
   const LogsTab = () => (
     <div className="bg-secondary h-[400px] md:h-[600px] overflow-y-auto p-4">
@@ -1042,10 +1301,20 @@ const FlashSniperTradingInterface: React.FC = () => {
     </div>
   );
 
+  // Update your TransactionsTab to pass the onOpenChart prop
   const TransactionsTab = () => (
     <div className="bg-secondary h-[400px] md:h-[600px] overflow-y-auto">
       {transactions.map((tx) => (
-        <TransactionItemComponent key={tx.id} transaction={tx} />
+        <TransactionItemComponent 
+          key={tx.id} 
+          transaction={tx} 
+          onOpenChart={(mintAddress) => {
+            const trade = activeTrades.find(t => t.mintAddress === mintAddress);
+            if (trade) {
+              openTradeChart(trade);
+            }
+          }}
+        />
       ))}
       {transactions.length === 0 && (
         <div className="text-center text-gray-500 py-8">
@@ -1054,6 +1323,59 @@ const FlashSniperTradingInterface: React.FC = () => {
       )}
     </div>
   );
+
+  const ActiveTradesPanel = () => {
+    if (activeTrades.length === 0) return null;
+
+    return (
+      <div className="bg-dark-2 border-b border-[#ffffff1e] p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-white text-sm font-semibold">Active Trades</h3>
+          <span className="text-gray-400 text-xs">{activeTrades.length} open</span>
+        </div>
+        <div className="space-y-2 max-h-40 overflow-y-auto">
+          {activeTrades.map((trade) => {
+            let timeAgo = 0;
+            try {
+              const buyDate = new Date(trade.buyTimestamp);
+              if (!isNaN(buyDate.getTime())) {
+                timeAgo = Math.floor((Date.now() - buyDate.getTime()) / 60000);
+              }
+            } catch (error) {
+              console.error('Error calculating time ago:', error);
+            }
+            
+            return (
+              <div key={trade.mintAddress} className="flex items-center justify-between p-3 bg-dark-1 rounded-lg hover:bg-dark-3 transition-colors">
+                <div className="flex items-center gap-3 flex-1">
+                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                    <span className="text-white text-xs font-bold">
+                      {trade.tokenSymbol?.substring(0, 2)}
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-white text-sm font-medium truncate">{trade.tokenSymbol}</div>
+                    <div className="text-gray-400 text-xs flex items-center gap-2">
+                      <span>Entry: ${trade.entryPrice?.toFixed(6)}</span>
+                      <span>•</span>
+                      <span>{timeAgo}m ago</span>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => openTradeChart(trade)}
+                  className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors whitespace-nowrap"
+                >
+                  View Chart
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
 
   if (!walletKeypair) return <div className="text-white text-center py-8">Loading wallet...</div>;
 
@@ -1624,7 +1946,12 @@ const FlashSniperTradingInterface: React.FC = () => {
               )}
             </div>
           </div>
+
           <div className="lg:order-1 lg:w-[823px] bg-secondary border-r border-[#ffffff21]">
+            {/* Active Trades Panel - Only show when there are active trades */}
+            {activeTrades.length > 0 && <ActiveTradesPanel />}
+            
+            {/* Tabs Header */}
             <div className="bg-primary border-t border-b border-[#ffffff1e] h-12 flex">
               <button
                 onClick={() => setActiveTab('logs')}
@@ -1650,6 +1977,7 @@ const FlashSniperTradingInterface: React.FC = () => {
               </button>
             </div>
             
+            {/* Stats Bar */}
             <div className="bg-secondary border-b border-[#ffffff1e] h-11 flex items-center justify-between px-4">
               <span className="text-white text-sm font-medium">
                 Tokens sniped: {snipedCount}
@@ -1662,8 +1990,10 @@ const FlashSniperTradingInterface: React.FC = () => {
               </span>
             </div>
             
+            {/* Tab Content */}
             {activeTab === 'logs' ? <LogsTab /> : <TransactionsTab />}
           </div>
+
         </div>
         <footer className="bg-secondary border-t border-[#ffffff21] h-12 flex items-center justify-between px-4 md:px-8">
           <span className="text-white text-sm font-medium">© 2025 | FlashSniper.com | Disclaimer</span>
@@ -1679,6 +2009,20 @@ const FlashSniperTradingInterface: React.FC = () => {
             </a>
           </div>
         </footer>
+        {showChart && selectedTrade && (
+          <EnhancedTradingChart
+            mintAddress={selectedTrade.mintAddress}
+            pairAddress={selectedTrade.pairAddress}
+            tokenSymbol={selectedTrade.tokenSymbol}
+            entryPrice={selectedTrade.entryPrice}
+            takeProfit={selectedTrade.takeProfit}
+            stopLoss={selectedTrade.stopLoss}
+            isActive={showChart}
+            onChartClose={closeChart}
+            onSellClick={handleManualSell}
+          />
+        )}
+
       </div>
     </div>
   );

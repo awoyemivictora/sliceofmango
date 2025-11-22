@@ -37,6 +37,18 @@ class Settings(BaseSettings):
     DEX_AGGREGATOR_API_HOST: str = os.getenv("DEX_AGGREGATOR_API_HOST")
     TAVILY_API_KEY: str = os.getenv("TAVILY_API_KEY")
     
+    JUPITER_PLATFORM_FEE_BPS: str = os.getenv("JUPITER_PLATFORM_FEE_BPS")
+    JUPITER_FEE_ACCOUNT: str = os.getenv("JUPITER_FEE_ACCOUNT")
+    
+    JUPITER_PLATFORM_FEE_BPS: str = os.getenv("JUPITER_PLATFORM_FEE_BPS")
+    JUPITER_FEE_ACCOUNT: str = os.getenv("JUPITER_FEE_ACCOUNT")
+    
+    SOL_MINT: str = os.getenv("SOL_MINT")
+    
+    
+
+
+    
     
 settings = Settings()
 

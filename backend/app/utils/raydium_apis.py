@@ -3,6 +3,10 @@ import httpx
 import logging
 import os
 from dotenv import load_dotenv
+import asyncio
+from typing import Optional, Dict, Any
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+
 
 
 load_dotenv()
@@ -12,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 
-async def get_raydium_pool_info(mint_address: str) -> Optional[Dict]:
+async def get_raydium_pool_info(pool_id: str) -> Optional[Dict]:
     """
     Fetches Raydium V3 pool info for a given token mint address.
     Note: Raydium V3 API does not directly allow querying by token mint address
@@ -62,7 +66,7 @@ async def get_raydium_pool_info(mint_address: str) -> Optional[Dict]:
     # base or quote, the current Raydium V3 documentation you provided does not show a direct
     # way to do that using a single mint.
 
-    pool_id_candidate = mint_address # Assuming mint_address might be a pool ID for direct lookup
+    pool_id_candidate = pool_id # Assuming mint_address might be a pool ID for direct lookup
 
     try:
         url = f"https://api-v3.raydium.io/pools/info/ids?ids={pool_id_candidate}"
@@ -139,3 +143,96 @@ async def get_raydium_pool_info(mint_address: str) -> Optional[Dict]:
 # if __name__ == "__main__":
 #     import asyncio
 #     asyncio.run(main())
+
+
+
+
+
+
+
+
+
+
+class RaydiumDataNotReadyError(Exception):
+    """Custom exception for when Raydium data isn't populated yet"""
+    pass
+
+def is_raydium_data_ready(data: Dict) -> bool:
+    """Check if Raydium API has populated the necessary data"""
+    if not data or not isinstance(data, dict):
+        return False
+    
+    # Check if we have the basic pool structure
+    if not data.get("data") or not isinstance(data["data"], list) or len(data["data"]) == 0:
+        return False
+    
+    pool = data["data"][0]
+    
+    # Check for critical fields that should be populated
+    required_fields = ["mintA", "mintB", "openTime", "tvl"]
+    for field in required_fields:
+        if not pool.get(field):
+            return False
+    
+    # Check if TVL is more than just a placeholder (0 or very small)
+    tvl = pool.get("tvl", 0)
+    if tvl == 0 or (isinstance(tvl, (int, float)) and tvl < 0.1):
+        return False
+    
+    # Check if mint amounts are populated
+    mint_amount_a = pool.get("mintAmountA", 0)
+    mint_amount_b = pool.get("mintAmountB", 0)
+    if mint_amount_a == 0 or mint_amount_b == 0:
+        return False
+    
+    return True
+
+@retry(
+    stop=stop_after_attempt(8),  # Increased attempts for Raydium
+    wait=wait_exponential(multiplier=2, min=5, max=60),  # Longer waits: 5s, 10s, 20s, 40s, 60s...
+    retry=retry_if_exception_type(RaydiumDataNotReadyError)
+)
+async def get_raydium_pool_info_with_retry(pool_id: str) -> Dict[str, Any]:
+    """
+    Enhanced Raydium pool info fetcher with proper retry logic
+    for new pools that take time to populate data
+    """
+    try:
+        logger.info(f"🔍 Fetching Raydium data for {pool_id[:8]}...")
+        data = await get_raydium_pool_info(pool_id)
+        
+        if not is_raydium_data_ready(data):
+            logger.warning(f"⚠️ Raydium data not ready for {pool_id[:8]}, retrying...")
+            raise RaydiumDataNotReadyError(f"Raydium data not populated for {pool_id}")
+        
+        logger.info(f"✅ Raydium data ready for {pool_id[:8]}")
+        return data
+        
+    except Exception as e:
+        if isinstance(e, RaydiumDataNotReadyError):
+            raise  # Re-raise for tenacity
+        logger.error(f"❌ Error fetching Raydium data for {pool_id[:8]}: {e}")
+        raise RaydiumDataNotReadyError(f"Raydium API error: {e}")
+
+async def wait_for_raydium_data(pool_id: str, max_wait_seconds: int = 300) -> Optional[Dict[str, Any]]:
+    """
+    Wait for Raydium data to be populated with timeout
+    """
+    start_time = asyncio.get_event_loop().time()
+    
+    while (asyncio.get_event_loop().time() - start_time) < max_wait_seconds:
+        try:
+            data = await get_raydium_pool_info_with_retry(pool_id)
+            if is_raydium_data_ready(data):
+                return data
+        except RaydiumDataNotReadyError:
+            # Wait before next attempt
+            await asyncio.sleep(10)
+        except Exception as e:
+            logger.error(f"Unexpected error waiting for Raydium data: {e}")
+            await asyncio.sleep(10)
+    
+    logger.error(f"⏰ Timeout waiting for Raydium data for {pool_id[:8]}")
+    return None
+
+

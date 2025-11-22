@@ -1,6 +1,6 @@
 # app/models.py
 from sqlalchemy import (
-    Column, Index, Integer, String, Float, Boolean, DateTime, ForeignKey, Text, func
+    BigInteger, Column, Index, Integer, String, Float, Boolean, DateTime, ForeignKey, Text, func
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from datetime import datetime
@@ -14,11 +14,47 @@ class Base(DeclarativeBase):
 # ──────────────────────────────────────────────────────────────
 # 1. New Tokens & Metadata (shared across all users)
 # ──────────────────────────────────────────────────────────────
+# class NewTokens(Base):
+#     __tablename__ = "new_tokens"
+
+#     pool_id: Mapped[Optional[str]] = mapped_column(String, nullable=False, primary_key=True)
+#     mint_address: Mapped[str] = mapped_column(String, index=True)
+#     timestamp: Mapped[datetime] = mapped_column(DateTime, default=func.now())
+#     signature: Mapped[str] = mapped_column(String)
+#     tx_type: Mapped[str] = mapped_column(String)
+    
+#     # Enhanced status tracking
+#     metadata_status: Mapped[str] = mapped_column(String, default="pending")  # pending → processing → completed → needs_update → failed
+#     metadata_retry_count: Mapped[int] = mapped_column(Integer, default=0)
+#     last_metadata_update: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+#     next_reprocess_time: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    
+#     # Processing stages tracking (for debugging and partial completion)
+#     dexscreener_processed: Mapped[bool] = mapped_column(Boolean, default=False)
+#     raydium_processed: Mapped[bool] = mapped_column(Boolean, default=False)
+#     webacy_processed: Mapped[bool] = mapped_column(Boolean, default=False)
+#     tavily_processed: Mapped[bool] = mapped_column(Boolean, default=False)
+#     profitability_processed: Mapped[bool] = mapped_column(Boolean, default=False)
+    
+#     # Error tracking
+#     last_error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    
+#     # Performance metrics
+#     total_processing_time_ms: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    
+#     # Indexes for better query performance
+#     __table_args__ = (
+#         Index('ix_new_tokens_status_timestamp', "metadata_status", "timestamp"),
+#         Index('ix_new_tokens_reprocess_time', "next_reprocess_time"),
+#         Index('ix_new_tokens_mint_status', "mint_address", "metadata_status"),
+#     )
+
+
 class NewTokens(Base):
     __tablename__ = "new_tokens"
 
-    pool_id: Mapped[Optional[str]] = mapped_column(String, nullable=False, primary_key=True)
-    mint_address: Mapped[str] = mapped_column(String, index=True)
+    mint_address: Mapped[str] = mapped_column(String, primary_key=True, unique=True, index=True)
+    pool_id: Mapped[Optional[str]] = mapped_column(String, nullable=False)
     timestamp: Mapped[datetime] = mapped_column(DateTime, default=func.now())
     signature: Mapped[str] = mapped_column(String)
     tx_type: Mapped[str] = mapped_column(String)
@@ -31,9 +67,7 @@ class NewTokens(Base):
     
     # Processing stages tracking (for debugging and partial completion)
     dexscreener_processed: Mapped[bool] = mapped_column(Boolean, default=False)
-    raydium_processed: Mapped[bool] = mapped_column(Boolean, default=False)
     webacy_processed: Mapped[bool] = mapped_column(Boolean, default=False)
-    tavily_processed: Mapped[bool] = mapped_column(Boolean, default=False)
     profitability_processed: Mapped[bool] = mapped_column(Boolean, default=False)
     
     # Error tracking
@@ -53,8 +87,7 @@ class NewTokens(Base):
 class TokenMetadata(Base):
     __tablename__ = "token_metadata"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    mint_address: Mapped[str] = mapped_column(String, unique=True, index=True)
+    mint_address: Mapped[str] = mapped_column(String, primary_key=True, unique=True, index=True)
 
     # DexScreener Core
     dexscreener_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
@@ -62,12 +95,13 @@ class TokenMetadata(Base):
     price_native: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     price_usd: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     market_cap: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    pair_created_at: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    pair_created_at: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
     websites: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     twitter: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     telegram: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     token_name: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     token_symbol: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    token_decimals: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, server_default="9", default=9)
     dex_id: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
     # Volume & Price Changes
@@ -91,51 +125,6 @@ class TokenMetadata(Base):
     webacy_risk_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     webacy_risk_level: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     webacy_moon_potential: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-
-    # Raydium Pool Data
-    program_id: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    pool_id: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    mint_a: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    mint_b: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    token_logo_uri: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    token_decimals: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-
-    mint_amount_a: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    mint_amount_b: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    fee_rate: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    open_time: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    tvl: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-
-    # Day/Week/Month Stats
-    day_volume: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    day_volume_quote: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    day_volume_fee: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    day_apr: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    day_fee_apr: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    day_price_min: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    day_price_max: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-
-    week_volume: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    week_volume_quote: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    week_volume_fee: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    week_apr: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    week_fee_apr: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    week_price_min: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    week_price_max: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-
-    month_volume: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    month_volume_quote: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    month_volume_fee: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    month_apr: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    month_fee_apr: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    month_price_min: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    month_price_max: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-
-    pool_type: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    market_id: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    lp_mint: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    lp_price: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    lp_amount: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
 
     # Profitability Engine Output
     profitability_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)

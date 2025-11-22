@@ -14,9 +14,11 @@ from app.utils.bot_logger import get_logger
 from cryptography.fernet import Fernet
 from app.middleware.rate_limiter import rate_limit
 from solders.pubkey import Pubkey
+from solders.keypair import Keypair
 from nacl.signing import VerifyKey
 from nacl.exceptions import BadSignatureError
 from app.config import settings
+from jupiter_python_sdk.jupiter import Jupiter
 
 logger = get_logger(__name__)
 
@@ -41,7 +43,6 @@ redis_client = redis.Redis(
     socket_connect_timeout=5,
     socket_timeout=5
 )
-
 
 @router.get("/get-nonce")
 async def get_nonce(_: bool = Depends(normal_limit)):
@@ -113,8 +114,6 @@ async def verify_wallet(
     except Exception as e:
         logger.error(f"Wallet verification failed: {str(e)}")
         raise HTTPException(status_code=400, detail=f"Verification failed: {str(e)}")
-
-
 
 @router.post("/register-or-login")
 async def register_or_login_wallet(
@@ -190,10 +189,6 @@ async def register_or_login_wallet(
         logger.error(f"Unexpected error in register-or-login: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail="Internal server error")
     
-
-
-
-
 async def rotate_master_key(old_key: str, new_key: str, db: AsyncSession):
     try:
         old_fernet = Fernet(old_key.encode())

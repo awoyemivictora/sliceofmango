@@ -14,10 +14,11 @@ export const HeroSection = (): JSX.Element => {
   ];
 
   const snipeMessages = [
-    "SCANNING_PUMPFUN...",
-    "ANALYZING_TOKENS...",
-    "EXECUTING_SNIPE...",
-    "TRADE_COMPLETED!",
+    "SCANNING RAYDIUM FOR NEW POOLS...",
+    "ANALYZING DETECTED TOKEN FOR MOON POTENTIAL...",
+    "EXECUTING INSTANT SNIPE...",
+    "MONITORING FOR POTENTIAL PROFIT/STOP-LOSS...",
+    "TRADE COMPLETED!",
   ];
 
   // Typing animation effect
@@ -61,12 +62,12 @@ export const HeroSection = (): JSX.Element => {
             <h1 className="font-black text-white text-3xl sm:text-4xl lg:text-5xl xl:text-6xl">
               <span className="bg-gradient-to-r from-white to-emerald-100 bg-clip-text text-transparent">
                 <a 
-                  href="https://pump.fun" 
+                  href="https://solscan.io/" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent hover:from-emerald-300 hover:to-cyan-300 transition-all duration-300 group hover:scale-105"
                 >
-                  <span>Pump.fun</span>
+                  <span>Solana</span>
                   <svg className="w-5 h-5 text-emerald-400 group-hover:text-cyan-400 transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                   </svg>
@@ -90,7 +91,7 @@ export const HeroSection = (): JSX.Element => {
                   <div className="w-2.5 h-2.5 bg-green-500 rounded-full"></div>
                 </div>
                 <div className="text-emerald-400 font-mono text-sm truncate">
-                  pumpfun_sniper.exe
+                  flash_sniper.exe
                 </div>
                 <div className="flex-1"></div>
                 <div className="text-green-400 text-xs font-mono flex items-center gap-1.5">

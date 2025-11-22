@@ -2921,15 +2921,14 @@ from app.dependencies import get_current_user_by_wallet
 from app.models import Subscription, TokenMetadataArchive, Trade, User, TokenMetadata, NewTokens
 from app.database import AsyncSessionLocal, get_db
 from app.schemas import LogTradeRequest, SubscriptionRequest
-from app.utils import profitability_engine
+from app.utils.profitability_engine import engine as profitability_engine
 from app.utils.dexscreener_api import get_dexscreener_data
-from app.utils.raydium_apis import get_raydium_pool_info
-from app.utils.solscan_apis import get_solscan_token_meta, get_top_holders_info
 from app.utils.webacy_api import check_webacy_risk
 from app import models, database
 from app.config import settings
 from app.security import decrypt_private_key_backend
 import redis.asyncio as redis
+from app.utils.bot_components import ConnectionManager, execute_user_buy, websocket_manager
 
 # Add generated stubs
 import sys
@@ -2992,54 +2991,189 @@ app.include_router(user.router)
 app.include_router(util.router)
 
 
-# Lifespan event handler
+
+# Persistent bot storage (Redis)
+async def save_bot_state(wallet_address: str, is_running: bool, settings: dict = None):
+    """Save bot state to Redis for persistence"""
+    state = {
+        "is_running": is_running,
+        "last_heartbeat": datetime.utcnow().isoformat(),
+        "settings": settings or {}
+    }
+    await redis_client.setex(f"bot_state:{wallet_address}", 86400, json.dumps(state))  # 24h TTL
+
+async def load_bot_state(wallet_address: str) -> Optional[dict]:
+    """Load bot state from Redis"""
+    state_data = await redis_client.get(f"bot_state:{wallet_address}")
+    if state_data:
+        return json.loads(state_data)
+    return None
+
+async def start_persistent_bot_for_user(wallet_address: str):
+    """Start a persistent bot that survives browser closures"""
+    if wallet_address in active_bot_tasks and not active_bot_tasks[wallet_address].done():
+        logger.info(f"Bot already running for {wallet_address}")
+        return
+    
+    async def persistent_bot_loop():
+        logger.info(f"Starting persistent bot for {wallet_address}")
+        
+        while True:
+            try:
+                # Check if bot should still be running
+                state = await load_bot_state(wallet_address)
+                if not state or not state.get("is_running", False):
+                    logger.info(f"Bot stopped via state for {wallet_address}")
+                    break
+                
+                # Get fresh user data each iteration
+                async with AsyncSessionLocal() as db:
+                    user_result = await db.execute(
+                        select(User).where(User.wallet_address == wallet_address)
+                    )
+                    user = user_result.scalar_one_or_none()
+                    
+                    if not user:
+                        logger.error(f"User {wallet_address} not found - stopping bot")
+                        await save_bot_state(wallet_address, False)
+                        break
+                    
+                    # Check balance
+                    try:
+                        async with AsyncClient(settings.SOLANA_RPC_URL) as client:
+                            balance_response = await client.get_balance(Pubkey.from_string(wallet_address))
+                            sol_balance = balance_response.value / 1_000_000_000
+                            
+                            if sol_balance < 0.1:  # Reduced minimum to 0.1 SOL
+                                logger.info(f"Insufficient balance for {wallet_address}: {sol_balance} SOL")
+                                # Send alert via WebSocket if connected
+                                await websocket_manager.send_personal_message(json.dumps({
+                                    "type": "log",
+                                    "log_type": "warning", 
+                                    "message": f"Low balance: {sol_balance:.4f} SOL. Bot paused.",
+                                    "timestamp": datetime.utcnow().isoformat()
+                                }), wallet_address)
+                                await asyncio.sleep(60)  # Check less frequently when low balance
+                                continue
+                    except Exception as e:
+                        logger.error(f"Balance check failed for {wallet_address}: {e}")
+                        await asyncio.sleep(30)
+                        continue
+                    
+                    # Process new tokens for this user
+                    await process_user_specific_tokens(user, db)
+                    
+                # Heartbeat - update every cycle
+                await save_bot_state(wallet_address, True, {
+                    "last_cycle": datetime.utcnow().isoformat(),
+                    "balance": sol_balance
+                })
+                
+                # Use user's check interval or default
+                check_interval = user.bot_check_interval_seconds if user and user.bot_check_interval_seconds else 10
+                await asyncio.sleep(check_interval)
+                
+            except asyncio.CancelledError:
+                logger.info(f"Persistent bot cancelled for {wallet_address}")
+                break
+            except Exception as e:
+                logger.error(f"Error in persistent bot for {wallet_address}: {e}")
+                await asyncio.sleep(30)
+        
+        # Cleanup
+        if wallet_address in active_bot_tasks:
+            del active_bot_tasks[wallet_address]
+        await save_bot_state(wallet_address, False)
+        logger.info(f"Persistent bot stopped for {wallet_address}")
+    
+    task = asyncio.create_task(persistent_bot_loop())
+    active_bot_tasks[wallet_address] = task
+    await save_bot_state(wallet_address, True)
+    
+async def process_user_specific_tokens(user: User, db: AsyncSession):
+    """Process tokens specifically for a user based on their filters"""
+    # Get recently processed tokens (last 5 minutes)
+    recent_time = datetime.utcnow() - timedelta(minutes=5)
+    
+    result = await db.execute(
+        select(TokenMetadata)
+        .where(
+            TokenMetadata.last_checked_at >= recent_time,
+            TokenMetadata.trading_recommendation.in_(["MOONBAG_BUY", "STRONG_BUY", "BUY"]),
+            TokenMetadata.profitability_confidence >= 70
+        )
+        .order_by(TokenMetadata.profitability_score.desc())
+        .limit(10)
+    )
+    
+    tokens = result.scalars().all()
+    
+    for token in tokens:
+        # Check if user already has position
+        existing_trade = await db.execute(
+            select(Trade).where(
+                Trade.user_wallet_address == user.wallet_address,
+                Trade.mint_address == token.mint_address,
+                Trade.sell_timestamp.is_(None)
+            )
+        )
+        if existing_trade.scalar_one_or_none():
+            continue
+        
+        # Apply user-specific filters
+        if await apply_user_filters(user, token, db, websocket_manager):
+            # Execute buy
+            await execute_user_buy(user, token, db, websocket_manager)
+            # Small delay between buys
+            await asyncio.sleep(1)
+
+# Add this to lifespan startup to restore persistent bots
+async def restore_persistent_bots():
+    """Restore all persistent bots on startup"""
+    try:
+        # Get all wallet addresses with active bots
+        keys = await redis_client.keys("bot_state:*")
+        for key in keys:
+            state_data = await redis_client.get(key)
+            if state_data:
+                state = json.loads(state_data)
+                if state.get("is_running", False):
+                    wallet_address = key.decode().replace("bot_state:", "")
+                    # Wait a bit before starting to avoid overload
+                    await asyncio.sleep(1)
+                    asyncio.create_task(start_persistent_bot_for_user(wallet_address))
+                    logger.info(f"Restored persistent bot for {wallet_address}")
+    except Exception as e:
+        logger.error(f"Error restoring persistent bots: {e}")
+
+# Update lifespan to restore bots
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     try:
         async with database.async_engine.begin() as conn:
             await conn.run_sync(models.Base.metadata.create_all)
+        
+        # Start core services
         asyncio.create_task(safe_raydium_grpc_loop())
         asyncio.create_task(safe_metadata_enrichment_loop())
-        logger.info("🚀 Production backend started successfully")
+        asyncio.create_task(restore_persistent_bots())  # ADD THIS LINE
+        
+        logger.info("🚀 Production backend started successfully with persistent bots")
         yield
     except Exception as e:
         logger.error(f"❌ Startup failed: {e}")
         raise
     finally:
+        # Cancel all bot tasks
+        for task in active_bot_tasks.values():
+            task.cancel()
+        await asyncio.gather(*active_bot_tasks.values(), return_exceptions=True)
         await redis_client.close()
         await database.async_engine.dispose()
 
 # Attach lifespan to app
 app.router.lifespan_context = lifespan
 
-
-# ===================================================================
-# 1. WebSocket Manager
-# ===================================================================
-
-class ConnectionManager:
-    def __init__(self):
-        self.active_connections: Dict[str, WebSocket] = {}
-
-    async def connect(self, websocket: WebSocket, wallet_address: str):
-        await websocket.accept()
-        self.active_connections[wallet_address] = websocket
-        logger.info(f"WebSocket connected for wallet: {wallet_address}")
-
-    def disconnect(self, wallet_address: str):
-        if wallet_address in self.active_connections:
-            del self.active_connections[wallet_address]
-            logger.info(f"WebSocket disconnected for wallet: {wallet_address}")
-
-    async def send_personal_message(self, message: str, wallet_address: str):
-        if wallet_address in self.active_connections:
-            try:
-                await self.active_connections[wallet_address].send_text(message)
-            except Exception as e:
-                logger.error(f"Error sending message to {wallet_address}: {e}")
-                self.disconnect(wallet_address)
-
-websocket_manager = ConnectionManager()
 
 # Active bot tasks
 active_bot_tasks: Dict[str, asyncio.Task] = {}
@@ -3274,82 +3408,6 @@ async def find_raydium_pool_creations(tx_info, accounts, signature, slot):
         
     return pool_infos
 
-# async def process_pool_creations(pool_infos):
-#     """Process and store new pool creations"""
-#     async with AsyncSessionLocal() as db_session:
-#         try:
-#             pools_saved = 0
-            
-#             for pool in pool_infos:
-#                 pool_data = pool["poolInfos"][0]
-                
-#                 # Check if this pool already exists in database to avoid duplicates
-#                 existing_stmt = select(NewTokens).where(NewTokens.pool_id == pool_data["id"])
-#                 existing_result = await db_session.execute(existing_stmt)
-#                 existing_pool = existing_result.scalar_one_or_none()
-                
-#                 if existing_pool:
-#                     continue  # Skip if pool already exists
-
-#                 # Fetch token decimals
-#                 try:
-#                     async with AsyncClient(settings.SOLANA_RPC_URL) as solana_client:
-#                         base_mint_acc, quote_mint_acc = await solana_client.get_multiple_accounts([
-#                             Pubkey.from_string(pool_data["baseMint"]),
-#                             Pubkey.from_string(pool_data["quoteMint"]),
-#                         ])
-
-#                         if base_mint_acc.value and quote_mint_acc.value:
-#                             base_decimals = base_mint_acc.value.data[44] if len(base_mint_acc.value.data) > 44 else 9
-#                             quote_decimals = quote_mint_acc.value.data[44] if len(quote_mint_acc.value.data) > 44 else 6
-                            
-#                             pool_data["baseDecimals"] = base_decimals
-#                             pool_data["quoteDecimals"] = quote_decimals
-#                             pool_data["lpDecimals"] = base_decimals
-                
-#                 except Exception as e:
-#                     pool_data["baseDecimals"] = 9
-#                     pool_data["quoteDecimals"] = 6
-#                     pool_data["lpDecimals"] = 9
-
-#                 # Save to database
-#                 token_trade = NewTokens(
-#                     mint_address=pool_data["baseMint"],
-#                     pool_id=pool_data["id"],
-#                     timestamp=datetime.utcnow(),
-#                     signature=pool["txid"],
-#                     tx_type="raydium_pool_create",
-#                     metadata_status="pending"
-#                 )
-#                 db_session.add(token_trade)
-#                 pools_saved += 1
-
-#             if pools_saved > 0:
-#                 await db_session.commit()
-#                 logger.info(f"✅ Successfully saved {pools_saved} new pool(s) to database")
-                
-#                 # Notify WebSocket clients
-#                 for wallet in websocket_manager.active_connections:
-#                     for pool in pool_infos:
-#                         await websocket_manager.send_personal_message(
-#                             json.dumps({
-#                                 "type": "new_pool",
-#                                 "pool": pool["poolInfos"][0]
-#                             }),
-#                             wallet
-#                         )
-
-#                 # Process additional token logic for new pools only
-#                 for pool in pool_infos:
-#                     await process_token_logic(pool["poolInfos"][0]["baseMint"], db_session)
-#             else:
-#                 logger.info("No new pools to save (all already exist in database)")
-
-#         except Exception as e:
-#             logger.error("Error processing pool creations: %s", e)
-#             await db_session.rollback()
-
-
 async def process_pool_creations(pool_infos):
     """Only save to NewTokens with delay — DO NOT process immediately"""
     async with AsyncSessionLocal() as db_session:
@@ -3415,7 +3473,6 @@ async def process_pool_creations(pool_infos):
         except Exception as e:
             logger.error(f"Error in process_pool_creations: {e}", exc_info=True)
             await db_session.rollback()
-
 
 async def track_raydium_transaction_types(signature, accounts, instructions):
     """Track and log the types of Raydium transactions we're seeing"""
@@ -3490,21 +3547,21 @@ def safe_float(value, default=0.0) -> float:
         return default
     
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
-async def process_token_logic(mint: str, db: AsyncSession):
+async def process_token_logic(mint_address: str, db: AsyncSession):
     try:
         start_time = datetime.utcnow()
-        logger.info(f"2025 Moonbag Analysis → {mint[:8]}...")
+        logger.info(f"2025 Moonbag Analysis → {mint_address[:8]}...")
 
         # 1. Get or create token
-        result = await db.execute(select(TokenMetadata).where(TokenMetadata.mint_address == mint))
+        result = await db.execute(select(TokenMetadata).where(TokenMetadata.mint_address == mint_address))
         token = result.scalars().first()
         if not token:
-            token = TokenMetadata(mint_address=mint)
+            token = TokenMetadata(mint_address=mint_address)
             db.add(token)
             await db.flush()
 
         # 2. Wait for DexScreener (CRITICAL — do not proceed without price)
-        dex_data = await fetch_dexscreener_with_retry(mint)
+        dex_data = await fetch_dexscreener_with_retry(mint_address)
         if not dex_data:
             token.trading_recommendation = "NO_DEXSCREENER"
             token.last_checked_at = datetime.utcnow()
@@ -3536,75 +3593,46 @@ async def process_token_logic(mint: str, db: AsyncSession):
             token.price_change_h24 = safe_float(dex_data.get("price_change_h24"))
             token.socials_present = bool(dex_data.get("twitter") or dex_data.get("telegram") or dex_data.get("websites"))
 
-        # 3. Parallel: Raydium + Webacy only (Tavily removed)
-        raydium_data, webacy_data = await asyncio.gather(
-            get_raydium_pool_info(mint),
-            check_webacy_risk(mint),
-            return_exceptions=True
-        )
-
-        raydium_data = raydium_data if not isinstance(raydium_data, Exception) else {}
-        webacy_data = webacy_data if not isinstance(webacy_data, Exception) else {}
-
-        # 4. Raydium Pool Info
-        if isinstance(raydium_data, dict) and raydium_data.get("data"):
-            pool = raydium_data["data"][0]
-            token.program_id = pool.get("programId")
-            token.pool_id = pool.get("id")
-            token.open_time = pool.get("openTime")
-            token.tvl = pool.get("tvl")
-            token.fee_rate = pool.get("feeRate")
-            token.pool_type = ", ".join(pool.get("pooltype", []))
-            token.market_id = pool.get("marketId")
-
-            if pool.get("mintA"):
-                ma = pool["mintA"]
-                token.mint_a = ma.get("address")
-                token.token_decimals = ma.get("decimals")
-                token.token_logo_uri = ma.get("logoURI")
-                if not token.token_name:
-                    token.token_name = ma.get("name")
-                if not token.token_symbol:
-                    token.token_symbol = ma.get("symbol")
-            if pool.get("mintB"):
-                token.mint_b = pool["mintB"].get("address")
-
-            token.mint_amount_a = pool.get("mintAmountA")
-            token.mint_amount_b = pool.get("mintAmountB")
-            if pool.get("lpMint"):
-                token.lp_mint = pool["lpMint"].get("address")
-            token.lp_price = pool.get("lpPrice")
-            token.lp_amount = pool.get("lpAmount")
-            token.burn_percent = pool.get("burnPercent", 0)
-            token.liquidity_burnt = token.burn_percent == 100
-            token.liquidity_pool_size_sol = pool.get("tvl")
-            token.launch_migrate_pool = pool.get("launchMigratePool", False)
-
-            for period in ["day", "week", "month"]:
-                if pool.get(period):
-                    data = pool[period]
-                    setattr(token, f"{period}_volume", data.get("volume"))
-                    setattr(token, f"{period}_volume_quote", data.get("volumeQuote"))
-                    setattr(token, f"{period}_volume_fee", data.get("volumeFee"))
-                    setattr(token, f"{period}_apr", data.get("apr"))
-                    setattr(token, f"{period}_fee_apr", data.get("feeApr"))
-                    setattr(token, f"{period}_price_min", data.get("priceMin"))
-                    setattr(token, f"{period}_price_max", data.get("priceMax"))
+        # 3. Wait for Raydium data with proper retry logic
+        raydium_data = {}
+        webacy_data = {}
+        
+        try:
+            # Start Webacy immediately (it's fast)
+            webacy_task = asyncio.create_task(check_webacy_risk(mint_address))
+            
+            # Get Webacy result
+            webacy_data = await webacy_task
+            webacy_data = webacy_data if not isinstance(webacy_data, Exception) else {}
+            
+        except Exception as e:
+            logger.error(f"Error in data fetch for {mint_address[:8]}: {e}")
+            webacy_data = webacy_data if not isinstance(webacy_data, Exception) else {}
 
         # 5. Webacy Risk
-        if webacy_data:
-            token.webacy_risk_score = webacy_data.get("risk_score")
+        if webacy_data and isinstance(webacy_data, dict):
+            token.webacy_risk_score = safe_float(webacy_data.get("risk_score"))
             token.webacy_risk_level = webacy_data.get("risk_level")
             token.webacy_moon_potential = webacy_data.get("moon_potential")
 
-        # 6. PROFITABILITY ENGINE — NOW TAVILY-FREE
+        # 6. PROFITABILITY ENGINE
         try:
+            # Prepare safe data for analysis
+            token_dict = {}
+            for key, value in token.__dict__.items():
+                if not key.startswith('_'):
+                    # Convert datetime to string for JSON serialization
+                    if isinstance(value, datetime):
+                        token_dict[key] = value.isoformat()
+                    else:
+                        token_dict[key] = value
+            
             analysis = await profitability_engine.analyze_token(
-                mint=mint,
-                token_data=token.__dict__,
-                webacy_data=webacy_data or {},
-                raydium_data=raydium_data or {}
+                mint=mint_address,
+                token_data=token_dict,  # Use safe dict instead of __dict__
+                webacy_data=webacy_data or {}
             )
+            
             token.profitability_score = analysis.final_score
             token.profitability_confidence = analysis.confidence
             token.trading_recommendation = analysis.recommendation
@@ -3612,57 +3640,91 @@ async def process_token_logic(mint: str, db: AsyncSession):
             token.moon_potential = analysis.moon_potential
             token.holder_concentration = analysis.holder_concentration
             token.liquidity_score = analysis.liquidity_score
-            token.reasons = " | ".join(analysis.reasons[:5])
+            token.reasons = " | ".join(analysis.reasons[:5]) if analysis.reasons else ""
 
-            logger.info(f"MOONBAG → {token.token_symbol or mint[:8]} | {analysis.recommendation} | "
+            logger.info(f"MOONBAG → {token.token_symbol or mint_address[:8]} | {analysis.recommendation} | "
                         f"Score: {analysis.final_score:.1f} | Conf: {analysis.confidence:.0f}%")
 
             if analysis.recommendation == "MOONBAG_BUY":
                 alert = {
                     "type": "moonbag_detected",
-                    "mint": mint,
+                    "mint": mint_address,
                     "symbol": token.token_symbol or "UNKNOWN",
                     "name": token.token_name or "Unknown",
                     "price_usd": token.price_usd,
                     "tvl": token.tvl,
                     "score": round(analysis.final_score, 1),
                     "confidence": round(analysis.confidence),
-                    "reasons": analysis.reasons,
-                    "logo": token.token_logo_uri,
+                    "reasons": analysis.reasons[:3] if analysis.reasons else [],
+                    "logo": token.token_symbol,
                     "dexscreener": token.dexscreener_url
                 }
                 for wallet in list(websocket_manager.active_connections.keys()):
                     await websocket_manager.send_personal_message(json.dumps(alert), wallet)
 
+                # IMMEDIATELY trigger buys for all connected users
+                logger.info(f"🚨 IMMEDIATE MOONBAG BUY TRIGGERED FOR {mint_address[:8]}")
+                for wallet_address in list(websocket_manager.active_connections.keys()):
+                    try:
+                        async with AsyncSessionLocal() as db:
+                            user_result = await db.execute(select(User).filter(User.wallet_address == wallet_address))
+                            user = user_result.scalar_one_or_none()
+                            if user and user.wallet_address in active_bot_tasks:
+                                # Check if already bought
+                                exists = await db.execute(
+                                    select(Trade).where(
+                                        Trade.user_wallet_address == user.wallet_address,
+                                        Trade.mint_address == mint_address,
+                                        Trade.trade_type == "buy",
+                                        Trade.sell_timestamp.is_(None)
+                                    )
+                                )
+                                if not exists.scalar_one_or_none():
+                                    asyncio.create_task(
+                                        apply_user_filters_and_trade(user, token, db, websocket_manager)
+                                    )
+                    except Exception as e:
+                        logger.error(f"Error triggering immediate buy for {wallet_address}: {e}")
+                        
         except Exception as e:
-            logger.error(f"Profitability engine error for {mint}: {e}")
+            logger.error(f"Profitability engine error for {mint_address}: {e}")
             token.trading_recommendation = "ERROR"
 
-        # Final save
+        # Final save with safe datetime handling
         token.last_checked_at = datetime.utcnow()
-        await db.merge(token)
+        db.add(token)
         await db.commit()
 
         # Update NewTokens
-        new_token = await db.get(NewTokens, mint) or (await db.execute(
-            select(NewTokens).where(NewTokens.mint_address == mint)
+        new_token = await db.get(NewTokens, mint_address) or (await db.execute(
+            select(NewTokens).where(NewTokens.mint_address == mint_address)
         )).scalar_one_or_none()
         if new_token:
             new_token.metadata_status = "completed"
             new_token.last_metadata_update = datetime.utcnow()
             await db.commit()
 
-        # Cache
-        safe_dict = {k: v for k, v in token.__dict__.items() if not k.startswith('_')}
-        await redis_client.setex(f"token_metadata:{mint}", 600, json.dumps(safe_dict))
+        # Safe caching with proper JSON serialization
+        safe_dict = {}
+        for k, v in token.__dict__.items():
+            if not k.startswith('_'):
+                if isinstance(v, datetime):
+                    safe_dict[k] = v.isoformat()
+                else:
+                    safe_dict[k] = v
+        
+        await redis_client.setex(f"token_metadata:{mint_address}", 600, json.dumps(safe_dict))
 
-        logger.info(f"Analysis complete: {mint[:8]} in {(datetime.utcnow() - start_time).total_seconds():.1f}s")
+        total_time = (datetime.utcnow() - start_time).total_seconds()
+        logger.info(f"Analysis complete: {mint_address[:8]} in {total_time:.1f}s")
 
     except Exception as e:
-        logger.error(f"CRITICAL FAILURE in process_token_logic for {mint}: {e}", exc_info=True)
+        logger.error(f"CRITICAL FAILURE in process_token_logic for {mint_address}: {e}", exc_info=True)
         await db.rollback()
        
-       
+        
+
+                  
         
 # ===================================================================
 # 3. OTHER UTIL FUNCTIONS
@@ -3701,7 +3763,9 @@ async def run_user_specific_bot_loop(user_wallet_address: str):
                 tasks = [
                     apply_user_filters_and_trade(user, token, db, websocket_manager)
                     for token in tokens
-                    if not await redis_client.exists(f"trade:{user_wallet_address}:{token.mint_address}")
+                    if (not await redis_client.exists(f"trade:{user_wallet_address}:{token.mint_address}") and
+                        token.trading_recommendation in ["MOONBAG_BUY", "STRONG_BUY", "BUY"] and
+                        token.profitability_confidence >= 70)
                 ]
                 await asyncio.gather(*tasks)
                 await asyncio.sleep(user.bot_check_interval_seconds or 10)
@@ -3724,174 +3788,32 @@ async def apply_user_filters_and_trade(user: User, token: TokenMetadata, db: Asy
         return
 
     # === ONLY BUY MOONBAGS OR STRONG BUYS ===
-    if token.trading_recommendation not in ["MOONBAG_BUY", "STRONG_BUY"]:
+    if token.trading_recommendation not in ["MOONBAG_BUY", "STRONG_BUY", "BUY"]:
         logger.info(f"Skipping {token.token_symbol} — Not a moonbag (got {token.trading_recommendation})")
         return
 
-    if token.profitability_confidence < 75:
+    if token.profitability_confidence < 70:
         logger.info(f"Skipping {token.token_symbol} — Low confidence ({token.profitability_confidence}%)")
         return
 
     logger.info(f"MOONBAG DETECTED → {token.token_symbol} | Score: {token.profitability_score} | Buying NOW!")
 
-    await redis_client.setex(f"trade:{user.wallet_address}:{token.mint_address}", 3600, "bought")
+    if token.trading_recommendation in ["MOONBAG_BUY", "STRONG_BUY", "BUY"] and token.profitability_confidence >= 70:
+        # Check if already bought
+        exists = await db.execute(
+            select(Trade).where(
+                Trade.user_wallet_address == user.wallet_address,
+                Trade.mint_address == token.mint_address,
+                Trade.trade_type == "buy",
+                Trade.sell_timestamp.is_(None)
+            )
+        )
+        if exists.scalar_one_or_none():
+            return  # Already holding
 
-    await execute_user_trade(
-        user_wallet_address=user.wallet_address,
-        mint_address=token.mint_address,
-        amount_sol=user.buy_amount_sol or 0.5,
-        trade_type="buy",
-        slippage=user.buy_slippage_bps / 10000.0,
-        take_profit=user.sell_take_profit_pct,
-        stop_loss=user.sell_stop_loss_pct,
-        timeout_seconds=user.sell_timeout_seconds,
-        trailing_stop_loss_pct=user.trailing_stop_loss_pct,
-        db=db,
-        websocket_manager=websocket_manager
-    )
-        
-async def execute_user_trade(
-    user_wallet_address: str,
-    mint_address: str,
-    amount_sol: float,
-    trade_type: str,
-    slippage: float,
-    take_profit: Optional[float],
-    stop_loss: Optional[float],
-    timeout_seconds: Optional[int],
-    trailing_stop_loss_pct: Optional[float],
-    db: AsyncSession,
-    websocket_manager: ConnectionManager
-):
-    user_stmt = select(User).filter(User.wallet_address == user_wallet_address)
-    user_result = await db.execute(user_stmt)
-    user = user_result.scalar_one_or_none()
-    if not user:
-        raise ValueError("User not found")
-    rpc_url = user.custom_rpc_https if user.is_premium and user.custom_rpc_https else settings.SOLANA_RPC_URL
-    async with AsyncClient(rpc_url) as client:
-        try:
-            encrypted_private_key = user.encrypted_private_key.encode()
-            private_key_bytes = decrypt_private_key_backend(encrypted_private_key)
-            keypair = Keypair.from_bytes(private_key_bytes)
-            jupiter = Jupiter(client, keypair)
-            quote = await jupiter.get_quote(
-                input_mint="So11111111111111111111111111111111111111112" if trade_type == "buy" else mint_address,
-                output_mint=mint_address if trade_type == "buy" else "So11111111111111111111111111111111111111112",
-                amount=int(amount_sol * 1_000_000_000),
-                slippage_bps=int(slippage * 10000)
-            )
-            recent_fees = await client.get_recent_prioritization_fees()
-            priority_fee = max(fee.micro_lamports for fee in recent_fees.value) if recent_fees.value else 100_000
-            swap_transaction = await jupiter.swap(
-                quote=quote,
-                user_public_key=Pubkey.from_string(user_wallet_address),
-                priority_fee_micro_lamports=priority_fee
-            )
-            raw_tx = base64.b64encode(swap_transaction.serialize()).decode()
-            trade_instruction_message = {
-                "type": "trade_instruction",
-                "trade_type": trade_type,
-                "mint_address": mint_address,
-                "amount_sol": amount_sol,
-                "slippage": slippage,
-                "take_profit": take_profit,
-                "stop_loss": stop_loss,
-                "timeout_seconds": timeout_seconds,
-                "trailing_stop_loss_pct": trailing_stop_loss_pct,
-                "raw_tx_base64": raw_tx,
-                "last_valid_block_height": quote["last_valid_block_height"],
-                "message": f"Execute {trade_type} trade for {mint_address}."
-            }
-            await websocket_manager.send_personal_message(
-                json.dumps(trade_instruction_message),
-                user_wallet_address
-            )
-            if trade_type == "buy":
-                asyncio.create_task(monitor_trade_for_sell(
-                    user_wallet_address, mint_address, take_profit, stop_loss, timeout_seconds, trailing_stop_loss_pct, db, websocket_manager
-                ))
-        except Exception as e:
-            logger.error(f"Error executing trade for {user_wallet_address}: {e}")
-            await websocket_manager.send_personal_message(
-                json.dumps({"type": "log", "message": f"Trade error: {str(e)}", "status": "error"}),
-                user_wallet_address
-            )
-
-async def monitor_trade_for_sell(
-    user_wallet_address: str,
-    mint_address: str,
-    take_profit: Optional[float],
-    stop_loss: Optional[float],
-    timeout_seconds: Optional[int],
-    trailing_stop_loss_pct: Optional[float],
-    db: AsyncSession,
-    websocket_manager: ConnectionManager
-):
-    logger.info(f"Monitoring trade for {user_wallet_address} on {mint_address}")
-    start_time = datetime.utcnow()
-    highest_price = None
-    while True:
-        try:
-            dex_data = await get_dexscreener_data(mint_address)
-            if not dex_data:
-                await websocket_manager.send_personal_message(
-                    json.dumps({"type": "log", "message": f"Failed to fetch price for {mint_address}. Retrying...", "status": "error"}),
-                    user_wallet_address
-                )
-                await asyncio.sleep(10)
-                continue
-            current_price = float(dex_data.get("price_usd", 0))
-            trade_stmt = select(Trade).filter(
-                Trade.user_wallet_address == user_wallet_address,
-                Trade.mint_address == mint_address,
-                Trade.trade_type == "buy"
-            ).order_by(Trade.buy_timestamp.desc())
-            trade_result = await db.execute(trade_stmt)
-            trade = trade_result.scalar_one_or_none()
-            if not trade:
-                logger.error(f"No buy trade found for {user_wallet_address} and {mint_address}")
-                break
-            buy_price = trade.price_usd_at_trade or 0
-            if timeout_seconds and (datetime.utcnow() - start_time).total_seconds() > timeout_seconds:
-                await execute_user_trade(
-                    user_wallet_address, mint_address, trade.amount_tokens, "sell", 0.05, None, None, None, None, db, websocket_manager
-                )
-                await websocket_manager.send_personal_message(
-                    json.dumps({"type": "log", "message": f"Selling {mint_address} due to timeout.", "status": "info"}),
-                    user_wallet_address
-                )
-                break
-            if trailing_stop_loss_pct and current_price > (highest_price or buy_price):
-                highest_price = current_price
-                stop_loss = highest_price * (1 - trailing_stop_loss_pct / 100)
-            if take_profit and current_price >= buy_price * (1 + take_profit / 100):
-                await execute_user_trade(
-                    user_wallet_address, mint_address, trade.amount_tokens, "sell", 0.05, None, None, None, None, db, websocket_manager
-                )
-                await websocket_manager.send_personal_message(
-                    json.dumps({"type": "log", "message": f"Selling {mint_address} at take-profit.", "status": "info"}),
-                    user_wallet_address
-                )
-                break
-            if stop_loss and current_price <= buy_price * (1 - stop_loss / 100):
-                await execute_user_trade(
-                    user_wallet_address, mint_address, trade.amount_tokens, "sell", 0.05, None, None, None, None, db, websocket_manager
-                )
-                await websocket_manager.send_personal_message(
-                    json.dumps({"type": "log", "message": f"Selling {mint_address} at stop-loss.", "status": "info"}),
-                    user_wallet_address
-                )
-                break
-            await asyncio.sleep(5)
-        except Exception as e:
-            logger.error(f"Error monitoring trade for {mint_address}: {e}")
-            await websocket_manager.send_personal_message(
-                json.dumps({"type": "log", "message": f"Error monitoring {mint_address}: {str(e)}", "status": "error"}),
-                user_wallet_address
-            )
-            await asyncio.sleep(10)
-           
+        await execute_user_buy(user, token, db, websocket_manager)
+        return asyncio.sleep(0)
+         
 async def update_bot_settings(settings: dict, wallet_address: str, db: AsyncSession):
     try:
         stmt = select(User).filter(User.wallet_address == wallet_address)
@@ -3990,20 +3912,6 @@ async def apply_user_filters(user: User, token_meta: TokenMetadata, db: AsyncSes
 
     return True
 
-# async def metadata_enrichment_loop():
-#     while True:
-#         async with AsyncSessionLocal() as db:
-#             stmt = select(NewTokens).where(NewTokens.metadata_status == "pending").limit(20)
-#             result = await db.execute(stmt)
-#             pending_tokens = result.scalars().all()
-
-#             tasks = [
-#                 asyncio.create_task(safe_enrich_token(token.mint_address, db))
-#                 for token in pending_tokens
-#             ]
-#             await asyncio.gather(*tasks, return_exceptions=True)
-#         await asyncio.sleep(5)
-        
 async def metadata_enrichment_loop():
     while True:
         async with AsyncSessionLocal() as db:
@@ -4023,17 +3931,26 @@ async def metadata_enrichment_loop():
 
         await asyncio.sleep(6)
         
-async def safe_enrich_token(mint: str, db: AsyncSession):
+async def safe_enrich_token(mint_address: str, db: AsyncSession):
     try:
-        await process_token_logic(mint, db)
-        # Only mark as processed on SUCCESS
-        token = await db.get(NewTokens, mint)  # or by mint_address
+        await process_token_logic(mint_address, db)
+
+        # FIXED: Query by mint_address, not by primary key
+        new_token_result = await db.execute(
+            select(NewTokens).where(NewTokens.mint_address == mint_address)
+        )
+        token = new_token_result.scalar_one_or_none()
+        
         if token:
             token.metadata_status = "processed"
+            token.last_metadata_update = datetime.utcnow()
             await db.commit()
+            
+        logger.info(f"Successfully enriched and marked as processed: {mint_address[:8]}")
+        
     except Exception as e:
-        logger.error(f"Failed to enrich {mint}: {e}")
-        # Leave as pending → will retry
+        logger.error(f"Failed to enrich {mint_address}: {e}", exc_info=True)
+        # Leave as pending → will retry automatically
                 
 async def smart_cleanup_and_archive_loop():
     while True:
@@ -4073,8 +3990,159 @@ async def smart_cleanup_and_archive_loop():
 
         await asyncio.sleep(1800)  # every 30 min
        
-            
-          
+async def start_user_bot_task(wallet_address: str):
+    """Start a user-specific bot task"""
+    if wallet_address in active_bot_tasks:
+        logger.info(f"Bot already running for {wallet_address}")
+        return
+    
+    task = asyncio.create_task(run_user_specific_bot_loop(wallet_address))
+    active_bot_tasks[wallet_address] = task
+    logger.info(f"Started bot task for {wallet_address}")          
+ 
+ 
+ 
+ # Add to main.py after active_bot_tasks definition
+
+# Persistent bot storage (Redis)
+async def save_bot_state(wallet_address: str, is_running: bool, settings: dict = None):
+    """Save bot state to Redis for persistence"""
+    state = {
+        "is_running": is_running,
+        "last_heartbeat": datetime.utcnow().isoformat(),
+        "settings": settings or {}
+    }
+    await redis_client.setex(f"bot_state:{wallet_address}", 86400, json.dumps(state))  # 24h TTL
+
+async def load_bot_state(wallet_address: str) -> Optional[dict]:
+    """Load bot state from Redis"""
+    state_data = await redis_client.get(f"bot_state:{wallet_address}")
+    if state_data:
+        return json.loads(state_data)
+    return None
+
+async def start_persistent_bot_for_user(wallet_address: str):
+    """Start a persistent bot that survives browser closures"""
+    if wallet_address in active_bot_tasks and not active_bot_tasks[wallet_address].done():
+        return  # Already running
+    
+    async def persistent_bot_loop():
+        logger.info(f"Starting persistent bot for {wallet_address}")
+        
+        while True:
+            try:
+                # Check if bot should still be running
+                state = await load_bot_state(wallet_address)
+                if not state or not state.get("is_running", False):
+                    logger.info(f"Bot stopped via state for {wallet_address}")
+                    break
+                
+                # Get fresh user data each iteration
+                async with AsyncSessionLocal() as db:
+                    user_result = await db.execute(
+                        select(User).where(User.wallet_address == wallet_address)
+                    )
+                    user = user_result.scalar_one_or_none()
+                    
+                    if not user:
+                        logger.error(f"User {wallet_address} not found - stopping bot")
+                        break
+                    
+                    # Check balance
+                    try:
+                        async with AsyncClient(settings.SOLANA_RPC_URL) as client:
+                            balance_response = await client.get_balance(Pubkey.from_string(wallet_address))
+                            sol_balance = balance_response.value / 1_000_000_000
+                            
+                            if sol_balance < 0.3:
+                                logger.info(f"Insufficient balance for {wallet_address}: {sol_balance} SOL")
+                                await asyncio.sleep(30)
+                                continue
+                    except Exception as e:
+                        logger.error(f"Balance check failed for {wallet_address}: {e}")
+                        await asyncio.sleep(30)
+                        continue
+                    
+                    # Process new tokens for this user
+                    await process_user_specific_tokens(user, db)
+                    
+                # Heartbeat
+                await save_bot_state(wallet_address, True)
+                await asyncio.sleep(user.bot_check_interval_seconds or 10)
+                
+            except asyncio.CancelledError:
+                logger.info(f"Persistent bot cancelled for {wallet_address}")
+                break
+            except Exception as e:
+                logger.error(f"Error in persistent bot for {wallet_address}: {e}")
+                await asyncio.sleep(30)
+        
+        # Cleanup
+        if wallet_address in active_bot_tasks:
+            del active_bot_tasks[wallet_address]
+        await save_bot_state(wallet_address, False)
+        logger.info(f"Persistent bot stopped for {wallet_address}")
+    
+    task = asyncio.create_task(persistent_bot_loop())
+    active_bot_tasks[wallet_address] = task
+    await save_bot_state(wallet_address, True)
+
+async def process_user_specific_tokens(user: User, db: AsyncSession):
+    """Process tokens specifically for a user based on their filters"""
+    # Get recently processed tokens (last 5 minutes)
+    recent_time = datetime.utcnow() - timedelta(minutes=5)
+    
+    result = await db.execute(
+        select(TokenMetadata)
+        .where(
+            TokenMetadata.last_checked_at >= recent_time,
+            TokenMetadata.trading_recommendation.in_(["MOONBAG_BUY", "STRONG_BUY", "BUY"]),
+            TokenMetadata.profitability_confidence >= 70
+        )
+        .order_by(TokenMetadata.profitability_score.desc())
+        .limit(10)
+    )
+    
+    tokens = result.scalars().all()
+    
+    for token in tokens:
+        # Check if user already has position
+        existing_trade = await db.execute(
+            select(Trade).where(
+                Trade.user_wallet_address == user.wallet_address,
+                Trade.mint_address == token.mint_address,
+                Trade.sell_timestamp.is_(None)
+            )
+        )
+        if existing_trade.scalar_one_or_none():
+            continue
+        
+        # Apply user-specific filters
+        if await apply_user_filters(user, token, db, websocket_manager):
+            # Execute buy
+            await execute_user_buy(user, token, db, websocket_manager)
+            # Small delay between buys
+            await asyncio.sleep(1)
+
+# Add this to lifespan startup to restore persistent bots
+async def restore_persistent_bots():
+    """Restore all persistent bots on startup"""
+    try:
+        # Get all wallet addresses with active bots
+        keys = await redis_client.keys("bot_state:*")
+        for key in keys:
+            state_data = await redis_client.get(key)
+            if state_data:
+                state = json.loads(state_data)
+                if state.get("is_running", False):
+                    wallet_address = key.decode().replace("bot_state:", "")
+                    # Wait a bit before starting to avoid overload
+                    await asyncio.sleep(1)
+                    asyncio.create_task(start_persistent_bot_for_user(wallet_address))
+                    logger.info(f"Restored persistent bot for {wallet_address}")
+    except Exception as e:
+        logger.error(f"Error restoring persistent bots: {e}")
+        
 
 # ===================================================================
 # 4. ALL MAIN ENDPOINTS STARTS HERE
@@ -4115,15 +4183,76 @@ async def health_check():
 async def debug():
     return [{"path": r.path, "name": r.name} for r in app.routes]
 
+# @app.websocket("/ws/logs/{wallet_address}")
+# async def websocket_endpoint(websocket: WebSocket, wallet_address: str):
+#     await websocket_manager.connect(websocket, wallet_address)
+#     try:
+#         # Start bot when WebSocket connects
+#         await start_user_bot_task(wallet_address)
+        
+#         async with AsyncSessionLocal() as db:
+#             result = await db.execute(
+#                 select(Trade)
+#                 .filter_by(user_wallet_address=wallet_address)
+#                 .order_by(Trade.id.desc())
+#                 .limit(50)
+#             )
+#             trades = result.scalars().all()
+#             for trade in trades:
+#                 await websocket.send_json({
+#                     "type": "trade_update",
+#                     "trade": {
+#                         "id": trade.id,
+#                         "trade_type": trade.trade_type,
+#                         "amount_sol": trade.amount_sol_in or trade.amount_sol_out or 0,
+#                         "token_symbol": trade.token_symbol or "Unknown",
+#                         "timestamp": trade.created_at.isoformat() if trade.created_at else None,
+#                     }
+#                 })
+        
+#         while True:
+#             data = await websocket.receive_text()
+#             if data:
+#                 try:
+#                     message = json.loads(data)
+#                     if message.get("type") == "health_response":
+#                         logger.info(f"Received health response from {wallet_address}")
+#                 except json.JSONDecodeError:
+#                     logger.error(f"Invalid WebSocket message from {wallet_address}")
+#     except WebSocketDisconnect:
+#         websocket_manager.disconnect(wallet_address)
+#         # Stop bot when WebSocket disconnects
+#         if wallet_address in active_bot_tasks:
+#             active_bot_tasks[wallet_address].cancel()
+#             del active_bot_tasks[wallet_address]
+#     except Exception as e:
+#         logger.error(f"WebSocket error for {wallet_address}: {str(e)}")
+#         websocket_manager.disconnect(wallet_address)
+#         if wallet_address in active_bot_tasks:
+#             active_bot_tasks[wallet_address].cancel()
+#             del active_bot_tasks[wallet_address]
+
 @app.websocket("/ws/logs/{wallet_address}")
 async def websocket_endpoint(websocket: WebSocket, wallet_address: str):
-    await websocket_manager.connect(websocket, wallet_address)
+    await websocket_manager.connect(websocket, wallet_address)  # FIXED: Remove extra websocket parameter
+    
     try:
+        # Send current bot status
+        state = await load_bot_state(wallet_address)
+        is_running = state.get("is_running", False) if state else False
+        
+        await websocket.send_json({
+            "type": "bot_status",
+            "is_running": is_running,
+            "message": "Bot is running persistently" if is_running else "Bot is stopped"
+        })
+        
+        # Send recent trades
         async with AsyncSessionLocal() as db:
             result = await db.execute(
                 select(Trade)
-                .filter_by(user_wallet_address=wallet_address)   # ← FIXED
-                .order_by(Trade.id.desc())                      # ← better than created_at which doesn't exist
+                .filter_by(user_wallet_address=wallet_address)
+                .order_by(Trade.id.desc())
                 .limit(50)
             )
             trades = result.scalars().all()
@@ -4139,21 +4268,50 @@ async def websocket_endpoint(websocket: WebSocket, wallet_address: str):
                     }
                 })
         
+        # Handle messages
         while True:
             data = await websocket.receive_text()
             if data:
                 try:
                     message = json.loads(data)
-                    if message.get("type") == "health_response":
-                        logger.info(f"Received health response from {wallet_address}")
+                    await handle_websocket_message(message, wallet_address, websocket)
                 except json.JSONDecodeError:
                     logger.error(f"Invalid WebSocket message from {wallet_address}")
+                    
     except WebSocketDisconnect:
-        websocket_manager.disconnect(wallet_address)
+        logger.info(f"WebSocket disconnected for {wallet_address}")
     except Exception as e:
         logger.error(f"WebSocket error for {wallet_address}: {str(e)}")
+    finally:
         websocket_manager.disconnect(wallet_address)
-
+        
+async def handle_websocket_message(message: dict, wallet_address: str, websocket: WebSocket):
+    """Handle different types of WebSocket messages"""
+    msg_type = message.get("type")
+    
+    if msg_type == "start_bot":
+        await start_persistent_bot_for_user(wallet_address)
+        await websocket.send_json({
+            "type": "bot_status", 
+            "is_running": True,
+            "message": "Bot started successfully"
+        })
+        
+    elif msg_type == "stop_bot":
+        await save_bot_state(wallet_address, False)
+        await websocket.send_json({
+            "type": "bot_status",
+            "is_running": False, 
+            "message": "Bot stopped successfully"
+        })
+        
+    elif msg_type == "health_response":
+        logger.debug(f"Health response from {wallet_address}")
+        
+    elif msg_type == "settings_update":
+        async with AsyncSessionLocal() as db:
+            await update_bot_settings(message.get("settings", {}), wallet_address, db)
+            
 @app.post("/user/update-rpc")
 async def update_user_rpc(
     rpc_data: dict,
