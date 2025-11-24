@@ -9,6 +9,8 @@ import { registerWallet, verifyWallet, getNonce } from '@/services/auth';
 import { config } from '@/config/production';
 import EnhancedTradingChart from '@/components/EnhancedTradingChart';
 
+
+
 // Add these interfaces
 interface ActiveTrade {
   mintAddress: string;
@@ -286,29 +288,44 @@ const ProfessionalInput: React.FC<ProfessionalInputProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
 
+  // Default values for each field type
+  const getDefaultValue = () => {
+    if (suffix === 'SOL') return '0.0000 SOL';
+    if (suffix === '%') return '0%';
+    if (suffix === ' seconds') return '0 seconds';
+    return '';
+  };
+
   const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
     setIsFocused(true);
     let rawValue = value;
-    if (formatOnFocus) {
+    
+    // If value is default, show empty for editing
+    if (value === getDefaultValue()) {
+      rawValue = '';
+    } else if (formatOnFocus) {
       rawValue = formatOnFocus(value);
     } else if (suffix && value.endsWith(suffix)) {
       rawValue = value.replace(suffix, '').trim();
     }
+    
     setDisplayValue(rawValue);
-    e.target.select();
+    setTimeout(() => e.target.select(), 100);
   };
 
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     setIsFocused(false);
     let formattedValue = displayValue.trim();
-    if (formatOnBlur) {
+    
+    // If empty, use default value
+    if (!formattedValue) {
+      formattedValue = getDefaultValue();
+    } else if (formatOnBlur) {
       formattedValue = formatOnBlur(formattedValue);
     } else if (suffix && formattedValue && !formattedValue.endsWith(suffix)) {
       formattedValue = `${formattedValue}${suffix}`;
     }
-    if (!formattedValue.trim()) {
-      formattedValue = value;
-    }
+    
     setDisplayValue(formattedValue);
     onChange(formattedValue);
   };
@@ -316,6 +333,8 @@ const ProfessionalInput: React.FC<ProfessionalInputProps> = ({
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
     setDisplayValue(newValue);
+    
+    // Only update parent if no suffix or formatting (real-time updates)
     if (!suffix && !formatOnBlur) {
       onChange(newValue);
     }
@@ -409,6 +428,7 @@ const ProfessionalInput: React.FC<ProfessionalInputProps> = ({
   );
 };
 
+
 const FlashSniperTradingInterface: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'logs' | 'transactions'>('transactions');
   const [activeWalletTab, setActiveWalletTab] = useState<'wallet' | 'buySell'>('buySell');
@@ -464,7 +484,28 @@ const FlashSniperTradingInterface: React.FC = () => {
   const [activeTrades, setActiveTrades] = useState<ActiveTrade[]>([]);
   const [selectedTrade, setSelectedTrade] = useState<ActiveTrade | null>(null);
   const [showChart, setShowChart] = useState(false);
+  const [pendingSettings, setPendingSettings] = useState({
+    buy: { ...buyForm },
+    sell: { ...sellForm },
+    safety: { ...safetyForm }
+  });
+  const [settingsChanged, setSettingsChanged] = useState(false);
 
+
+  // Function to clear logs
+  const handleClearLogs = () => {
+    setLogs([]);
+    
+    // Optional: Add a log entry confirming the logs were cleared
+    // const clearLog: LogEntry = {
+    //   id: `log-${Date.now()}`,
+    //   type: 'log',
+    //   log_type: 'info',
+    //   message: '📋 Logs cleared manually',
+    //   timestamp: new Date().toISOString()
+    // };
+    // setLogs([clearLog]);
+  };
 
   // Update the bot status check on component mount
   useEffect(() => {
@@ -533,76 +574,6 @@ const FlashSniperTradingInterface: React.FC = () => {
       }
     }
   };
-
-
-  // Enhanced WebSocket connection with auto-reconnect
-  // useEffect(() => {
-  //   if (!walletAddress || !authToken) {
-  //     if (websocket) {
-  //       websocket.close();
-  //       setWebsocket(null);
-  //     }
-  //     return;
-  //   }
-
-  //   let ws: WebSocket;
-  //   let reconnectAttempts = 0;
-  //   const maxReconnectAttempts = 5;
-
-  //   const connect = () => {
-  //     try {
-  //       ws = apiService.createWebSocket(walletAddress);
-
-  //       ws.onopen = () => {
-  //         console.log('WebSocket connected');
-  //         reconnectAttempts = 0;
-  //         // Send initial connection message
-  //         if (ws.readyState === WebSocket.OPEN) {
-  //           ws.send(JSON.stringify({ 
-  //             type: 'connection_init', 
-  //             wallet_address: walletAddress 
-  //           }));
-  //         }
-  //       };
-
-  //       ws.onmessage = async (event) => {
-  //         try {
-  //           const data = JSON.parse(event.data);
-  //           await handleWebSocketMessage(data);
-  //         } catch (err) {
-  //           console.error('WS message error:', err);
-  //         }
-  //       };
-
-  //       ws.onclose = (event) => {
-  //         console.log(`WebSocket disconnected: ${event.code} - ${event.reason}`);
-  //         setWebsocket(null);
-          
-  //         if (reconnectAttempts < maxReconnectAttempts) {
-  //           const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
-  //           reconnectAttempts++;
-  //           setTimeout(connect, delay);
-  //         }
-  //       };
-
-  //       ws.onerror = (err) => {
-  //         console.error('WebSocket error:', err);
-  //       };
-
-  //       setWebsocket(ws);
-  //     } catch (error) {
-  //       console.error('WebSocket connection error:', error);
-  //     }
-  //   };
-
-  //   connect();
-
-  //   return () => {
-  //     if (ws) {
-  //       ws.close(1000, 'Component unmount');
-  //     }
-  //   };
-  // }, [walletAddress, authToken]);
 
   // Enhanced WebSocket connection with single instance
   useEffect(() => {
@@ -859,7 +830,6 @@ const FlashSniperTradingInterface: React.FC = () => {
     }
   };
 
-  // Format and send settings to backend
   const updateBotSettings = useCallback(() => {
     const settings = {
       buy_amount_sol: parseFloat(buyForm.amount.replace(' SOL', '')) || 0,
@@ -867,6 +837,7 @@ const FlashSniperTradingInterface: React.FC = () => {
       sell_take_profit_pct: parseFloat(sellForm.takeProfit.replace('%', '')) || 0,
       sell_stop_loss_pct: parseFloat(sellForm.stopLoss.replace('%', '')) || 0,
       sell_timeout_seconds: parseInt(sellForm.timeout.replace(' seconds', '')) || 0,
+      sell_slippage_bps: parseInt(sellForm.slippage.replace('%', '')) * 100 || 0,
       trailing_stop_loss_pct: sellForm.trailingStopLossPct
         ? parseFloat(sellForm.trailingStopLossPct.replace('%', '')) || 0
         : undefined,
@@ -887,25 +858,48 @@ const FlashSniperTradingInterface: React.FC = () => {
         filter_max_same_block_buys: parseInt(safetyForm.maxSameBlockBuys) || 0,
       }),
     };
-    sendSettingsUpdate(settings);
-  }, [buyForm, sellForm, safetyForm, isPremium, sendSettingsUpdate]);
+    if (websocket && websocket.readyState === WebSocket.OPEN && walletAddress) {
+      websocket.send(
+        JSON.stringify({
+          type: 'settings_update',
+          settings,
+          wallet_address: walletAddress
+        })
+      );
+    }
+  }, [pendingSettings, websocket, walletAddress]);
 
-  // Enhanced bot control functions
+
+
+  // Enhanced bot control functions with settings update
   const handleRunBot = async () => {
-    console.log('Run Bot clicked'); // Debug log
+    console.log('Run Bot clicked');
     
     if (!authToken || !walletAddress) {
       alert('Please ensure wallet is registered and authenticated.');
       return;
     }
     
-    // Check balance first
     if (balance < 0.3) {
       alert(`Please deposit at least 0.3 SOL to start the bot. Current balance: ${balance.toFixed(4)} SOL`);
       return;
     }
 
     try {
+      // Update settings before starting bot
+      if (settingsChanged) {
+        await updateBotSettings();
+        const settingsLog: LogEntry = {
+          id: `log-${Date.now()}`,
+          type: 'log',
+          log_type: 'info',
+          message: '⚙️ Bot settings updated and applied',
+          timestamp: new Date().toISOString()
+        };
+        handleLogMessage(settingsLog);
+        setSettingsChanged(false);
+      }
+
       // Start bot via API
       const response = await apiService.request('/trade/bot/start', {
         method: 'POST',
@@ -925,23 +919,19 @@ const FlashSniperTradingInterface: React.FC = () => {
         }));
       }
 
-      // Store in localStorage for UI persistence
       localStorage.setItem(`bot_running_${walletAddress}`, 'true');
       
-      // Add success log
       const successLog: LogEntry = {
         id: `log-${Date.now()}`,
         type: 'log',
         log_type: 'success',
-        message: '🚀 Trading bot started successfully! Monitoring for new token pools from Raydium...',
+        message: '🚀 Trading bot started successfully! Monitoring for new token pools...',
         timestamp: new Date().toISOString()
       };
       handleLogMessage(successLog);
       
     } catch (error: any) {
       console.error('Error starting bot:', error);
-      
-      // Add error log
       const errorLog: LogEntry = {
         id: `log-${Date.now()}`,
         type: 'log',
@@ -950,15 +940,28 @@ const FlashSniperTradingInterface: React.FC = () => {
         timestamp: new Date().toISOString()
       };
       handleLogMessage(errorLog);
-      
       alert(`Failed to start bot: ${error.message || 'Please check console for details'}`);
     }
   };
 
   const handleStopBot = async () => {
-    console.log('Stop Bot clicked'); // Debug log
+    console.log('Stop Bot clicked');
     
     try {
+      // Update settings before stopping bot if changed
+      if (settingsChanged) {
+        await updateBotSettings();
+        const settingsLog: LogEntry = {
+          id: `log-${Date.now()}`,
+          type: 'log',
+          log_type: 'info',
+          message: '⚙️ Bot settings updated before stopping',
+          timestamp: new Date().toISOString()
+        };
+        handleLogMessage(settingsLog);
+        setSettingsChanged(false);
+      }
+
       const response = await apiService.request('/trade/bot/stop', {
         method: 'POST',
         headers: {
@@ -969,7 +972,6 @@ const FlashSniperTradingInterface: React.FC = () => {
 
       setIsBotRunning(false);
       
-      // Send WebSocket message
       if (websocket && websocket.readyState === WebSocket.OPEN) {
         websocket.send(JSON.stringify({
           type: 'stop_bot',
@@ -977,10 +979,8 @@ const FlashSniperTradingInterface: React.FC = () => {
         }));
       }
 
-      // Remove from localStorage
       localStorage.removeItem(`bot_running_${walletAddress}`);
       
-      // Add stop log
       const stopLog: LogEntry = {
         id: `log-${Date.now()}`,
         type: 'log',
@@ -1082,10 +1082,12 @@ const FlashSniperTradingInterface: React.FC = () => {
     if (authToken) fetchPremiumStatus();
   }, [authToken]);
 
+  // Remove the auto-update from form changes
   const handleBuyFormChange = (field: keyof BuyFormData, value: string) => {
     setBuyForm((prev) => {
       const newForm = { ...prev, [field]: value };
-      updateBotSettings();
+      setPendingSettings(prev => ({ ...prev, buy: newForm }));
+      setSettingsChanged(true);
       return newForm;
     });
   };
@@ -1093,7 +1095,8 @@ const FlashSniperTradingInterface: React.FC = () => {
   const handleSellFormChange = (field: keyof SellFormData, value: string | boolean) => {
     setSellForm((prev) => {
       const newForm = { ...prev, [field]: value };
-      updateBotSettings();
+      setPendingSettings(prev => ({ ...prev, sell: newForm }));
+      setSettingsChanged(true);
       return newForm;
     });
   };
@@ -1101,7 +1104,8 @@ const FlashSniperTradingInterface: React.FC = () => {
   const handleSafetyFormChange = (field: keyof typeof safetyForm, value: string | boolean) => {
     setSafetyForm((prev) => {
       const newForm = { ...prev, [field]: value };
-      updateBotSettings();
+      setPendingSettings(prev => ({ ...prev, safety: newForm }));
+      setSettingsChanged(true);
       return newForm;
     });
   };
@@ -1285,18 +1289,35 @@ const FlashSniperTradingInterface: React.FC = () => {
     }
   }, [buyForm, sellForm, safetyForm, isBotRunning, updateBotSettings]);
 
-  // Enhanced tab components
+
   const LogsTab = () => (
-    <div className="bg-secondary h-[400px] md:h-[600px] overflow-y-auto p-4">
-      <div className="space-y-3">
-        {logs.map((log) => (
-          <LogEntryComponent key={log.id} log={log} />
-        ))}
-        {logs.length === 0 && (
-          <div className="text-center text-gray-500 py-8">
-            No logs yet. Start the bot to see trading activity.
-          </div>
-        )}
+    <div className="bg-secondary h-[400px] md:h-[600px] flex flex-col">
+      {/* Logs content - scrollable */}
+      <div className="flex-1 overflow-y-auto p-4">
+        <div className="space-y-3">
+          {logs.map((log) => (
+            <LogEntryComponent key={log.id} log={log} />
+          ))}
+          {logs.length === 0 && (
+            <div className="text-center text-gray-500 py-8">
+              No logs yet. Start the bot to see trading activity.
+            </div>
+          )}
+        </div>
+      </div>
+      
+      {/* Clear Logs Button - positioned at bottom right */}
+      <div className="flex justify-end p-3 border-t border-[#333]">
+        <button
+          onClick={handleClearLogs}
+          className="text-xs text-gray-400 hover:text-white transition-colors duration-200 flex items-center gap-1 px-3 py-1 rounded border border-gray-600 hover:border-gray-400 bg-dark-2 hover:bg-dark-1"
+          title="Clear all logs"
+        >
+          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+          Clear Logs
+        </button>
       </div>
     </div>
   );
@@ -1386,13 +1407,19 @@ const FlashSniperTradingInterface: React.FC = () => {
         style={{ backgroundImage: 'url(/images/img_grid_layers_v2.png)' }}
       />
       <div className="relative z-10">
-        <header className="bg-primary border-b border-[#ffffff21] h-16 flex items-center justify-between px-4 md:px-8">
+        <header className="sticky top-0 z-50 bg-primary border-b border-[#ffffff21] h-16 flex items-center justify-between px-4 md:px-8">
           <div className="flex items-center gap-4">
-            <img src="/images/img_frame_1171277880.svg" alt="Logo" className="w-3 h-3" />
-            <div className="text-white text-sm font-black font-inter">
-              <span className="text-white">FLASH </span>
-              <span className="text-success">SNIPER</span>
-            </div>
+            {/* Make the entire logo area clickable */}
+            <button 
+              onClick={() => navigate('/')}
+              className="flex items-center gap-4 hover:opacity-80 transition-opacity"
+            >
+              <img src="/images/img_frame_1171277880.svg" alt="Logo" className="w-3 h-3" />
+              <div className="text-white text-sm font-black font-inter">
+                <span className="text-white">FLASH </span>
+                <span className="text-success">SNIPER</span>
+              </div>
+            </button>
           </div>
           <button
             className="md:hidden text-white p-2"
@@ -1403,14 +1430,72 @@ const FlashSniperTradingInterface: React.FC = () => {
             </svg>
           </button>
           <div className="hidden md:flex items-center gap-8">
-            <span className="text-white text-sm font-medium">Documentation</span>
-            <span className="text-white text-sm font-medium">Frequently Asked Questions</span>
+            <button 
+              onClick={() => navigate('/documentation')}
+              className="text-white text-sm font-medium hover:opacity-80 transition-opacity"
+            >
+              Documentation
+            </button>
+            <button 
+              onClick={() => {
+                // Navigate to home page and scroll to FAQ section
+                navigate('/');
+                // Use setTimeout to ensure navigation completes before scrolling
+                setTimeout(() => {
+                  const faqSection = document.getElementById('faq');
+                  if (faqSection) {
+                    const offset = 80; // Account for fixed header
+                    const elementPosition = faqSection.getBoundingClientRect().top;
+                    const offsetPosition = elementPosition + window.pageYOffset - offset;
+                    
+                    window.scrollTo({
+                      top: offsetPosition,
+                      behavior: 'smooth'
+                    });
+                  }
+                }, 100);
+              }}
+              className="text-white text-sm font-medium hover:opacity-80 transition-opacity"
+            >
+              Frequently Asked Questions
+            </button>
           </div>
           {isMobileMenuOpen && (
             <div className="absolute top-16 left-0 right-0 bg-primary border-b border-[#ffffff21] md:hidden">
               <div className="flex flex-col p-4 space-y-4">
-                <span className="text-white text-sm font-medium">Documentation</span>
-                <span className="text-white text-sm font-medium">Frequently Asked Questions</span>
+                <button 
+                  onClick={() => {
+                    navigate('/documentation');
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="text-white text-sm font-medium hover:opacity-80 transition-opacity text-left"
+                >
+                  Documentation
+                </button>
+                <button 
+                  onClick={() => {
+                    // Navigate to home page and scroll to FAQ section
+                    navigate('/');
+                    setIsMobileMenuOpen(false);
+                    // Use setTimeout to ensure navigation completes before scrolling
+                    setTimeout(() => {
+                      const faqSection = document.getElementById('faq');
+                      if (faqSection) {
+                        const offset = 80; // Account for fixed header
+                        const elementPosition = faqSection.getBoundingClientRect().top;
+                        const offsetPosition = elementPosition + window.pageYOffset - offset;
+                        
+                        window.scrollTo({
+                          top: offsetPosition,
+                          behavior: 'smooth'
+                        });
+                      }
+                    }, 100);
+                  }}
+                  className="text-white text-sm font-medium hover:opacity-80 transition-opacity text-left"
+                >
+                  Frequently Asked Questions
+                </button>
               </div>
             </div>
           )}
@@ -1471,10 +1556,29 @@ const FlashSniperTradingInterface: React.FC = () => {
                     </div>
                   )}
                   <div className="bg-dark-2 rounded-lg border border-[#262944] shadow-lg">
-                    <div className="flex items-center gap-3 p-4 border-b border-[#000010] shadow-sm">
-                      <img src="/images/img_wallet01_white_a700.svg" alt="Wallet" className="w-[18px] h-[18px]" />
-                      <span className="text-light font-satoshi font-medium text-[13px] leading-[18px]">Your Wallet</span>
+
+                    <div className="flex items-center justify-between p-4 border-b border-[#000010] shadow-sm">
+                      <div className="flex items-center gap-3">
+                        <img src="/images/img_wallet01_white_a700.svg" alt="Wallet" className="w-[18px] h-[18px]" />
+                        <span className="text-light font-satoshi font-medium text-[13px] leading-[18px]">Your Wallet</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={handleCheckSolDeposit}
+                          className="p-1 hover:bg-white/10 rounded transition-colors"
+                          title="Refresh Balance"
+                        >
+                          <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                          </svg>
+                        </button>
+                        <div className={`w-2 h-2 rounded-full ${balance >= 0.3 ? 'bg-emerald-400' : 'bg-amber-400'} animate-pulse`}></div>
+                        <span className="text-sm text-gray-400">
+                          {balance.toFixed(4)} SOL
+                        </span>
+                      </div>
                     </div>
+
                     <div className="p-3 space-y-3">
                       <div className="relative">
                         <input
@@ -1639,7 +1743,7 @@ const FlashSniperTradingInterface: React.FC = () => {
                           />
                         </div>
                       </div>
-                      <div className="bg-accent border-t border-[#22253e] rounded-lg p-3 flex items-center gap-3">
+                      {/* <div className="bg-accent border-t border-[#22253e] rounded-lg p-3 flex items-center gap-3">
                         <input
                           type="checkbox"
                           checked={sellForm.useOwnRPC}
@@ -1647,7 +1751,7 @@ const FlashSniperTradingInterface: React.FC = () => {
                           className="w-6 h-6"
                         />
                         <span className="text-muted text-sm font-medium">Use your own RPC</span>
-                      </div>
+                      </div> */}
                       {sellForm.useOwnRPC && (
                         <>
                           {isPremium ? (
@@ -1706,7 +1810,7 @@ const FlashSniperTradingInterface: React.FC = () => {
                   </div>
 
                   {/* Safety Section */}
-                  <div className="bg-dark-2 rounded-lg shadow-lg relative">
+                  {/* <div className="bg-dark-2 rounded-lg shadow-lg relative">
                     <div className="flex items-center gap-3 p-4 border-b border-[#000010]">
                       <img src="/images/img_flash.svg" alt="Safety" className="w-5 h-5" />
                       <span className="text-light text-base font-medium">Safety</span>
@@ -1859,7 +1963,7 @@ const FlashSniperTradingInterface: React.FC = () => {
                         </div>
                       </div>
                     )}
-                  </div>
+                  </div> */}
 
                   {showLoginPopup && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">

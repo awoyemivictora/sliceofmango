@@ -38,13 +38,18 @@ class Settings(BaseSettings):
     TAVILY_API_KEY: str = os.getenv("TAVILY_API_KEY")
     
     JUPITER_PLATFORM_FEE_BPS: str = os.getenv("JUPITER_PLATFORM_FEE_BPS")
-    JUPITER_FEE_ACCOUNT: str = os.getenv("JUPITER_FEE_ACCOUNT")
-    
+    JUPITER_REFERRAL_ACCOUNT: str = os.getenv("JUPITER_FEE_ACCOUNT")
     JUPITER_PLATFORM_FEE_BPS: str = os.getenv("JUPITER_PLATFORM_FEE_BPS")
-    JUPITER_FEE_ACCOUNT: str = os.getenv("JUPITER_FEE_ACCOUNT")
     
     SOL_MINT: str = os.getenv("SOL_MINT")
     
+    GRPC_URL: str = os.getenv("GRPC_URL")
+    GRPC_TOKEN: str = os.getenv("GRPC_TOKEN")    
+    
+    PUMPFUN_PROGRAM: str = os.getenv("PUMPFUN_PROGRAM")
+    RAYDIUM_PROGRAM: str = os.getenv("RAYDIUM_PROGRAM")
+    RAYDIUM_FEE_ACCOUNT: str = os.getenv("RAYDIUM_FEE_ACCOUNT")
+        
     
 
 

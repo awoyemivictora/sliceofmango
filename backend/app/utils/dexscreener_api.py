@@ -58,6 +58,7 @@ async def get_dexscreener_data(mint_address: str) -> dict:
         market_cap = pool.get("marketCap", 0.0)
         pair_created_at = pool.get("pairCreatedAt", 0)
         dex_id = pool.get("dexId", "")
+        fdv = pool.get("fdv", 0.0)
 
         # Extract base token info
         base_token = pool.get("baseToken", {})
@@ -117,6 +118,8 @@ async def get_dexscreener_data(mint_address: str) -> dict:
             "token_name": token_name,
             "token_symbol": token_symbol,
             "dex_id": dex_id,
+            "liquidity_usd": liquidity_obj.get("usd", 0.0),
+            "fdv": pool.get("fdv", 0.0),
             "volume_h24": volume_h24,
             "volume_h6": volume_h6,
             "volume_h1": volume_h1,

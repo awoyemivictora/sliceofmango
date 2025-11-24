@@ -5,6 +5,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import TurboSniperDashboard from './pages/TurboSniperDashboard';
 import FlashSniperTradingInterface from './pages/FlashSniperTradingInterface';
 import LandingPage from './pages/LandingPage';
+import DocumentationPage from './pages/Docs';
 
 const AppRoutes = () => {
   return (
@@ -13,6 +14,7 @@ const AppRoutes = () => {
         {/* <Route path="/" element={<TurboSniperDashboard />} /> */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/trading-interface" element={<FlashSniperTradingInterface />} />
+        <Route path="/documentation" element={<DocumentationPage />} /> 
       </Routes>
     </Router>
   );

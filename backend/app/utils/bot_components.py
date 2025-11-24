@@ -1,38 +1,37 @@
 import logging
 import os
+import json
+import base64
+import asyncio
+from datetime import datetime
 from typing import Dict, Optional
-from fastapi import WebSocket
+
 import redis
 from fastapi import WebSocket
-import json
-import asyncio
-from typing import Dict, Optional
-from datetime import datetime
-import base64
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from solders.pubkey import Pubkey
 from solders.keypair import Keypair
 from solana.rpc.async_api import AsyncClient
-from jupiter_python_sdk.jupiter import Jupiter
+
+# Latest Jupiter SDK (pip install jupiter-python-sdk)
+from jupiter_python_sdk.jupiter import Jupiter  # ← This is the correct import
+
 from app.models import Trade, User, TokenMetadata
 from app.utils.dexscreener_api import get_dexscreener_data
 from app.config import settings
 from app.security import decrypt_private_key_backend
 
-# Configure logger
+# Logger
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 if not logger.handlers:
     handler = logging.StreamHandler()
-    handler.setLevel(logging.INFO)
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    handler.setFormatter(formatter)
+    handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
     logger.addHandler(handler)
-    logger.propagate = False
 
-
-# Redis client
-redis_client = redis.Redis(host=os.getenv("REDIS_HOST", "localhost"), port=6379, db=0)
+# Redis
+redis_client = redis.Redis(host=os.getenv("REDIS_HOST", "localhost"), port=6379, db=0, decode_responses=True)
 
 
 class ConnectionManager:
@@ -51,61 +50,90 @@ class ConnectionManager:
         if ws:
             try:
                 await ws.send_text(message)
-            except:
+            except Exception:
                 self.disconnect(wallet_address)
 
-# Single global instance
+
 websocket_manager = ConnectionManager()
 
+
 # ===================================================================
-# JUPITER LOGICS
+# JUPITER SWAP USING LATEST SDK (v6+ API, community wrapper)
 # ===================================================================
 async def execute_jupiter_swap(
     user: User,
     input_mint: str,
     output_mint: str,
-    amount_lamports: int,
+    amount: int,                    # Raw lamports / smallest unit
     slippage_bps: int,
     label: str = "swap",
     db: Optional[AsyncSession] = None,
-    priority_fee: int = 100_000
+    priority_fee_micro_lamports: int = 100_000
 ) -> dict:
     """
-    Universal Jupiter swap with 1% referral fee
-    Used for BOTH buy and sell
+    Execute swap with 1% referral fee baked in.
     """
     rpc_url = user.custom_rpc_https or settings.SOLANA_RPC_URL
+
     async with AsyncClient(rpc_url) as client:
         private_key_bytes = decrypt_private_key_backend(user.encrypted_private_key.encode())
         keypair = Keypair.from_bytes(private_key_bytes)
-        jupiter = Jupiter(client, keypair)
 
-        quote = await jupiter.get_quote(
-            input_mint=input_mint,
-            output_mint=output_mint,
-            amount=amount_lamports,
-            slippage_bps=slippage_bps,
-            platform_fee_bps=settings.JUPITER_PLATFORM_FEE_BPS  # ← 1% FEE
+        # Initialize Jupiter SDK client
+        jupiter_client = Jupiter(
+            async_client=client,
+            keypair=keypair,
         )
 
-        swap_tx = await jupiter.swap(
-            quote=quote,
-            user_public_key=Pubkey.from_string(user.wallet_address),
-            fee_account=settings.JUPITER_FEE_ACCOUNT,  # ← YOUR REFERRAL WALLET
-            priority_fee_micro_lamports=priority_fee,
-            wrap_and_unwrap_sol=True
-        )
+        try:
+            # Step 1: Get quote WITH referral fee (1%)
+            quote: dict = await jupiter_client.quote(
+                input_mint=input_mint,
+                output_mint=output_mint,
+                amount=amount,
+                slippage_bps=slippage_bps,
+                # Referral params (new in v6+)
+                platform_fee_bps=settings.JUPITER_PLATFORM_FEE_BPS,  # 100 = 1%
+                referrer=settings.JUPITER_REFERRAL_ACCOUNT,  # Your referral pubkey
+            )
 
-        raw_tx = base64.b64encode(swap_tx.serialize()).decode()
+            if 'error' in quote:
+                raise ValueError(f"Quote error: {quote['error']}")
 
-        return {
-            "raw_tx_base64": raw_tx,
-            "quote": quote,
-            "last_valid_block_height": quote.get("lastValidBlockHeight"),
-            "out_amount": int(quote["outAmount"]),
-            "price_impact": quote.get("priceImpactPct", "0"),
-        }
-   
+            # Step 2: Execute swap (inherits fee from quote)
+            swap_tx_base64: str = await jupiter_client.swap(
+                input_mint=input_mint,
+                output_mint=output_mint,
+                amount=amount,
+                wrap_unwrap_sol=True,
+                slippage_bps=slippage_bps,
+                # Fee is already in the quote; referrer is propagated
+            )
+
+            if isinstance(swap_tx_base64, bytes):
+                swap_tx_base64 = base64.b64encode(swap_tx_base64).decode("utf-8")
+
+            # Log the fee for tracking (optional)
+            estimated_fee = (int(quote.get("inAmount", amount)) * settings.JUPITER_PLATFORM_FEE_BPS) / 10000  # Rough calc
+            logger.info(f"{label} fee estimated: {estimated_fee} units to {settings.JUPITER_REFERRAL_ACCOUNT}")
+
+            return {
+                "raw_tx_base64": swap_tx_base64,
+                "quote": quote,
+                "last_valid_block_height": quote.get("contextSlot"),
+                "out_amount": int(quote.get("outAmount", 0)),
+                "price_impact": quote.get("priceImpactPct", "0"),
+                "in_amount": int(quote.get("inAmount", amount)),
+                "estimated_referral_fee": estimated_fee,  # For your records
+            }
+
+        except Exception as e:
+            logger.error(f"Jupiter {label} failed for {user.wallet_address}: {e}")
+            raise
+
+# ===================================================================
+# BUY LOGIC
+# ===================================================================
 async def execute_user_buy(
     user: User,
     token: TokenMetadata,
@@ -114,21 +142,26 @@ async def execute_user_buy(
 ):
     mint = token.mint_address
     lock_key = f"buy_lock:{user.wallet_address}:{mint}"
-    if await redis_client.get(lock_key):
-        return  # Already buying
 
-    await redis_client.setex(lock_key, 60, "1")  # 60s lock
+    if await redis_client.get(lock_key):
+        return  # Prevent duplicate buys
+
+    await redis_client.setex(lock_key, 60, "1")
 
     try:
         amount_lamports = int(user.buy_amount_sol * 1_000_000_000)
+
         swap_data = await execute_jupiter_swap(
             user=user,
-            input_mint="So11111111111111111111111111111111111111112",
+            input_mint=settings.SOL_MINT,
             output_mint=mint,
-            amount_lamports=amount_lamports,
+            amount=amount_lamports,
             slippage_bps=user.buy_slippage_bps,
-            label="BUY"
+            label="BUY",
+            priority_fee_micro_lamports=100_000
         )
+
+        token_amount = swap_data["out_amount"] / (10 ** (token.token_decimals or 9))
 
         trade = Trade(
             user_wallet_address=user.wallet_address,
@@ -136,7 +169,7 @@ async def execute_user_buy(
             token_symbol=token.token_symbol or mint[:8],
             trade_type="buy",
             amount_sol_in=user.buy_amount_sol,
-            amount_tokens=swap_data["out_amount"] / (10 ** (token.token_decimals or 9)),
+            amount_tokens=token_amount,
             price_usd_at_trade=token.price_usd,
             buy_timestamp=datetime.utcnow(),
             take_profit_target=user.sell_take_profit_pct,
@@ -152,39 +185,46 @@ async def execute_user_buy(
             "mint": mint,
             "amount_sol": user.buy_amount_sol,
             "raw_tx_base64": swap_data["raw_tx_base64"],
-            "token_amount": swap_data["out_amount"] / (10 ** (token.token_decimals or 9)),
+            "token_amount": round(token_amount, 6),
             "price_usd": token.price_usd,
         }), user.wallet_address)
 
-        # Auto start sell monitor
+        # Start monitoring for sell conditions
         asyncio.create_task(monitor_position(
             user=user,
             trade=trade,
             entry_price_usd=token.price_usd,
             token_decimals=token.token_decimals or 9,
+            token_amount=token_amount,
             db=db,
             websocket_manager=websocket_manager
         ))
 
     except Exception as e:
-        logger.error(f"Buy failed for {user.wallet_address}: {e}")
+        logger.error(f"Buy failed for {user.wallet_address} | {mint}: {e}")
         await websocket_manager.send_personal_message(json.dumps({
-            "type": "log", "message": f"Buy failed: {str(e)}", "status": "error"
+            "type": "log",
+            "message": f"Buy failed: {str(e)}",
+            "status": "error"
         }), user.wallet_address)
     finally:
         await redis_client.delete(lock_key)
-        
+
+
+# ===================================================================
+# MONITOR + SELL LOGIC
+# ===================================================================
 async def monitor_position(
     user: User,
     trade: Trade,
     entry_price_usd: float,
     token_decimals: int,
+    token_amount: float,
     db: AsyncSession,
     websocket_manager: ConnectionManager
 ):
     start_time = datetime.utcnow()
     highest_price = entry_price_usd
-    token_amount = trade.amount_tokens or 0
     amount_lamports = int(token_amount * (10 ** token_decimals))
 
     while True:
@@ -198,32 +238,28 @@ async def monitor_position(
             pnl_pct = (current_price / entry_price_usd - 1) * 100
             highest_price = max(highest_price, current_price)
 
-            # Trailing stop
-            trailing_trigger = highest_price * (1 - user.trailing_stop_loss_pct / 100)
-
-            # Conditions
             tp_hit = user.sell_take_profit_pct and pnl_pct >= user.sell_take_profit_pct
             sl_hit = user.sell_stop_loss_pct and pnl_pct <= -user.sell_stop_loss_pct
-            trail_hit = user.trailing_stop_loss_pct and current_price <= trailing_trigger
             timeout_hit = user.sell_timeout_seconds and (datetime.utcnow() - start_time).total_seconds() > user.sell_timeout_seconds
 
-            if tp_hit or sl_hit or trail_hit or timeout_hit:
-                reason = "Take Profit" if tp_hit else "Stop Loss" if sl_hit else "Trailing Stop" if trail_hit else "Timeout"
+            if tp_hit or sl_hit or timeout_hit:
+                reason = "Take Profit" if tp_hit else "Stop Loss" if sl_hit else "Timeout"
 
                 swap_data = await execute_jupiter_swap(
                     user=user,
                     input_mint=trade.mint_address,
-                    output_mint="So11111111111111111111111111111111111111112",
-                    amount_lamports=amount_lamports,
-                    slippage_bps=4000,  # 40% slippage on sell
-                    label="SELL"
+                    output_mint=settings.SOL_MINT,
+                    amount=amount_lamports,
+                    slippage_bps=user.sell_slippage_bps,
+                    label="SELL",
+                    priority_fee_micro_lamports=200_000  # Higher fee on sell
                 )
 
                 profit_usd = (current_price - entry_price_usd) * token_amount
 
                 trade.trade_type = "sell"
                 trade.sell_timestamp = datetime.utcnow()
-                trade.profit_usd = profit_usd
+                trade.profit_usd = round(profit_usd, 4)
                 trade.sell_reason = reason
                 await db.commit()
 
@@ -240,8 +276,9 @@ async def monitor_position(
                 break
 
             await asyncio.sleep(4)
+
         except Exception as e:
-            logger.error(f"Monitor error: {e}")
+            logger.error(f"Monitor error for {user.wallet_address}: {e}")
             await asyncio.sleep(10)
             
             

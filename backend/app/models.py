@@ -103,6 +103,8 @@ class TokenMetadata(Base):
     token_symbol: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     token_decimals: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, server_default="9", default=9)
     dex_id: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    liquidity_usd: Mapped[Optional[float]] = mapped_column(Float, nullable=True, comment="Total liquidity in USD across all pairs")
+    fdv: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
 
     # Volume & Price Changes
     volume_h24: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
@@ -148,6 +150,7 @@ class TokenMetadata(Base):
         Index('ix_token_metadata_profitability', "profitability_score", "last_checked_at"),
         Index('ix_token_metadata_recommendation', "trading_recommendation", "last_checked_at"),
         Index('ix_token_recommendation_score', "trading_recommendation", "profitability_score", "last_checked_at"),
+        Index('ix_token_metadata_liquidity', "liquidity_usd"),
     )
 
 
@@ -181,23 +184,26 @@ class User(Base):
     custom_rpc_https: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     custom_rpc_wss: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
-    # Bot Filters
-    filter_socials_added: Mapped[bool] = mapped_column(Boolean, default=True)
-    filter_liquidity_burnt: Mapped[bool] = mapped_column(Boolean, default=True)
-    filter_immutable_metadata: Mapped[bool] = mapped_column(Boolean, default=True)
-    filter_mint_authority_renounced: Mapped[bool] = mapped_column(Boolean, default=True)
-    filter_freeze_authority_revoked: Mapped[bool] = mapped_column(Boolean, default=True)
-    filter_check_pool_size_min_sol: Mapped[float] = mapped_column(Float, default=10.0)
-    filter_top_holders_max_pct: Mapped[float] = mapped_column(Float, default=30.0)
-    filter_safety_check_period_seconds: Mapped[int] = mapped_column(Integer, default=300)
-
-    # Trading Settings
+    # Bot Filters (Premium Only - nullable for basic users)
+    filter_socials_added: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True, default=None)
+    filter_liquidity_burnt: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True, default=None)
+    filter_immutable_metadata: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True, default=None)
+    filter_mint_authority_renounced: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True, default=None)
+    filter_freeze_authority_revoked: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True, default=None)
+    filter_check_pool_size_min_sol: Mapped[Optional[float]] = mapped_column(Float, nullable=True, default=None)
+    filter_top_holders_max_pct: Mapped[Optional[float]] = mapped_column(Float, nullable=True, default=None)
+    filter_safety_check_period_seconds: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, default=None)
+    
+    # Buy Trading Settings
     buy_amount_sol: Mapped[float] = mapped_column(Float, default=0.1)
     buy_slippage_bps: Mapped[int] = mapped_column(Integer, default=1000)
+    
+    # Sell Trading Settings
     sell_take_profit_pct: Mapped[float] = mapped_column(Float, default=50.0)
     sell_stop_loss_pct: Mapped[float] = mapped_column(Float, default=20.0)
     sell_timeout_seconds: Mapped[int] = mapped_column(Integer, default=3600)
-    trailing_stop_loss_pct: Mapped[float] = mapped_column(Float, default=10.0)
+    sell_slippage_bps: Mapped[int] = mapped_column(Integer, default=1000)
+    
     bot_check_interval_seconds: Mapped[int] = mapped_column(Integer, default=10)
 
     trades: Mapped[List["Trade"]] = relationship("Trade", back_populates="user", cascade="all, delete-orphan")
