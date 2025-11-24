@@ -3061,13 +3061,33 @@ app = FastAPI(
     version="0.2.0",
 )
 
+if settings.ENVIRONMENT == "development":
+    allowed_origins = ["*"]
+else:
+    allowed_origins = [
+        # Production
+        "https://flashsnipper.com",
+        "https://www.flashsnipper.com",
+        "https://flashsnipper.vercel.app",
+
+        # Local development
+        "http://localhost:4028",
+        "http://127.0.0.1:4028",
+
+        # Optional: extra local ports you use
+        "http://localhost:3000",
+        "http://localhost:8000",
+        "http://localhost:5173",   # Vite default
+    ]
+
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # DEV ONLY
+    allow_origins=allowed_origins,  
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    max_age=600
 )
 
 # Import routers AFTER app creation to avoid circular imports

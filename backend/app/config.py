@@ -7,6 +7,7 @@ import redis
 load_dotenv() # Load environment variables from .env file
 
 class Settings(BaseSettings):
+    ENVIRONMENT: str = os.getenv("ENVIRONMENT")
     model_config = SettingsConfigDict(env_file='.env', extra='ignore')
 
     DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql+asyncpg://user:password@localhost/solsniper_db")
