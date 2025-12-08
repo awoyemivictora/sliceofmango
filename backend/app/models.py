@@ -206,6 +206,11 @@ class User(Base):
     sell_slippage_bps: Mapped[int] = mapped_column(Integer, default=1000)
     
     bot_check_interval_seconds: Mapped[int] = mapped_column(Integer, default=10)
+    
+    # For Trade Monitoring Flexibility [I STILL NEED TO ADD THIS TO FRONTEND AS WELL]
+    partial_sell_pct: Mapped[float] = mapped_column(Float, default=70.0)  # Sell 70% on early profit
+    trailing_sl_pct: Mapped[float] = mapped_column(Float, default=15.0)   # Trailing SL drop from peak
+    rug_liquidity_drop_pct: Mapped[float] = mapped_column(Float, default=20.0)  # Rug if liquidity drops >20%
 
     trades: Mapped[List["Trade"]] = relationship("Trade", back_populates="user", cascade="all, delete-orphan")
 

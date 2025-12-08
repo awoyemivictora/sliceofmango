@@ -1,14 +1,14 @@
-# bot_components.py — ULTRA API VERSION (Dec 2, 2025: Jupiter Ultra API + Referral)
 import logging
 import json
 import base64
 import asyncio
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Dict, Optional, Any
 import redis.asyncio as redis
 import aiohttp
 import httpx
 from fastapi import WebSocket
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from solders.pubkey import Pubkey
 from solders.keypair import Keypair
@@ -17,26 +17,47 @@ from solders.signature import Signature
 from solders.message import to_bytes_versioned
 from solana.rpc.async_api import AsyncClient
 from spl.token.instructions import get_associated_token_address
+from app.database import AsyncSessionLocal
 from app.models import Trade, User, TokenMetadata
-from app.utils.dexscreener_api import get_dexscreener_data
+from app.utils.dexscreener_api import fetch_dexscreener_with_retry, get_dexscreener_data
 from app.config import settings
 from app.security import decrypt_private_key_backend
+from app.utils.jupiter_api import get_jupiter_token_data, safe_float
+from app.utils.webacy_api import check_webacy_risk
 
 logger = logging.getLogger(__name__)
 
 # Redis
 redis_client = redis.Redis(host="localhost", port=6379, db=0, decode_responses=True)
 
+# Add near other global variables at the top
+monitor_tasks: Dict[int, asyncio.Task] = {}
+
+price_cache: Dict[str, Dict] = {}
+
+
 class ConnectionManager:
     def __init__(self):
         self.active_connections: Dict[str, WebSocket] = {}
-
+        self.connection_times: Dict[str, datetime] = {}
+        
     async def connect(self, websocket: WebSocket, wallet_address: str):
         await websocket.accept()
         self.active_connections[wallet_address] = websocket
-
+        self.connection_times[wallet_address] = datetime.utcnow()
+        
     def disconnect(self, wallet_address: str):
         self.active_connections.pop(wallet_address, None)
+        self.connection_times.pop(wallet_address, None)
+        
+    async def check_and_reconnect(self, wallet_address: str):
+        """Check if connection is stale and needs reconnection"""
+        if wallet_address in self.connection_times:
+            last_activity = datetime.utcnow() - self.connection_times[wallet_address]
+            if last_activity.total_seconds() > 60:  # 1 minute of inactivity
+                logger.warning(f"Connection stale for {wallet_address}, reconnecting...")
+                return True
+        return False
 
     async def send_personal_message(self, message: str, wallet_address: str):
         ws = self.active_connections.get(wallet_address)
@@ -48,6 +69,61 @@ class ConnectionManager:
 
 websocket_manager = ConnectionManager()
 
+
+
+
+# Move this function to the TOP after imports but before class definitions
+async def check_and_restart_stale_monitors():
+    """Check if monitor tasks are running and restart if needed"""
+    while True:
+        try:
+            async with AsyncSessionLocal() as db:
+                # Find trades that should be monitored but don't have active tasks
+                result = await db.execute(
+                    select(Trade).where(
+                        Trade.sell_timestamp.is_(None),
+                        Trade.buy_timestamp > datetime.utcnow() - timedelta(hours=24)
+                    )
+                )
+                trades = result.scalars().all()
+                
+                for trade in trades:
+                    if trade.id not in monitor_tasks:
+                        logger.info(f"🔄 Restarting monitor for trade {trade.id}")
+                        
+                        # Get user
+                        user_result = await db.execute(
+                            select(User).where(User.wallet_address == trade.user_wallet_address)
+                        )
+                        user = user_result.scalar_one_or_none()
+                        
+                        if user and trade.token_decimals and trade.amount_tokens:
+                            # Use a separate helper to avoid circular reference
+                            asyncio.create_task(
+                                restart_monitor_for_trade(trade, user)
+                            )
+        
+        except Exception as e:
+            logger.error(f"Error checking stale monitors: {e}")
+        
+        await asyncio.sleep(30)  # Check every 30 seconds
+
+
+async def restart_monitor_for_trade(trade: Trade, user: User):
+    """Helper to restart monitor for a trade"""
+    try:
+        await monitor_position(
+            user=user,
+            trade=trade,
+            entry_price_usd=trade.price_usd_at_trade or 0,
+            token_decimals=trade.token_decimals,
+            token_amount=trade.amount_tokens,
+            websocket_manager=websocket_manager
+        )
+    except Exception as e:
+        logger.error(f"Failed to restart monitor for trade {trade.id}: {e}")
+        
+        
 
 # ===================================================================
 # Correct Jupiter Referral ATA (2025)
@@ -526,11 +602,9 @@ async def store_fee_info(wallet_address: str, tx_signature: str, fee_amount: int
     except Exception as e:
         logger.error(f"Failed to store fee info: {e}")
 
-# ===================================================================
-# BUY LOGIC (Updated for Ultra API)
-# ===================================================================
-
+        
 async def execute_user_buy(user: User, token: TokenMetadata, db: AsyncSession, websocket_manager: ConnectionManager):
+    """Execute immediate buy and fetch metadata right after"""
     mint = token.mint_address
     lock_key = f"buy_lock:{user.wallet_address}:{mint}"
     
@@ -540,89 +614,28 @@ async def execute_user_buy(user: User, token: TokenMetadata, db: AsyncSession, w
         return
     
     await redis_client.setex(lock_key, 60, "1")
-
+    
     try:
-        # Get fresh DexScreener data
-        dex_data = await get_dexscreener_data(mint)
+        # For immediate snipe, we use minimal data initially
+        token_symbol = token.token_symbol or mint[:8]
         
-        if not dex_data:
-            raise Exception(f"No DexScreener data for {mint[:8]}...")
-        
-        # DEBUG: Check DexScreener data structure
-        logger.info(f"DexScreener data for {mint[:8]}...:")
-        logger.info(f"  Keys: {list(dex_data.keys())}")
-        if 'raw' in dex_data and 'liquidity' in dex_data['raw']:
-            logger.info(f"  Raw liquidity: {dex_data['raw']['liquidity']} (type: {type(dex_data['raw']['liquidity'])})")
-        
-        # FIX: Handle both old and new DexScreener formats
-        liquidity_usd = 0.0
-        
-        # Check for direct liquidity value (your format shows "liquidity": 74313.95)
-        if "liquidity" in dex_data:
-            liquidity_value = dex_data["liquidity"]
-            logger.info(f"Direct liquidity value: {liquidity_value} (type: {type(liquidity_value)})")
-            try:
-                if isinstance(liquidity_value, (int, float)):
-                    liquidity_usd = float(liquidity_value)
-                elif isinstance(liquidity_value, str):
-                    liquidity_usd = float(liquidity_value)
-            except (ValueError, TypeError) as e:
-                logger.warning(f"Could not parse direct liquidity: {e}")
-        
-        # Also check for liquidity_usd field (your format shows this too)
-        if "liquidity_usd" in dex_data:
-            try:
-                liquidity_usd = float(dex_data["liquidity_usd"])
-                logger.info(f"Using liquidity_usd field: {liquidity_usd}")
-            except (ValueError, TypeError) as e:
-                logger.warning(f"Could not parse liquidity_usd: {e}")
-        
-        # Also check nested structure (old format)
-        elif "liquidity" in dex_data and isinstance(dex_data["liquidity"], dict):
-            liquidity_value = dex_data["liquidity"].get("usd", 0)
-            try:
-                liquidity_usd = float(liquidity_value)
-            except (ValueError, TypeError):
-                liquidity_usd = 0.0
-        
-        logger.info(f"Token {mint[:8]}... final liquidity: ${liquidity_usd:.2f}")
-        
-        # Get token decimals
-        decimals = token.token_decimals or 9
-        if dex_data and "decimals" in dex_data:
-            try:
-                decimals = int(dex_data["decimals"])
-            except:
-                pass
-        
-        amount_lamports = int(user.buy_amount_sol * 1_000_000_000)
-        
-        slippage_bps = int(user.buy_slippage_bps) if user.buy_slippage_bps else 500  # Default 5%
-
-        # CAP MAX SLIPPAGE AT 1500 (15%)
-        MAX_ALLOWED_SLIPPAGE_BPS = 1500
-        if slippage_bps > MAX_ALLOWED_SLIPPAGE_BPS:
-            logger.warning(f"Capping slippage from {slippage_bps}bps to {MAX_ALLOWED_SLIPPAGE_BPS}bps (15%) for safety")
-            slippage_bps = MAX_ALLOWED_SLIPPAGE_BPS
-            
-        # Adjust slippage for low liquidity tokens
-        if liquidity_usd < 50000.0:  # $50K
-            # Cap at 15% for low liquidity tokens
-            slippage_bps = min(1500, slippage_bps * 1.5)  # 1.5x slippage but max 15%
-            logger.info(f"Low liquidity token (${liquidity_usd:.0f}): Using {slippage_bps}bps slippage ({slippage_bps/100:.1f}%)")
-            
-        # Send pre-buy message
+        # Send immediate snipe notification
         await websocket_manager.send_personal_message(json.dumps({
             "type": "log",
-            "message": f"🔄 Buying {token.token_symbol or mint[:8]} with {user.buy_amount_sol} SOL...",
-            "status": "info"
+            "log_type": "info",
+            "message": f"⚡ IMMEDIATE SNIPE: Buying {mint} with {user.buy_amount_sol} SOL...",
+            "timestamp": datetime.utcnow().isoformat()
         }), user.wallet_address)
         
-        logger.info(f"Attempting buy: {user.buy_amount_sol} SOL → {mint[:8]}... (liquidity: ${liquidity_usd:.0f}, slippage: {slippage_bps}bps)")
+        amount_lamports = int(user.buy_amount_sol * 1_000_000_000)
+        slippage_bps = min(int(user.buy_slippage_bps or 1000), 1500)  # Cap at 15%
         
-        # Prepare explorer URLs BEFORE creating trade record
-        explorer_urls = {}
+        # Use default decimals for immediate buy (will be updated with metadata)
+        decimals = token.token_decimals or 9
         
+        logger.info(f"⚡ IMMEDIATE BUY: {user.buy_amount_sol} SOL → {mint[:8]}... (slippage: {slippage_bps}bps)")
+        
+        # Try to execute the swap
         try:
             swap = await execute_jupiter_swap(
                 user=user,
@@ -630,55 +643,149 @@ async def execute_user_buy(user: User, token: TokenMetadata, db: AsyncSession, w
                 output_mint=mint,
                 amount=amount_lamports,
                 slippage_bps=slippage_bps,
-                label="BUY",
+                label="IMMEDIATE_SNIPE",
             )
             
             if swap.get("fee_applied"):
                 await websocket_manager.send_personal_message(json.dumps({
                     "type": "log",
+                    "log_type": "info",
                     "message": f"💰 1% fee applied to this transaction",
-                    "status": "info"
+                    "timestamp": datetime.utcnow().isoformat()
                 }), user.wallet_address)
                 
         except Exception as swap_error:
-            # Handle Jupiter API errors specifically
             error_msg = str(swap_error)
-            if "JUPITER_API_KEY" in error_msg:
-                raise Exception("Jupiter API key missing. Please set JUPITER_API_KEY in .env")
-            elif "6025" in error_msg:
-                raise Exception(f"Low liquidity error. Try increasing buy amount to 0.2+ SOL")
+            logger.error(f"Immediate buy failed for {mint}: {error_msg}")
+            
+            # User-friendly error messages
+            if "6025" in error_msg:
+                user_friendly_msg = f"Immediate buy failed: Low liquidity. Try 0.2+ SOL."
+            elif "JUPITER_API_KEY" in error_msg:
+                user_friendly_msg = f"Immediate buy failed: Jupiter API key issue."
+            elif "insufficient" in error_msg.lower():
+                user_friendly_msg = f"Immediate buy failed: Insufficient liquidity."
             else:
-                raise swap_error
+                user_friendly_msg = f"Immediate buy failed: {error_msg[:80]}"
+            
+            await websocket_manager.send_personal_message(json.dumps({
+                "type": "log",
+                "log_type": "error",
+                "message": user_friendly_msg,
+                "timestamp": datetime.utcnow().isoformat()
+            }), user.wallet_address)
+            raise
 
+        # Calculate token amount
         token_amount = swap["out_amount"] / (10 ** decimals)
         
         if token_amount <= 0:
             raise Exception("Swap returned 0 tokens")
 
-        logger.info(f"Buy successful: {token_amount:.2f} tokens received")
+        logger.info(f"✅ Immediate buy successful: {token_amount:.2f} tokens received")
         
-        # NOW, We define explorer_urls after we have the swap signature
-        explorer_urls = {
-            "solscan": f"https://solscan.io/tx/{swap['signature']}",
-            "dexScreener": f"https://dexscreener.com/solana/{mint}",
-            "jupiter": f"https://jup.ag/token/{mint}"
-        }
+        # ===================================================================
+        # 🔥 CRITICAL: Fetch comprehensive metadata RIGHT AFTER successful buy
+        # ===================================================================
+        logger.info(f"🔄 Fetching comprehensive metadata for {mint[:8]}...")
         
-        # Use current price from dex_data if available
-        current_price = token.price_usd
-        if dex_data and dex_data.get("priceUsd"):
+        # Get or create token metadata in the database
+        token_meta_result = await db.execute(
+            select(TokenMetadata).where(TokenMetadata.mint_address == mint)
+        )
+        token_meta = token_meta_result.scalar_one_or_none()
+        
+        if not token_meta:
+            token_meta = TokenMetadata(mint_address=mint)
+            db.add(token_meta)
+            await db.flush()
+        
+        # 1. Fetch DexScreener data
+        dex_data = await fetch_dexscreener_with_retry(mint)
+        
+        if dex_data:
+            # Populate DexScreener data
+            token_meta.dexscreener_url = dex_data.get("dexscreener_url")
+            token_meta.pair_address = dex_data.get("pair_address")
+            token_meta.price_usd = safe_float(dex_data.get("price_usd"))
+            token_meta.market_cap = safe_float(dex_data.get("market_cap"))
+            token_meta.token_name = dex_data.get("token_name")
+            token_meta.token_symbol = dex_data.get("token_symbol")
+            token_meta.liquidity_usd = safe_float(dex_data.get("liquidity_usd"))
+            token_meta.fdv = safe_float(dex_data.get("fdv"))
+            token_meta.twitter = dex_data.get("twitter")
+            token_meta.telegram = dex_data.get("telegram")
+            token_meta.websites = dex_data.get("websites")
+            token_meta.socials_present = bool(dex_data.get("twitter") or dex_data.get("telegram") or dex_data.get("websites"))
+            
+            # Update decimals if available
+            if dex_data.get("decimals"):
+                try:
+                    decimals = int(dex_data["decimals"])
+                except:
+                    pass
+        
+        # 2. Fetch Jupiter data for logo
+        try:
+            jupiter_data = await asyncio.wait_for(
+                get_jupiter_token_data(mint),
+                timeout=5.0
+            )
+            
+            if jupiter_data and jupiter_data.get("icon"):
+                token_meta.token_logo = jupiter_data["icon"]
+                logger.info(f"✅ Jupiter logo found for {mint[:8]}")
+            else:
+                # Fallback to DexScreener logo
+                token_meta.token_logo = f"https://dd.dexscreener.com/ds-logo/solana/{mint}.png"
+                
+        except (asyncio.TimeoutError, Exception) as e:
+            logger.warning(f"Jupiter fetch failed for {mint[:8]}: {e}")
+            token_meta.token_logo = f"https://dd.dexscreener.com/ds-logo/solana/{mint}.png"
+        
+        # 3. Fetch Webacy data
+        try:
+            webacy_data = await check_webacy_risk(mint)
+            if webacy_data and isinstance(webacy_data, dict):
+                token_meta.webacy_risk_score = safe_float(webacy_data.get("risk_score"))
+                token_meta.webacy_risk_level = webacy_data.get("risk_level")
+                token_meta.webacy_moon_potential = webacy_data.get("moon_potential")
+        except Exception as e:
+            logger.warning(f"Webacy fetch failed for {mint[:8]}: {e}")
+        
+        # 4. Update timestamp
+        token_meta.last_checked_at = datetime.utcnow()
+        
+        # 5. Get final values from metadata
+        final_token_symbol = token_meta.token_symbol or mint[:8]
+        final_token_name = token_meta.token_name or "Unknown"
+        final_token_logo = token_meta.token_logo
+        current_price = token_meta.price_usd or 0.0001
+        
+        # Update token amount with correct decimals if needed
+        if dex_data and dex_data.get("decimals"):
             try:
-                current_price = float(dex_data["priceUsd"])
+                actual_decimals = int(dex_data["decimals"])
+                if actual_decimals != decimals:
+                    decimals = actual_decimals
+                    token_amount = swap["out_amount"] / (10 ** decimals)
             except:
                 pass
         
-        token_logo = token.token_logo or f"https://dd.dexscreener.com/ds-logo/solana/{mint}.png"
+        # ===================================================================
+        # Create trade record with proper metadata
+        # ===================================================================
+        # Create explorer URLs
+        explorer_urls = {
+            "solscan": f"https://solscan.io/tx/{swap['signature']}",
+            "dexScreener": token_meta.dexscreener_url or f"https://dexscreener.com/solana/{mint}",
+            "jupiter": f"https://jup.ag/token/{mint}"
+        }
         
-        # Create trade record
         trade = Trade(
             user_wallet_address=user.wallet_address,
             mint_address=mint,
-            token_symbol=token.token_symbol or mint[:8],
+            token_symbol=final_token_symbol,
             trade_type="buy",
             amount_sol=user.buy_amount_sol,
             amount_tokens=token_amount,
@@ -688,7 +795,7 @@ async def execute_user_buy(user: User, token: TokenMetadata, db: AsyncSession, w
             stop_loss=user.sell_stop_loss_pct,
             token_amounts_purchased=token_amount,
             token_decimals=decimals,
-            liquidity_at_buy=liquidity_usd,
+            liquidity_at_buy=token_meta.liquidity_usd or 0,
             # Store buy URLs
             slippage_bps=slippage_bps,
             solscan_buy_url=explorer_urls["solscan"],
@@ -696,368 +803,606 @@ async def execute_user_buy(user: User, token: TokenMetadata, db: AsyncSession, w
             jupiter_url=explorer_urls["jupiter"],
             # Set buy transaction hash
             buy_tx_hash=swap.get('signature'),
-            # 🔥 FEE TRACKING - Fixed
+            # Fee tracking
             fee_applied=swap.get("fee_applied", False),
             fee_amount=float(swap.get("estimated_referral_fee", 0)) if swap.get("estimated_referral_fee") else None,
             fee_percentage=float(swap.get("fee_percentage", 0.0)) if swap.get("fee_percentage") else None,
             fee_bps=swap.get("fee_bps", None),
-            fee_mint=swap.get("fee_mint", None),  # Fixed: Get from swap response
+            fee_mint=swap.get("fee_mint", None),
             fee_collected_at=datetime.utcnow() if swap.get("fee_applied") else None
         )
         db.add(trade)
         await db.commit()
 
-        # Log successful save
-        logger.info(f"Trade saved to database with ID: {trade.id}")
+        logger.info(f"✅ Trade saved to database with ID: {trade.id}")
         
-        # Send success message with token logo from database
+        # ===================================================================
+        # Send metadata to frontend immediately
+        # ===================================================================
+        metadata_alert = {
+            "type": "token_metadata_update",
+            "mint": mint,
+            "symbol": final_token_symbol,
+            "name": final_token_name,
+            "logo": final_token_logo,
+            "price_usd": current_price,
+            "liquidity_usd": token_meta.liquidity_usd,
+            "market_cap": token_meta.market_cap,
+            "dexscreener_url": token_meta.dexscreener_url,
+            "twitter": token_meta.twitter,
+            "telegram": token_meta.telegram,
+            "website": token_meta.websites,
+            "webacy_risk_score": token_meta.webacy_risk_score,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+        await websocket_manager.send_personal_message(json.dumps(metadata_alert), user.wallet_address)
+        
+        # Send trade update with proper metadata
         await websocket_manager.send_personal_message(json.dumps({
             "type": "trade_update",
             "trade": {
                 "id": f"buy-{trade.id}-{datetime.utcnow().timestamp()}",
                 "type": "buy",
                 "mint_address": mint,
-                "token_symbol": token.token_symbol or mint[:8],
-                "token_logo": token_logo,  # From database
+                "token_symbol": final_token_symbol,
+                "token_logo": final_token_logo,
                 "amount_sol": user.buy_amount_sol,
                 "amount_tokens": token_amount,
                 "tx_hash": swap["signature"],
                 "timestamp": datetime.utcnow().isoformat() + "Z",
-                "explorer_urls": explorer_urls
+                "explorer_urls": explorer_urls,
+                "is_immediate_snipe": True,
+                "metadata_fetched": True
             }
         }), user.wallet_address)
         
-        # 🔥 Add fee notification
-        if swap.get("fee_applied"):
-            await websocket_manager.send_personal_message(json.dumps({
-                "type": "log",
-                "message": f"💰 1% fee applied to this buy transaction",
-                "status": "info"
-            }), user.wallet_address)
-
         # Also send a simple success message
         await websocket_manager.send_personal_message(json.dumps({
             "type": "log",
-            "message": f"✅ Buy successful! {token_amount:.2f} tokens at ${current_price:.6f} each",
-            "status": "success"
+            "log_type": "success",
+            "message": f"✅ Immediate snipe successful! {token_amount:.2f} {final_token_symbol} tokens purchased.",
+            "timestamp": datetime.utcnow().isoformat()
         }), user.wallet_address)
         
-        # Send monitoring started message
+        # Send monitoring started message WITH PROPER TOKEN SYMBOL
         await websocket_manager.send_personal_message(json.dumps({
             "type": "log",
-            "message": f"📈 Monitoring {token.token_symbol or mint[:8]} for take profit ({user.sell_take_profit_pct}%) or stop loss ({user.sell_stop_loss_pct}%)",
-            "status": "info"
+            "log_type": "info",
+            "message": f"📈 Monitoring {final_token_symbol} for take profit ({user.sell_take_profit_pct}%) or stop loss ({user.sell_stop_loss_pct}%)",
+            "timestamp": datetime.utcnow().isoformat()
         }), user.wallet_address)
 
-        # Start monitoring
-        asyncio.create_task(monitor_position(
-            user=user, trade=trade, entry_price_usd=current_price,
-            token_decimals=decimals, token_amount=token_amount,
-            db=db, websocket_manager=websocket_manager
-        ))
+        logger.info(f"🎯 Creating monitor task for {final_token_symbol} ({mint[:8]}) | Trade ID: {trade.id}")
+
+        # Start monitoring with proper metadata
+        try:
+            # Start monitoring with new session approach
+            asyncio.create_task(
+                start_monitor_for_trade(
+                    trade=trade,
+                    user=user,
+                    entry_price_usd=current_price,
+                    token_decimals=decimals,
+                    token_amount=token_amount
+                )
+            )
+            
+            # Send monitor started message with proper metadata
+            await websocket_manager.send_personal_message(json.dumps({
+                "type": "monitor_started",
+                "trade_id": trade.id,
+                "mint": mint,
+                "symbol": final_token_symbol,
+                "entry_price": current_price,
+                "timestamp": datetime.utcnow().isoformat(),
+                "is_immediate_snipe": True,
+                "metadata_fetched": True
+            }), user.wallet_address)
+            
+        except Exception as e:
+            logger.error(f"Failed to start monitor for {mint}: {e}")
+            await websocket_manager.send_personal_message(json.dumps({
+                "type": "log",
+                "log_type": "warning",
+                "message": f"⚠️ Buy successful but monitor failed to start: {str(e)[:100]}",
+                "timestamp": datetime.utcnow().isoformat()
+            }), user.wallet_address)
 
     except Exception as e:
-        logger.error(f"BUY FAILED for {mint}: {e}", exc_info=True)
+        logger.error(f"🚨 IMMEDIATE BUY FAILED for {mint}: {e}", exc_info=True)
         error_msg = str(e)
         
         # Provide helpful error messages
-        if "6025" in error_msg or "low liquidity" in error_msg.lower():
-            user_friendly_msg = f"Buy failed: Low liquidity. Try increasing amount to 0.2+ SOL."
+        if "6025" in error_msg:
+            user_friendly_msg = f"Immediate buy failed: Low liquidity. Try 0.2+ SOL."
         elif "JUPITER_API_KEY" in error_msg:
-            user_friendly_msg = f"Buy failed: Missing Jupiter API key. Check your .env file."
+            user_friendly_msg = f"Immediate buy failed: Jupiter API key issue."
         elif "insufficient" in error_msg.lower():
-            user_friendly_msg = f"Buy failed: Insufficient liquidity."
-        elif "'>' not supported" in error_msg:
-            user_friendly_msg = f"Buy failed: Configuration error (check MIN_BUY_SOL in settings)."
+            user_friendly_msg = f"Immediate buy failed: Insufficient liquidity."
         else:
-            user_friendly_msg = f"Buy failed: {error_msg[:100]}"
+            user_friendly_msg = f"Immediate buy failed: {error_msg[:80]}"
         
         await websocket_manager.send_personal_message(json.dumps({
             "type": "log", 
-            "message": user_friendly_msg, 
-            "status": "error"
+            "log_type": "error",
+            "message": user_friendly_msg,
+            "timestamp": datetime.utcnow().isoformat()
         }), user.wallet_address)
         
-        logger.error(f"Detailed buy error for {mint}: {error_msg}")
-        
-        # IMPORTANT: Re-raise the exception so the calling function knows it failed
+        logger.error(f"Detailed immediate buy error for {mint}: {error_msg}")
         raise
+        
     finally:
         await redis_client.delete(lock_key)
 
-
-
+        
+async def start_monitor_for_trade(trade: Trade, user: User, entry_price_usd: float, token_decimals: int, token_amount: float):
+    """Start monitor task for a trade"""
+    try:
+        logger.info(f"🎯 STARTING MONITOR for trade {trade.id} ({trade.mint_address[:8]})")
+        
+        # Create the monitor task
+        monitor_task = asyncio.create_task(
+            monitor_position(
+                user=user,
+                trade=trade,
+                entry_price_usd=entry_price_usd,
+                token_decimals=token_decimals,
+                token_amount=token_amount,
+                websocket_manager=websocket_manager
+            )
+        )
+        
+        # Store the task reference
+        monitor_tasks[trade.id] = monitor_task
+        
+        # Add callback to clean up when done
+        monitor_task.add_done_callback(lambda t: monitor_tasks.pop(trade.id, None))
+        
+        return monitor_task
+        
+    except Exception as e:
+        logger.error(f"Failed to start monitor for trade {trade.id}: {e}")
+        raise
 
 # ===================================================================
 # MONITOR & SELL (Updated for Ultra API)
 # ===================================================================
+
+async def get_cached_price(mint: str):
+    now = datetime.utcnow()
+    if mint in price_cache:
+        cached = price_cache[mint]
+        age = (now - cached["timestamp"]).total_seconds()
+        if age < 8:
+            return cached["data"]
+        elif age < 30:
+            # Allow stale up to 30s during high volatility
+            logger.debug(f"Using slightly stale price ({age:.0f}s old) for {mint[:8]}")
+            return cached["data"]
+    
+    try:
+        data = await fetch_dexscreener_with_retry(mint)
+        if data and data.get("priceUsd"):
+            price_cache[mint] = {"timestamp": now, "data": data}
+            return data
+    except Exception as e:
+        logger.debug(f"Price fetch failed for {mint[:8]}: {e}")
+    
+    # Fallback to stale if exists
+    if mint in price_cache:
+        age = (now - price_cache[mint]["timestamp"]).total_seconds()
+        logger.warning(f"Using stale price ({age:.0f}s old) for {mint[:8]} as fallback")
+        return price_cache[mint]["data"]
+    
+    return None
+
+        
 # async def monitor_position(
 #     user: User,
 #     trade: Trade,
 #     entry_price_usd: float,
 #     token_decimals: int,
 #     token_amount: float,
-#     db: AsyncSession,
 #     websocket_manager: ConnectionManager
 # ):
+#     """
+#     Monitor position and execute sells based on criteria.
+#     Creates its own database session to avoid session closure issues.
+#     """
+   
 #     if token_amount <= 0:
 #         logger.warning(f"Invalid token_amount {token_amount} for {trade.mint_address} – skipping monitor")
 #         return
-
-#     start = datetime.utcnow()
-#     amount_lamports = int(token_amount * (10 ** token_decimals))
-#     mint = trade.mint_address
-    
-#     # Log that monitoring has started
-#     logger.info(f"🚀 Starting to monitor {mint[:8]}... for user {user.wallet_address[:8]}...")
-#     logger.info(f"  Entry price: ${entry_price_usd:.6f}")
-#     logger.info(f"  Token amount: {token_amount:.2f}")
-#     logger.info(f"  Take profit: {user.sell_take_profit_pct}%")
-#     logger.info(f"  Stop loss: {user.sell_stop_loss_pct}%")
-#     logger.info(f"  Timeout: {user.sell_timeout_seconds}s")
-
-#     while True:
-#         try:
-#             # Check if trade already sold (edge case)
-#             db_trade = await db.get(Trade, trade.id)
-#             if db_trade and db_trade.sell_timestamp:
-#                 logger.info(f"Trade {mint[:8]}... already sold, stopping monitor")
-#                 break
-
-#             dex = await get_dexscreener_data(mint)
-#             if not dex or not dex.get("priceUsd"):
-#                 await asyncio.sleep(5)
-#                 continue
-
-#             price = float(dex["priceUsd"])
-#             if entry_price_usd <= 0 or price <= 0:
-#                 await asyncio.sleep(5)
-#                 continue
-            
-#             pnl = (price / entry_price_usd - 1) * 100
-#             logger.debug(f"Monitor {mint[:8]}...: ${price:.6f} | PnL: {pnl:.2f}% | TP: {user.sell_take_profit_pct}% | SL: {user.sell_stop_loss_pct}%")
-
-#             sell_reason = None
-#             if user.sell_take_profit_pct and pnl >= user.sell_take_profit_pct:
-#                 sell_reason = "TP"
-#             elif user.sell_stop_loss_pct and pnl <= -user.sell_stop_loss_pct:
-#                 sell_reason = "SL"
-#             elif user.sell_timeout_seconds and (datetime.utcnow() - start).total_seconds() > user.sell_timeout_seconds:
-#                 sell_reason = "Timeout"
-
-#             if sell_reason:
-#                 logger.info(f"Selling {mint[:8]}... - Reason: {sell_reason}, PnL: {pnl:.2f}%")
-                
-#                 # Update slippage based on current liquidity
-#                 slippage_bps = int(user.sell_slippage_bps) if user.sell_slippage_bps else 500  # Default 5%
-#                 liquidity_usd = 0.0
-#                 if dex and "liquidity" in dex and isinstance(dex["liquidity"], dict):
-#                     liquidity_value = dex["liquidity"].get("usd", 0)
-#                     try:
-#                         liquidity_usd = float(liquidity_value)
-#                     except (ValueError, TypeError):
-#                         liquidity_usd = 0.0
-                
-#                 if liquidity_usd < 50000.0:  # Low liquidity
-#                     slippage_bps = min(1500, slippage_bps * 3)  # Triple slippage but max 15%
+#     # Track the main session
+#     main_session = None
+   
+#     try:
+#         # Create a new database session for this monitor
+#         main_session = AsyncSessionLocal()
+       
+#         # Get the trade ID from the passed trade object
+#         trade_id = trade.id
+       
+#         if not trade_id:
+#             logger.error(f"Trade ID is missing for {trade.mint_address}")
+#             await websocket_manager.send_personal_message(json.dumps({
+#                 "type": "log",
+#                 "log_type": "error",
+#                 "message": f"❌ Monitor failed: Trade ID missing for {trade.mint_address[:8]}",
+#                 "timestamp": datetime.utcnow().isoformat()
+#             }), user.wallet_address)
+#             return
+       
+#         # Fetch trade FRESH from database using the ID
+#         trade_result = await main_session.execute(
+#             select(Trade).where(Trade.id == trade_id)
+#         )
+#         db_trade = trade_result.scalar_one_or_none()
+       
+#         if not db_trade:
+#             logger.error(f"Trade {trade_id} not found in database for {trade.mint_address}")
+#             await websocket_manager.send_personal_message(json.dumps({
+#                 "type": "log",
+#                 "log_type": "error",
+#                 "message": f"❌ Monitor failed: Trade {trade_id} not found in database",
+#                 "timestamp": datetime.utcnow().isoformat()
+#             }), user.wallet_address)
+#             return
+       
+#         # Now we have fresh objects in our new session
+#         trade = db_trade
+       
+#         # 🔥 FIX: Use buy_timestamp for timeout calculation (fallback to now if missing)
+#         timing_base = trade.buy_timestamp if trade.buy_timestamp else datetime.utcnow()
+#         amount_lamports = int(token_amount * (10 ** token_decimals)) # Full amount
+#         mint = trade.mint_address
+#         peak_price = entry_price_usd # Track highest price for trailing SL
+       
+#         # Get initial liquidity from the trade
+#         initial_liquidity = trade.liquidity_at_buy or 0 # From buy time
+#         # Log that monitoring has started
+#         logger.info(f"🚀 MONITOR STARTED for {mint[:8]}... | Trade ID: {trade.id}")
+#         logger.info(f" User: {user.wallet_address[:8]}")
+#         logger.info(f" Entry price: ${entry_price_usd:.6f}")
+#         logger.info(f" Token amount: {token_amount:.2f} ({amount_lamports} lamports)")
+#         logger.info(f" User timeout (initial): {user.sell_timeout_seconds}s")
+#         logger.info(f" User take profit: {user.sell_take_profit_pct}%")
+#         logger.info(f" User stop loss: {user.sell_stop_loss_pct}%")
+#         logger.info(f" Timing base (buy time): {timing_base}")
+       
+#         # Send monitoring started message to frontend
+#         await websocket_manager.send_personal_message(json.dumps({
+#             "type": "log",
+#             "log_type": "info",
+#             "message": f"📈 Monitoring started for {trade.token_symbol or mint[:8]}...",
+#             "timestamp": datetime.utcnow().isoformat()
+#         }), user.wallet_address)
+#         iteration = 0
+       
+#         while True:
+#             iteration += 1
+           
+#             # Create a NEW session for each iteration to avoid stale data
+#             async with AsyncSessionLocal() as session:
+#                 try:
+#                     # REFRESH USER EVERY LOOP ← THIS FIXES TIMEOUT
+#                     user_result = await session.execute(
+#                         select(User).where(User.wallet_address == user.wallet_address)
+#                     )
+#                     user = user_result.scalar_one_or_none()
+#                     if not user:
+#                         logger.error(f"User disappeared during monitoring: {user.wallet_address}")
+#                         await websocket_manager.send_personal_message(json.dumps({
+#                             "type": "log",
+#                             "log_type": "error",
+#                             "message": f"❌ User not found, stopping monitor",
+#                             "timestamp": datetime.utcnow().isoformat()
+#                         }), user.wallet_address)
+#                         break
+                   
+#                     # Check if trade already sold (edge case) - use fresh query
+#                     trade_result = await session.execute(
+#                         select(Trade).where(Trade.id == trade_id)
+#                     )
+#                     current_trade = trade_result.scalar_one_or_none()
+                   
+#                     if not current_trade:
+#                         logger.warning(f"Trade {mint[:8]}... no longer in DB, stopping monitor")
+#                         await websocket_manager.send_personal_message(json.dumps({
+#                             "type": "log",
+#                             "log_type": "warning",
+#                             "message": f"⚠️ Trade {trade.token_symbol or mint[:8]} no longer exists, stopping monitor",
+#                             "timestamp": datetime.utcnow().isoformat()
+#                         }), user.wallet_address)
+#                         break
+                       
+#                     if current_trade.sell_timestamp:
+#                         logger.info(f"Trade {mint[:8]}... already sold at {current_trade.sell_timestamp}, stopping monitor")
+#                         await websocket_manager.send_personal_message(json.dumps({
+#                             "type": "log",
+#                             "log_type": "info",
+#                             "message": f"✅ Position already sold, stopping monitor",
+#                             "timestamp": datetime.utcnow().isoformat()
+#                         }), user.wallet_address)
+#                         break
+#                     # Fetch current price
+#                     dex = await get_cached_price(mint)
+#                     if not dex or not dex.get("priceUsd"):
+#                         logger.debug(f"No price data for {mint[:8]}... - waiting")
+#                         await asyncio.sleep(5)
+#                         continue
+#                     price = float(dex["priceUsd"])
+#                     if entry_price_usd <= 0 or price <= 0:
+#                         logger.debug(f"Invalid price for {mint[:8]}... - entry: ${entry_price_usd}, current: ${price}")
+#                         await asyncio.sleep(5)
+#                         continue
+                   
+#                     # Calculate PnL
+#                     pnl = (price / entry_price_usd - 1) * 100
+#                     peak_price = max(peak_price, price) # Update peak
+#                     # Log current status every 10 iterations or 30 seconds
+#                     # Log current status every 10 iterations or 30 seconds
+#                     if iteration % 10 == 0 or (datetime.utcnow() - timing_base).total_seconds() > 30:
+#                         logger.info(f"📊 Monitor {mint[:8]}...: ${price:.6f} | PnL: {pnl:.2f}% | TP: {user.sell_take_profit_pct}% | SL: {user.sell_stop_loss_pct}% | Peak: ${peak_price:.6f}")
+                       
+#                         # Send heartbeat to frontend
+#                         await websocket_manager.send_personal_message(json.dumps({
+#                             "type": "position_update",
+#                             "mint": mint,
+#                             "current_price": price,
+#                             "pnl_percent": round(pnl, 2),
+#                             "entry_price": entry_price_usd,
+#                             "peak_price": peak_price,
+#                             "timestamp": datetime.utcnow().isoformat()
+#                         }), user.wallet_address)
+                        
+#                     sell_reason = None
+#                     sell_partial = False
+#                     sell_amount_lamports = amount_lamports # Default full sell
+#                     # 🔥 FIX: Calculate elapsed from buy time
+#                     elapsed = (datetime.utcnow() - timing_base).total_seconds()
                     
-#                 swap = await execute_jupiter_swap(
-#                     user=user,
-#                     input_mint=mint,
-#                     output_mint=settings.SOL_MINT,
-#                     amount=amount_lamports,
-#                     slippage_bps=slippage_bps,
-#                     label="SELL",
-#                 )
-
-#                 profit_usd = (price - entry_price_usd) * token_amount
-#                 trade.sell_timestamp = datetime.utcnow()
-#                 trade.profit_usd = round(profit_usd, 4)
-#                 trade.sell_reason = sell_reason
-#                 trade.price_usd_at_trade = price
-#                 trade.sell_tx_hash = swap.get("signature") 
-#                 await db.commit()
-
-#                 await websocket_manager.send_personal_message(json.dumps({
-#                     "type": "trade_instruction",
-#                     "action": "sell",
-#                     "mint": mint,
-#                     "reason": sell_reason,
-#                     "pnl_pct": round(pnl, 2),
-#                     "profit_usd": round(profit_usd, 4),
-#                     "raw_tx_base64": swap["raw_tx_base64"],
-#                     "fee_applied": swap["fee_applied"],
-#                     "fee_percentage": 1.0 if swap["fee_applied"] else 0.0,
-#                     "signature": swap["signature"],
-#                     "solscan_url": f"https://solscan.io/tx/{swap['signature']}"
-#                 }), user.wallet_address)
-#                 break
-
-#             await asyncio.sleep(4)
-#         except Exception as e:
-#             logger.error(f"Monitor error for {mint}: {e}")
-#             await asyncio.sleep(10)
-            
-#             # If monitor fails repeatedly, check if trade still exists
-#             try:
-#                 db_trade = await db.get(Trade, trade.id)
-#                 if not db_trade:
-#                     logger.warning(f"Trade {mint[:8]}... no longer in DB, stopping monitor")
-#                     break
-#             except:
-#                 pass
-            
-            
-            
-# async def monitor_position(
-#     user: User,
-#     trade: Trade,
-#     entry_price_usd: float,
-#     token_decimals: int,
-#     token_amount: float,
-#     db: AsyncSession,
-#     websocket_manager: ConnectionManager
-# ):
-#     if token_amount <= 0:
-#         logger.warning(f"Invalid token_amount {token_amount} for {trade.mint_address} – skipping monitor")
-#         return
-
-#     start = datetime.utcnow()
-#     amount_lamports = int(token_amount * (10 ** token_decimals))
-#     mint = trade.mint_address
-    
-#     # Log that monitoring has started
-#     logger.info(f"🚀 Starting to monitor {mint[:8]}... for user {user.wallet_address[:8]}...")
-#     logger.info(f"  Entry price: ${entry_price_usd:.6f}")
-#     logger.info(f"  Token amount: {token_amount:.2f}")
-#     logger.info(f"  Take profit: {user.sell_take_profit_pct}%")
-#     logger.info(f"  Stop loss: {user.sell_stop_loss_pct}%")
-#     logger.info(f"  Timeout: {user.sell_timeout_seconds}s")
-
-#     while True:
-#         try:
-#             # Check if trade already sold (edge case)
-#             db_trade = await db.get(Trade, trade.id)
-#             if db_trade and db_trade.sell_timestamp:
-#                 logger.info(f"Trade {mint[:8]}... already sold, stopping monitor")
-#                 break
-
-#             dex = await get_dexscreener_data(mint)
-#             if not dex or not dex.get("priceUsd"):
-#                 logger.debug(f"No price data for {mint[:8]}... - waiting")
-#                 await asyncio.sleep(5)
-#                 continue
-
-#             price = float(dex["priceUsd"])
-#             if entry_price_usd <= 0 or price <= 0:
-#                 logger.debug(f"Invalid price for {mint[:8]}... - entry: ${entry_price_usd}, current: ${price}")
-#                 await asyncio.sleep(5)
-#                 continue
-            
-#             pnl = (price / entry_price_usd - 1) * 100
-            
-#             # Log PnL every 30 seconds for debugging
-#             if int(datetime.utcnow().timestamp()) % 30 == 0:  # Every 30 seconds
-#                 logger.info(f"Monitor {mint[:8]}...: ${price:.6f} | PnL: {pnl:.2f}% | TP: {user.sell_take_profit_pct}% | SL: {user.sell_stop_loss_pct}%")
-#             else:
-#                 logger.debug(f"Monitor {mint[:8]}...: ${price:.6f} | PnL: {pnl:.2f}%")
-
-#             sell_reason = None
-#             if user.sell_take_profit_pct and pnl >= user.sell_take_profit_pct:
-#                 sell_reason = "TP"
-#                 logger.info(f"TAKE PROFIT HIT for {mint[:8]}...: PnL {pnl:.2f}% >= {user.sell_take_profit_pct}%")
-#             elif user.sell_stop_loss_pct and pnl <= -user.sell_stop_loss_pct:
-#                 sell_reason = "SL"
-#                 logger.info(f"STOP LOSS HIT for {mint[:8]}...: PnL {pnl:.2f}% <= -{user.sell_stop_loss_pct}%")
-#             elif user.sell_timeout_seconds and (datetime.utcnow() - start).total_seconds() > user.sell_timeout_seconds:
-#                 sell_reason = "Timeout"
-#                 logger.info(f"TIMEOUT for {mint[:8]}...: {(datetime.utcnow() - start).total_seconds():.0f}s > {user.sell_timeout_seconds}s")
-
-#             if sell_reason:
-#                 logger.info(f"🚨 SELLING {mint[:8]}... - Reason: {sell_reason}, PnL: {pnl:.2f}%")
-                
-#                 # Send sell notification
-#                 await websocket_manager.send_personal_message(json.dumps({
-#                     "type": "log",
-#                     "message": f"🚨 Selling {trade.token_symbol or mint[:8]} - {sell_reason} triggered (PnL: {pnl:.2f}%)",
-#                     "status": "warning"
-#                 }), user.wallet_address)
-                
-#                 # Update slippage based on current liquidity
-#                 slippage_bps = int(user.sell_slippage_bps) if user.sell_slippage_bps else 500  # Default 5%
-#                 liquidity_usd = 0.0
-#                 if dex and "liquidity" in dex and isinstance(dex["liquidity"], dict):
-#                     liquidity_value = dex["liquidity"].get("usd", 0)
-#                     try:
-#                         liquidity_usd = float(liquidity_value)
-#                     except (ValueError, TypeError):
-#                         liquidity_usd = 0.0
-                
-#                 if liquidity_usd < 50000.0:  # Low liquidity
-#                     slippage_bps = min(1500, slippage_bps * 3)  # Triple slippage but max 15%
+#                     # 🔥 DEBUG: Add this to see actual values
+#                     logger.info(f"TIMEOUT CHECK: User={user.wallet_address}, elapsed={elapsed:.1f}s, timeout={user.sell_timeout_seconds}s, should_sell={elapsed > user.sell_timeout_seconds}")
+#                     logger.info(f"Monitor iteration {iteration} for {mint[:8]}: Elapsed {elapsed:.2f}s / Timeout {user.sell_timeout_seconds}s | PNL {pnl:.2f}%")
                     
-#                 swap = await execute_jupiter_swap(
-#                     user=user,
-#                     input_mint=mint,
-#                     output_mint=settings.SOL_MINT,
-#                     amount=amount_lamports,
-#                     slippage_bps=slippage_bps,
-#                     label="SELL",
-#                 )
-                
-#                 # Prepare sell explorer URL
-#                 sell_explorer_url = f"https://solscan.io/tx/{swap.get('signature')}"
-                
-#                 # Update trade record with sell URLs
-#                 trade.sell_timestamp = datetime.utcnow()
+#                     # DEBUG: Log elapsed and timeout every iteration
+#                     logger.info(f"DEBUG: Elapsed from buy: {elapsed:.0f}s | Current timeout setting: {user.sell_timeout_seconds}s")
+#                     # Test: Move timeout to FIRST check
+#                     if user.sell_timeout_seconds and elapsed > user.sell_timeout_seconds:
+#                         sell_reason = "Timeout"
+#                         logger.info(f"⏰ TIMEOUT for {mint[:8]}...: {elapsed:.0f}s > {user.sell_timeout_seconds}s")
 
-#                 profit_usd = (price - entry_price_usd) * token_amount
-#                 trade.sell_timestamp = datetime.utcnow()
-#                 trade.profit_usd = round(profit_usd, 4)
-#                 trade.sell_reason = sell_reason
-#                 trade.price_usd_at_trade = price
-#                 trade.sell_tx_hash = swap.get("signature") 
-#                 trade.solscan_sell_url = sell_explorer_url
-                
-#                 await db.commit()
-
-#                 await websocket_manager.send_personal_message(json.dumps({
-#                     "type": "trade_instruction",
-#                     "action": "sell",
-#                     "mint": mint,
-#                     "reason": sell_reason,
-#                     "pnl_pct": round(pnl, 2),
-#                     "profit_usd": round(profit_usd, 4),
-#                     "raw_tx_base64": swap["raw_tx_base64"],
-#                     "fee_applied": swap["fee_applied"],
-#                     "fee_percentage": 1.0 if swap["fee_applied"] else 0.0,
-#                     "signature": swap["signature"],
-#                     "solscan_url": f"https://solscan.io/tx/{swap['signature']}"
-#                 }), user.wallet_address)
-                
-#                 # Send final sell confirmation
-#                 await websocket_manager.send_personal_message(json.dumps({
-#                     "type": "log",
-#                     "message": f"✅ Sold {trade.token_symbol or mint[:8]}! Profit: ${profit_usd:.4f} ({pnl:.2f}%)",
-#                     "status": "success"
-#                 }), user.wallet_address)
-#                 break
-
-#             await asyncio.sleep(4)
-#         except Exception as e:
-#             logger.error(f"Monitor error for {mint}: {e}")
-#             await asyncio.sleep(10)
+#                     # 1. Take Profit / Early Profit: Partial sell if hits user TP
+#                     elif user.sell_take_profit_pct and pnl >= user.sell_take_profit_pct:
+#                         sell_reason = "Take Profit"
+#                         sell_partial = True if user.partial_sell_pct and user.partial_sell_pct < 100 else False
+#                         if sell_partial:
+#                             sell_amount_lamports = int(amount_lamports * (user.partial_sell_pct / 100))
+#                         logger.info(f"🎯 TAKE PROFIT TRIGGERED for {mint[:8]}...: PnL {pnl:.2f}% >= {user.sell_take_profit_pct}% {'| Partial sell' if sell_partial else ''}")
+                        
+#                     # 2. Stop Loss (Fixed + Trailing)
+#                     elif user.sell_stop_loss_pct and pnl <= -user.sell_stop_loss_pct:
+#                         sell_reason = "Stop Loss"
+#                         logger.info(f"🛑 STOP LOSS TRIGGERED for {mint[:8]}...: PnL {pnl:.2f}% <= -{user.sell_stop_loss_pct}%")
+                   
+#                     # 3. Trailing Stop Loss
+#                     elif user.trailing_sl_pct:
+#                         trail_pnl = (price / peak_price - 1) * 100
+#                         if trail_pnl <= -user.trailing_sl_pct:
+#                             sell_reason = "Trailing SL"
+#                             logger.info(f"📉 TRAILING SL HIT: Drop {trail_pnl:.2f}% from peak ${peak_price:.6f}")
+                            
+#                     # 4. Basic Rug Detection: Liquidity drop
+#                     elif user.rug_liquidity_drop_pct:
+#                         current_liquidity = safe_float(dex.get("liquidity_usd", 0))
+#                         if current_liquidity > 0 and current_liquidity < initial_liquidity * (1 - user.rug_liquidity_drop_pct / 100):
+#                             sell_reason = "Rug Detected (Liquidity Drop)"
+#                             logger.warning(f"🚨 RUG DETECTED: Liquidity dropped to ${current_liquidity:.2f} from ${initial_liquidity:.2f}")
+   
+#                         # Send sell notification
+#                         await websocket_manager.send_personal_message(json.dumps({
+#                             "type": "log",
+#                             "log_type": "warning",
+#                             "message": f"🚨 Selling {trade.token_symbol or mint[:8]} - {sell_reason} triggered (PnL: {pnl:.2f}%)",
+#                             "timestamp": datetime.utcnow().isoformat()
+#                         }), user.wallet_address)
+                       
+#                         # Update slippage based on current liquidity
+#                         slippage_bps = int(user.sell_slippage_bps) if user.sell_slippage_bps else 500 # Default 5%
+#                         liquidity_usd = 0.0
+                       
+#                         try:
+#                             dex = await get_cached_price(mint)
+#                             if dex and "liquidity" in dex and isinstance(dex["liquidity"], dict):
+#                                 liquidity_value = dex["liquidity"].get("usd", 0)
+#                                 try:
+#                                     liquidity_usd = float(liquidity_value)
+#                                 except (ValueError, TypeError):
+#                                     liquidity_usd = 0.0
+#                         except Exception as e:
+#                             logger.debug(f"Failed to fetch liquidity for {mint[:8]}: {e}")
+                       
+#                         if liquidity_usd < 50000.0: # Low liquidity
+#                             slippage_bps = min(1500, slippage_bps * 3) # Triple slippage but max 15%
+#                             logger.info(f"Low liquidity (${liquidity_usd:.0f}) → Using {slippage_bps}bps slippage")
+                           
+#                         # Execute sell (use sell_amount_lamports for partial)
+#                         try:
+#                             swap = await execute_jupiter_swap(
+#                                 user=user,
+#                                 input_mint=mint,
+#                                 output_mint=settings.SOL_MINT,
+#                                 amount=sell_amount_lamports,
+#                                 slippage_bps=slippage_bps,
+#                                 label="SELL",
+#                             )
+#                         except Exception as swap_error:
+#                             logger.error(f"SELL failed for {mint}: {swap_error}")
+                           
+#                             # Send error message to user
+#                             await websocket_manager.send_personal_message(json.dumps({
+#                                 "type": "log",
+#                                 "log_type": "error",
+#                                 "message": f"❌ Sell failed: {str(swap_error)[:100]}",
+#                                 "timestamp": datetime.utcnow().isoformat()
+#                             }), user.wallet_address)
+                           
+#                             # Check if it's a liquidity error
+#                             error_msg = str(swap_error)
+#                             if "6025" in error_msg or "insufficient liquidity" in error_msg.lower():
+#                                 logger.warning(f"Low liquidity for {mint[:8]} - waiting 30s before retry")
+#                                 await asyncio.sleep(30)
+#                             else:
+#                                 # Wait and retry on next iteration
+#                                 await asyncio.sleep(10)
+#                             continue
+                       
+#                         # Prepare sell explorer URL
+#                         sell_explorer_url = f"https://solscan.io/tx/{swap.get('signature')}"
+                       
+#                         # Calculate profit
+#                         profit_usd = (price - entry_price_usd) * (sell_amount_lamports / (10 ** token_decimals))
+                       
+#                         # Update trade record
+#                         if sell_partial:
+#                             # Update remaining amount for continued monitoring
+#                             amount_lamports -= sell_amount_lamports
+#                             token_amount -= (sell_amount_lamports / (10 ** token_decimals))
+                           
+#                             # Update the trade in database
+#                             current_trade.amount_tokens = token_amount
+#                             current_trade.profit_usd = (current_trade.profit_usd or 0) + round(profit_usd, 4)
+#                             current_trade.sell_reason = f"{sell_reason} (Partial)"
+                           
+#                             # 🔥 Store fee information if applied
+#                             if swap.get("fee_applied"):
+#                                 current_trade.fee_applied = True
+#                                 current_trade.fee_amount = swap.get("estimated_referral_fee", 0)
+#                                 current_trade.fee_percentage = swap.get("fee_percentage", 0.0)
+#                                 current_trade.fee_bps = swap.get("fee_bps", None)
+#                                 current_trade.fee_mint = swap.get("fee_mint", None)
+#                                 current_trade.fee_collected_at = datetime.utcnow()
+                               
+#                                 # Log fee collection
+#                                 logger.info(f"💰 1% fee collected on PARTIAL SELL: {swap.get('estimated_referral_fee', 0)}")
+                               
+#                                 # Send fee notification
+#                                 await websocket_manager.send_personal_message(json.dumps({
+#                                     "type": "log",
+#                                     "log_type": "info",
+#                                     "message": f"💰 1% fee applied to this partial sell transaction",
+#                                     "timestamp": datetime.utcnow().isoformat()
+#                                 }), user.wallet_address)
+                           
+#                             await session.commit()
+#                             logger.info(f"✅ PARTIAL SELL: Remaining {token_amount:.2f} tokens")
+                           
+#                             # Send success message
+#                             await websocket_manager.send_personal_message(json.dumps({
+#                                 "type": "log",
+#                                 "log_type": "success",
+#                                 "message": f"✅ Partial sell ({user.partial_sell_pct if sell_partial else 100}%)! Profit: ${profit_usd:.4f} ({pnl:.2f}%) | Remaining holds until timeout.",
+#                                 "timestamp": datetime.utcnow().isoformat()
+#                             }), user.wallet_address)
+                           
+#                             # Continue monitoring remainder
+#                             continue
+                       
+#                         else:
+#                             # Full sell: Close position
+#                             current_trade.sell_timestamp = datetime.utcnow()
+#                             current_trade.sell_reason = sell_reason
+#                             current_trade.sell_tx_hash = swap.get("signature")
+#                             current_trade.price_usd_at_trade = price
+#                             current_trade.profit_usd = round(profit_usd, 4)
+#                             current_trade.solscan_sell_url = sell_explorer_url
+                           
+#                             # 🔥 Store fee information if applied
+#                             if swap.get("fee_applied"):
+#                                 current_trade.fee_applied = True
+#                                 current_trade.fee_amount = swap.get("estimated_referral_fee", 0)
+#                                 current_trade.fee_percentage = swap.get("fee_percentage", 0.0)
+#                                 current_trade.fee_bps = swap.get("fee_bps", None)
+#                                 current_trade.fee_mint = swap.get("fee_mint", None)
+#                                 current_trade.fee_collected_at = datetime.utcnow()
+                               
+#                                 # Log fee collection
+#                                 logger.info(f"💰 1% fee collected on SELL: {swap.get('estimated_referral_fee', 0)}")
+                           
+#                             await session.commit()
+                           
+#                             # Send trade instruction to frontend
+#                             trade_instruction = {
+#                                 "type": "trade_instruction",
+#                                 "action": "sell",
+#                                 "mint": mint,
+#                                 "reason": sell_reason,
+#                                 "pnl_pct": round(pnl, 2),
+#                                 "profit_usd": round(profit_usd, 4),
+#                                 "raw_tx_base64": swap["raw_tx_base64"],
+#                                 "signature": swap["signature"],
+#                                 "solscan_url": f"https://solscan.io/tx/{swap['signature']}"
+#                             }
+#                             if swap.get("fee_applied"):
+#                                 trade_instruction["fee_applied"] = True
+#                             else:
+#                                 trade_instruction["fee_applied"] = False
+                           
+#                             await websocket_manager.send_personal_message(json.dumps(trade_instruction), user.wallet_address)
+                           
+#                             # Send final sell confirmation
+#                             sell_message = f"✅ Sold {trade.token_symbol or mint[:8]}! Profit: ${profit_usd:.4f} ({pnl:.2f}%)"
+                           
+#                             if swap.get("fee_applied"):
+#                                 sell_message += f" (1% fee applied)"
+                           
+#                             await websocket_manager.send_personal_message(json.dumps({
+#                                 "type": "log",
+#                                 "log_type": "success",
+#                                 "message": sell_message,
+#                                 "timestamp": datetime.utcnow().isoformat()
+#                             }), user.wallet_address)
+                           
+#                             logger.info(f"✅ SELL COMPLETED for {mint[:8]}... - Signature: {swap.get('signature', 'Unknown')}")
+#                             break
+#                     # Wait before next check
+#                     await asyncio.sleep(4) # Check every 4 seconds
+                   
+#                 except Exception as e:
+#                     logger.error(f"Monitor error for {mint} on iteration {iteration}: {e}", exc_info=True)
+#                     await asyncio.sleep(10)
+                   
+#                     # After too many errors, check if we should stop
+#                     if iteration > 100: # ~10 minutes of errors
+#                         logger.error(f"Too many monitor errors for {mint}, stopping")
+#                         await websocket_manager.send_personal_message(json.dumps({
+#                             "type": "log",
+#                             "log_type": "error",
+#                             "message": f"❌ Monitor stopped due to errors for {trade.token_symbol or mint[:8]}",
+#                             "timestamp": datetime.utcnow().isoformat()
+#                         }), user.wallet_address)
+#                         break
+#             # Session auto-closes here due to context manager
+#         logger.info(f"🛑 MONITOR STOPPED for {mint[:8]}... after {iteration} iterations")
+       
+#     except Exception as e:
+#         logger.error(f"Fatal error in monitor setup for {trade.mint_address}: {e}", exc_info=True)
+#         await websocket_manager.send_personal_message(json.dumps({
+#             "type": "log",
+#             "log_type": "error",
+#             "message": f"❌ Monitor failed to start for {trade.token_symbol or trade.mint_address[:8]}",
+#             "timestamp": datetime.utcnow().isoformat()
+#         }), user.wallet_address)
+       
+#     finally:
+#         # Always close the main session if it exists
+#         if main_session:
+#             await main_session.close()
             
-#             # If monitor fails repeatedly, check if trade still exists
-#             try:
-#                 db_trade = await db.get(Trade, trade.id)
-#                 if not db_trade:
-#                     logger.warning(f"Trade {mint[:8]}... no longer in DB, stopping monitor")
-#                     break
-#             except:
-#                 pass
             
-
 
 
 async def monitor_position(
@@ -1066,194 +1411,595 @@ async def monitor_position(
     entry_price_usd: float,
     token_decimals: int,
     token_amount: float,
-    db: AsyncSession,
     websocket_manager: ConnectionManager
 ):
+    """
+    Monitor position and execute sells based on criteria.
+    Creates its own database session to avoid session closure issues.
+    """
+    
     if token_amount <= 0:
         logger.warning(f"Invalid token_amount {token_amount} for {trade.mint_address} – skipping monitor")
         return
-
-    start = datetime.utcnow()
-    amount_lamports = int(token_amount * (10 ** token_decimals))
-    mint = trade.mint_address
     
-    # Log that monitoring has started
-    logger.info(f"🚀 Starting to monitor {mint[:8]}... for user {user.wallet_address[:8]}...")
-    logger.info(f"  Entry price: ${entry_price_usd:.6f}")
-    logger.info(f"  Token amount: {token_amount:.2f}")
-    logger.info(f"  Take profit: {user.sell_take_profit_pct}%")
-    logger.info(f"  Stop loss: {user.sell_stop_loss_pct}%")
-    logger.info(f"  Timeout: {user.sell_timeout_seconds}s")
-
-    while True:
-        try:
-            # Check if trade already sold (edge case)
-            db_trade = await db.get(Trade, trade.id)
-            if db_trade and db_trade.sell_timestamp:
-                logger.info(f"Trade {mint[:8]}... already sold, stopping monitor")
-                break
-
-            dex = await get_dexscreener_data(mint)
-            if not dex or not dex.get("priceUsd"):
-                logger.debug(f"No price data for {mint[:8]}... - waiting")
-                await asyncio.sleep(5)
-                continue
-
-            price = float(dex["priceUsd"])
-            if entry_price_usd <= 0 or price <= 0:
-                logger.debug(f"Invalid price for {mint[:8]}... - entry: ${entry_price_usd}, current: ${price}")
-                await asyncio.sleep(5)
-                continue
+    # Track the main session
+    main_session = None
+    
+    try:
+        # Create a new database session for this monitor
+        main_session = AsyncSessionLocal()
+        
+        # Get the trade ID from the passed trade object
+        trade_id = trade.id
+        
+        if not trade_id:
+            logger.error(f"Trade ID is missing for {trade.mint_address}")
+            await websocket_manager.send_personal_message(json.dumps({
+                "type": "log",
+                "log_type": "error",
+                "message": f"❌ Monitor failed: Trade ID missing for {trade.mint_address[:8]}",
+                "timestamp": datetime.utcnow().isoformat()
+            }), user.wallet_address)
+            return
+        
+        # Fetch trade FRESH from database using the ID
+        trade_result = await main_session.execute(
+            select(Trade).where(Trade.id == trade_id)
+        )
+        db_trade = trade_result.scalar_one_or_none()
+        
+        if not db_trade:
+            logger.error(f"Trade {trade_id} not found in database for {trade.mint_address}")
+            await websocket_manager.send_personal_message(json.dumps({
+                "type": "log",
+                "log_type": "error",
+                "message": f"❌ Monitor failed: Trade {trade_id} not found in database",
+                "timestamp": datetime.utcnow().isoformat()
+            }), user.wallet_address)
+            return
+        
+        # Now we have fresh objects in our new session
+        trade = db_trade
+        
+        # 🔥 CRITICAL: Get the EXACT buy timestamp from the trade
+        timing_base = trade.buy_timestamp if trade.buy_timestamp else datetime.utcnow()
+        amount_lamports = int(token_amount * (10 ** token_decimals))  # Full amount
+        mint = trade.mint_address
+        
+        # Get user's timeout setting - REFRESH EVERY LOOP
+        user_result = await main_session.execute(
+            select(User).where(User.wallet_address == user.wallet_address)
+        )
+        current_user = user_result.scalar_one_or_none()
+        
+        if not current_user:
+            logger.error(f"User {user.wallet_address} not found during monitor setup")
+            return
+        
+        timeout_seconds = current_user.sell_timeout_seconds or 3600  # Default 1 hour
+        take_profit_pct = current_user.sell_take_profit_pct or 50.0
+        stop_loss_pct = current_user.sell_stop_loss_pct or 20.0
+        
+        # Log that monitoring has started with CLEAR timeout info
+        logger.info(f"🚀 MONITOR STARTED for {mint[:8]}... | Trade ID: {trade.id}")
+        logger.info(f"  User: {user.wallet_address[:8]}")
+        logger.info(f"  Buy time: {timing_base}")
+        logger.info(f"  Timeout: {timeout_seconds}s (Will auto-sell at: {timing_base + timedelta(seconds=timeout_seconds)})")
+        logger.info(f"  Take profit: {take_profit_pct}%")
+        logger.info(f"  Stop loss: {stop_loss_pct}%")
+        logger.info(f"  Token amount: {token_amount:.2f}")
+        
+        # Send monitoring started message to frontend
+        await websocket_manager.send_personal_message(json.dumps({
+            "type": "log",
+            "log_type": "info",
+            "message": f"📈 Monitoring {trade.token_symbol or mint[:8]}... | Auto-sell in {timeout_seconds}s",
+            "timestamp": datetime.utcnow().isoformat()
+        }), user.wallet_address)
+        
+        iteration = 0
+        
+        while True:
+            iteration += 1
+            current_time = datetime.utcnow()
             
-            pnl = (price / entry_price_usd - 1) * 100
-            
-            # Log PnL every 30 seconds for debugging
-            if int(datetime.utcnow().timestamp()) % 30 == 0:  # Every 30 seconds
-                logger.info(f"Monitor {mint[:8]}...: ${price:.6f} | PnL: {pnl:.2f}% | TP: {user.sell_take_profit_pct}% | SL: {user.sell_stop_loss_pct}%")
-            else:
-                logger.debug(f"Monitor {mint[:8]}...: ${price:.6f} | PnL: {pnl:.2f}%")
-
-            sell_reason = None
-            if user.sell_take_profit_pct and pnl >= user.sell_take_profit_pct:
-                sell_reason = "TP"
-                logger.info(f"TAKE PROFIT HIT for {mint[:8]}...: PnL {pnl:.2f}% >= {user.sell_take_profit_pct}%")
-            elif user.sell_stop_loss_pct and pnl <= -user.sell_stop_loss_pct:
-                sell_reason = "SL"
-                logger.info(f"STOP LOSS HIT for {mint[:8]}...: PnL {pnl:.2f}% <= -{user.sell_stop_loss_pct}%")
-            elif user.sell_timeout_seconds and (datetime.utcnow() - start).total_seconds() > user.sell_timeout_seconds:
-                sell_reason = "Timeout"
-                logger.info(f"TIMEOUT for {mint[:8]}...: {(datetime.utcnow() - start).total_seconds():.0f}s > {user.sell_timeout_seconds}s")
-
-            if sell_reason:
-                logger.info(f"🚨 SELLING {mint[:8]}... - Reason: {sell_reason}, PnL: {pnl:.2f}%")
-                
-                # Send sell notification
-                await websocket_manager.send_personal_message(json.dumps({
-                    "type": "log",
-                    "message": f"🚨 Selling {trade.token_symbol or mint[:8]} - {sell_reason} triggered (PnL: {pnl:.2f}%)",
-                    "status": "warning"
-                }), user.wallet_address)
-                
-                # Update slippage based on current liquidity
-                slippage_bps = int(user.sell_slippage_bps) if user.sell_slippage_bps else 500  # Default 5%
-                liquidity_usd = 0.0
-                if dex and "liquidity" in dex and isinstance(dex["liquidity"], dict):
-                    liquidity_value = dex["liquidity"].get("usd", 0)
-                    try:
-                        liquidity_usd = float(liquidity_value)
-                    except (ValueError, TypeError):
-                        liquidity_usd = 0.0
-                
-                if liquidity_usd < 50000.0:  # Low liquidity
-                    slippage_bps = min(1500, slippage_bps * 3)  # Triple slippage but max 15%
-                    
+            # Create a NEW session for each iteration
+            async with AsyncSessionLocal() as session:
                 try:
-                    swap = await execute_jupiter_swap(
-                        user=user,
-                        input_mint=mint,
-                        output_mint=settings.SOL_MINT,
-                        amount=amount_lamports,
-                        slippage_bps=slippage_bps,
-                        label="SELL",
+                    # REFRESH USER EVERY LOOP (CRITICAL FOR TIMEOUT)
+                    user_result = await session.execute(
+                        select(User).where(User.wallet_address == user.wallet_address)
                     )
-                except Exception as swap_error:
-                    logger.error(f"SELL failed for {mint}: {swap_error}")
+                    user = user_result.scalar_one_or_none()
                     
-                    # Send error message to user
-                    await websocket_manager.send_personal_message(json.dumps({
-                        "type": "log",
-                        "message": f"❌ Sell failed: {str(swap_error)[:100]}",
-                        "status": "error"
-                    }), user.wallet_address)
-                    break
-                
-                # Prepare sell explorer URL
-                sell_explorer_url = f"https://solscan.io/tx/{swap.get('signature')}"
-                
-                # Update trade record with sell URLs
+                    if not user:
+                        logger.error(f"User disappeared during monitoring: {user.wallet_address}")
+                        await websocket_manager.send_personal_message(json.dumps({
+                            "type": "log",
+                            "log_type": "error",
+                            "message": f"❌ User not found, stopping monitor",
+                            "timestamp": current_time.isoformat()
+                        }), user.wallet_address)
+                        break
+                    
+                    # Get latest timeout from user
+                    timeout_seconds = user.sell_timeout_seconds or 3600
+                    
+                    # Check if trade already sold
+                    trade_result = await session.execute(
+                        select(Trade).where(Trade.id == trade_id)
+                    )
+                    current_trade = trade_result.scalar_one_or_none()
+                    
+                    if not current_trade:
+                        logger.warning(f"Trade {mint[:8]}... no longer in DB, stopping monitor")
+                        break
+                    
+                    if current_trade.sell_timestamp:
+                        logger.info(f"Trade {mint[:8]}... already sold at {current_trade.sell_timestamp}, stopping monitor")
+                        await websocket_manager.send_personal_message(json.dumps({
+                            "type": "log",
+                            "log_type": "info",
+                            "message": f"✅ Position already sold, stopping monitor",
+                            "timestamp": current_time.isoformat()
+                        }), user.wallet_address)
+                        break
+                    
+                    # ============================================================
+                    # 🎯 CHECK #1: TIMEOUT - THIS IS THE MAIN FIX
+                    # ============================================================
+                    elapsed_seconds = (current_time - timing_base).total_seconds()
+                    
+                    # DEBUG: Log timeout status every 10 iterations
+                    if iteration % 10 == 0:
+                        time_left = max(0, timeout_seconds - elapsed_seconds)
+                        logger.info(f"⏰ Timeout check for {mint[:8]}: {elapsed_seconds:.0f}s / {timeout_seconds}s ({(elapsed_seconds/timeout_seconds*100):.1f}%)")
+                    
+                    # TIMEOUT TRIGGER - This MUST happen regardless of price
+                    # if elapsed_seconds >= timeout_seconds:
+                    #     logger.info(f"⏰ TIMEOUT REACHED for {mint[:8]}: {elapsed_seconds:.0f}s >= {timeout_seconds}s")
+                        
+                    #     # Fetch current price for reporting
+                    #     dex = await get_cached_price(mint)
+                    #     current_price = 0
+                    #     pnl = 0
+                        
+                    #     if dex and dex.get("priceUsd"):
+                    #         current_price = float(dex["priceUsd"])
+                    #         if entry_price_usd > 0:
+                    #             pnl = (current_price / entry_price_usd - 1) * 100
+                        
+                    #     # Send timeout notification
+                    #     await websocket_manager.send_personal_message(json.dumps({
+                    #         "type": "log",
+                    #         "log_type": "warning",
+                    #         "message": f"⏰ TIMEOUT: Selling {trade.token_symbol or mint[:8]} after {timeout_seconds}s (PnL: {pnl:.2f}%)",
+                    #         "timestamp": current_time.isoformat()
+                    #     }), user.wallet_address)
+                        
+                    #     # Execute the sell
+                    #     await execute_timeout_sell(user, mint, amount_lamports, trade_id, session, 
+                    #                               entry_price_usd, current_price, pnl, websocket_manager)
+                        
+                    #     # Monitor job is done
+                    #     break
+                    
+                    
+                    # TIMEOUT TRIGGER - This MUST happen regardless of price
+                    if elapsed_seconds >= timeout_seconds:
+                        logger.info(f"⏰ TIMEOUT REACHED for {mint[:8]}: {elapsed_seconds:.0f}s >= {timeout_seconds}s")
+                        
+                        # 🔥 FIX: Get current price for PnL calculation
+                        dex = await get_cached_price(mint)
+                        current_price = 0
+                        
+                        if dex and dex.get("priceUsd"):
+                            current_price = float(dex["priceUsd"])
+                        
+                        # Calculate PnL based on ACTUAL entry price from trade
+                        if trade.price_usd_at_trade and current_price > 0:
+                            pnl = (current_price / trade.price_usd_at_trade - 1) * 100
+                        else:
+                            pnl = 0
+                        
+                        # Send timeout notification with REAL PnL
+                        await websocket_manager.send_personal_message(json.dumps({
+                            "type": "log",
+                            "log_type": "warning",
+                            "message": f"⏰ TIMEOUT: Selling {trade.token_symbol or mint[:8]} after {timeout_seconds}s (PnL: {pnl:.2f}%)",
+                            "timestamp": current_time.isoformat()
+                        }), user.wallet_address)
+                        
+                        # Execute the sell with CORRECT PnL
+                        await execute_timeout_sell(user, mint, amount_lamports, trade_id, session, 
+                                                trade.price_usd_at_trade or entry_price_usd, 
+                                                current_price, pnl, websocket_manager)
+                        
+                        # Monitor job is done
+                        break
+                    
+                    # ============================================================
+                    # CHECK #2: PRICE-BASED CONDITIONS (only if not timed out)
+                    # ============================================================
+                    
+                    # Fetch current price
+                    dex = await get_cached_price(mint)
+                    if not dex or not dex.get("priceUsd"):
+                        logger.debug(f"No price data for {mint[:8]}... - waiting")
+                        await asyncio.sleep(5)
+                        continue
+                    
+                    current_price = float(dex["priceUsd"])
+                    
+                    if entry_price_usd <= 0 or current_price <= 0:
+                        logger.debug(f"Invalid price for {mint[:8]}: entry=${entry_price_usd}, current=${current_price}")
+                        await asyncio.sleep(5)
+                        continue
+                    
+                    # Calculate PnL
+                    pnl = (current_price / entry_price_usd - 1) * 100
+                    
+                    # Log current status periodically
+                    if iteration % 15 == 0:
+                        logger.info(f"📊 Monitor {mint[:8]}: ${current_price:.6f} | PnL: {pnl:.2f}% | Time left: {max(0, timeout_seconds - elapsed_seconds):.0f}s")
+                        
+                        # Send heartbeat to frontend
+                        await websocket_manager.send_personal_message(json.dumps({
+                            "type": "position_update",
+                            "mint": mint,
+                            "current_price": current_price,
+                            "pnl_percent": round(pnl, 2),
+                            "entry_price": entry_price_usd,
+                            "time_left_seconds": max(0, timeout_seconds - elapsed_seconds),
+                            "timeout_seconds": timeout_seconds,
+                            "timestamp": current_time.isoformat()
+                        }), user.wallet_address)
+                    
+                    sell_reason = None
+                    sell_partial = False
+                    sell_amount_lamports = amount_lamports
+                    
+                    # 2A. Take Profit
+                    if user.sell_take_profit_pct and pnl >= user.sell_take_profit_pct:
+                        sell_reason = "Take Profit"
+                        if user.partial_sell_pct and user.partial_sell_pct < 100:
+                            sell_partial = True
+                            sell_amount_lamports = int(amount_lamports * (user.partial_sell_pct / 100))
+                        logger.info(f"🎯 TAKE PROFIT for {mint[:8]}: PnL {pnl:.2f}% >= {user.sell_take_profit_pct}%")
+                    
+                    # 2B. Stop Loss
+                    elif user.sell_stop_loss_pct and pnl <= -user.sell_stop_loss_pct:
+                        sell_reason = "Stop Loss"
+                        logger.info(f"🛑 STOP LOSS for {mint[:8]}: PnL {pnl:.2f}% <= -{user.sell_stop_loss_pct}%")
+                    
+                    # 2C. Execute sell if any price condition met
+                    if sell_reason:
+                        await execute_price_based_sell(
+                            user, mint, sell_amount_lamports, trade_id, session,
+                            entry_price_usd, current_price, pnl, sell_reason, sell_partial,
+                            token_decimals, websocket_manager
+                        )
+                        
+                        if sell_partial:
+                            # Update remaining amount and continue monitoring
+                            amount_lamports -= sell_amount_lamports
+                            token_amount -= (sell_amount_lamports / (10 ** token_decimals))
+                            logger.info(f"✅ Partial sell executed. Remaining: {token_amount:.2f} tokens")
+                            continue
+                        else:
+                            # Full sell - exit monitor
+                            break
+                    
+                    # ============================================================
+                    # WAIT BEFORE NEXT CHECK
+                    # ============================================================
+                    await asyncio.sleep(4)  # Check every 4 seconds
+                    
+                except Exception as e:
+                    logger.error(f"Monitor error for {mint} on iteration {iteration}: {e}", exc_info=True)
+                    await asyncio.sleep(10)
+                    
+                    # After too many errors, check if we should stop
+                    if iteration > 100:  # ~10 minutes of errors
+                        logger.error(f"Too many monitor errors for {mint}, stopping")
+                        await websocket_manager.send_personal_message(json.dumps({
+                            "type": "log",
+                            "log_type": "error",
+                            "message": f"❌ Monitor stopped due to errors for {trade.token_symbol or mint[:8]}",
+                            "timestamp": current_time.isoformat()
+                        }), user.wallet_address)
+                        break
+            
+            # Session auto-closes here due to context manager
+        
+        logger.info(f"🛑 MONITOR STOPPED for {mint[:8]}... after {iteration} iterations")
+        
+    except Exception as e:
+        logger.error(f"Fatal error in monitor setup for {trade.mint_address}: {e}", exc_info=True)
+        await websocket_manager.send_personal_message(json.dumps({
+            "type": "log",
+            "log_type": "error",
+            "message": f"❌ Monitor failed to start for {trade.token_symbol or trade.mint_address[:8]}",
+            "timestamp": datetime.utcnow().isoformat()
+        }), user.wallet_address)
+        
+    finally:
+        # Always close the main session if it exists
+        if main_session:
+            await main_session.close()
+
+
+# async def execute_timeout_sell(user: User, mint: str, amount_lamports: int, trade_id: int, 
+#                               session: AsyncSession, entry_price: float, current_price: float,
+#                               pnl: float, websocket_manager: ConnectionManager):
+#     """Execute a sell due to timeout"""
+#     try:
+#         logger.info(f"🔄 Executing TIMEOUT sell for {mint[:8]}...")
+        
+#         # Get user's sell slippage
+#         slippage_bps = int(user.sell_slippage_bps) if user.sell_slippage_bps else 500
+        
+#         # Execute the sell swap
+#         swap = await execute_jupiter_swap(
+#             user=user,
+#             input_mint=mint,
+#             output_mint=settings.SOL_MINT,
+#             amount=amount_lamports,
+#             slippage_bps=slippage_bps,
+#             label="TIMEOUT_SELL",
+#         )
+        
+#         # Update trade record
+#         trade_result = await session.execute(
+#             select(Trade).where(Trade.id == trade_id)
+#         )
+#         trade = trade_result.scalar_one_or_none()
+        
+#         if trade:
+#             trade.sell_timestamp = datetime.utcnow()
+#             trade.sell_reason = "Timeout"
+#             trade.sell_tx_hash = swap.get("signature")
+#             trade.price_usat_trade = current_price
+#             trade.profit_usd = (current_price - entry_price) * (amount_lamports / (10 ** 9))  # Approximate
+            
+#             # Store fee info if applied
+#             if swap.get("fee_applied"):
+#                 trade.fee_applied = True
+#                 trade.fee_amount = swap.get("estimated_referral_fee", 0)
+#                 trade.fee_percentage = swap.get("fee_percentage", 0.0)
+#                 trade.fee_bps = swap.get("fee_bps", None)
+#                 trade.fee_mint = swap.get("fee_mint", None)
+#                 trade.fee_collected_at = datetime.utcnow()
+            
+#             trade.solscan_sell_url = f"https://solscan.io/tx/{swap.get('signature')}"
+            
+#             await session.commit()
+        
+#         # Send success message
+#         await websocket_manager.send_personal_message(json.dumps({
+#             "type": "log",
+#             "log_type": "success",
+#             "message": f"✅ TIMEOUT SELL: Sold {mint[:8]} after timeout. PnL: {pnl:.2f}%",
+#             "timestamp": datetime.utcnow().isoformat()
+#         }), user.wallet_address)
+        
+#         # Send trade instruction to frontend
+#         await websocket_manager.send_personal_message(json.dumps({
+#             "type": "trade_instruction",
+#             "action": "sell",
+#             "mint": mint,
+#             "reason": "Timeout",
+#             "pnl_pct": round(pnl, 2),
+#             "profit_usd": trade.profit_usd if trade else 0,
+#             "signature": swap["signature"],
+#             "solscan_url": f"https://solscan.io/tx/{swap['signature']}"
+#         }), user.wallet_address)
+        
+#         logger.info(f"✅ TIMEOUT SELL COMPLETED for {mint[:8]}")
+        
+#     except Exception as e:
+#         logger.error(f"❌ TIMEOUT SELL FAILED for {mint[:8]}: {e}")
+#         await websocket_manager.send_personal_message(json.dumps({
+#             "type": "log",
+#             "log_type": "error",
+#             "message": f"❌ Timeout sell failed: {str(e)[:100]}",
+#             "timestamp": datetime.utcnow().isoformat()
+#         }), user.wallet_address)
+
+
+async def execute_timeout_sell(user: User, mint: str, amount_lamports: int, trade_id: int, 
+                              session: AsyncSession, entry_price: float, current_price: float,
+                              pnl: float, websocket_manager: ConnectionManager):
+    """Execute a sell due to timeout"""
+    try:
+        logger.info(f"🔄 Executing TIMEOUT sell for {mint[:8]}...")
+        
+        # 🔥 CRITICAL FIX: Get ACTUAL current price from DexScreener
+        dex_data = await get_cached_price(mint)
+        actual_current_price = 0
+        
+        if dex_data and dex_data.get("priceUsd"):
+            actual_current_price = float(dex_data["priceUsd"])
+        else:
+            # Try to fetch fresh data
+            dex_data = await fetch_dexscreener_with_retry(mint)
+            if dex_data and dex_data.get("price_usd"):
+                actual_current_price = float(dex_data["price_usd"])
+        
+        # 🔥 CRITICAL FIX: Get the trade with ALL details including token decimals
+        trade_result = await session.execute(
+            select(Trade).where(Trade.id == trade_id)
+        )
+        trade = trade_result.scalar_one_or_none()
+        
+        if not trade:
+            logger.error(f"Trade {trade_id} not found for timeout sell")
+            return
+        
+        # Get correct decimals
+        token_decimals = trade.token_decimals or 9
+        
+        # 🔥 CRITICAL FIX: Get actual entry price from trade, not passed parameter
+        actual_entry_price = trade.price_usd_at_trade or entry_price
+        
+        # Calculate REAL PnL
+        if actual_entry_price > 0 and actual_current_price > 0:
+            real_pnl = ((actual_current_price / actual_entry_price) - 1) * 100
+        else:
+            real_pnl = 0
+        
+        logger.info(f"📊 REAL PnL Calculation: Entry=${actual_entry_price:.10f}, Current=${actual_current_price:.10f}, PnL={real_pnl:.2f}%")
+        
+        # Get user's sell slippage
+        slippage_bps = int(user.sell_slippage_bps) if user.sell_slippage_bps else 500
+        
+        # Execute the sell swap
+        swap = await execute_jupiter_swap(
+            user=user,
+            input_mint=mint,
+            output_mint=settings.SOL_MINT,
+            amount=amount_lamports,
+            slippage_bps=slippage_bps,
+            label="TIMEOUT_SELL",
+        )
+        
+        # Calculate profit in USD
+        token_amount = amount_lamports / (10 ** token_decimals)
+        profit_usd = (actual_current_price - actual_entry_price) * token_amount
+        
+        # Update trade record with CORRECT values
+        if trade:
+            trade.sell_timestamp = datetime.utcnow()
+            trade.sell_reason = "Timeout"
+            trade.sell_tx_hash = swap.get("signature")
+            trade.price_usd_at_trade = actual_current_price  # Update with actual sell price
+            trade.profit_usd = profit_usd
+            trade.profit_sol = profit_usd / actual_current_price if actual_current_price > 0 else 0
+            
+            # Store fee info if applied
+            if swap.get("fee_applied"):
+                trade.fee_applied = True
+                trade.fee_amount = swap.get("estimated_referral_fee", 0)
+                trade.fee_percentage = swap.get("fee_percentage", 0.0)
+                trade.fee_bps = swap.get("fee_bps", None)
+                trade.fee_mint = swap.get("fee_mint", None)
+                trade.fee_collected_at = datetime.utcnow()
+            
+            trade.solscan_sell_url = f"https://solscan.io/tx/{swap.get('signature')}"
+            
+            await session.commit()
+        
+        # Send success message with REAL PnL
+        await websocket_manager.send_personal_message(json.dumps({
+            "type": "log",
+            "log_type": "success",
+            "message": f"✅ TIMEOUT SELL: Sold {mint[:8]} after timeout. PnL: {real_pnl:.2f}% | Profit: ${profit_usd:.6f}",
+            "timestamp": datetime.utcnow().isoformat()
+        }), user.wallet_address)
+        
+        # Send trade instruction to frontend with correct PnL
+        await websocket_manager.send_personal_message(json.dumps({
+            "type": "trade_instruction",
+            "action": "sell",
+            "mint": mint,
+            "reason": "Timeout",
+            "pnl_pct": round(real_pnl, 2),
+            "profit_usd": profit_usd,
+            "profit_sol": profit_usd / actual_current_price if actual_current_price > 0 else 0,
+            "entry_price": actual_entry_price,
+            "exit_price": actual_current_price,
+            "signature": swap["signature"],
+            "solscan_url": f"https://solscan.io/tx/{swap['signature']}"
+        }), user.wallet_address)
+        
+        logger.info(f"✅ TIMEOUT SELL COMPLETED for {mint[:8]} | PnL: {real_pnl:.2f}% | Profit: ${profit_usd:.6f}")
+        
+    except Exception as e:
+        logger.error(f"❌ TIMEOUT SELL FAILED for {mint[:8]}: {e}", exc_info=True)
+        await websocket_manager.send_personal_message(json.dumps({
+            "type": "log",
+            "log_type": "error",
+            "message": f"❌ Timeout sell failed: {str(e)[:100]}",
+            "timestamp": datetime.utcnow().isoformat()
+        }), user.wallet_address)
+        
+
+async def execute_price_based_sell(user: User, mint: str, amount_lamports: int, trade_id: int,
+                                  session: AsyncSession, entry_price: float, current_price: float,
+                                  pnl: float, reason: str, is_partial: bool,
+                                  token_decimals: int, websocket_manager: ConnectionManager):
+    """Execute a sell based on price conditions (TP/SL)"""
+    try:
+        logger.info(f"🔄 Executing {reason} sell for {mint[:8]}...")
+        
+        # Get user's sell slippage
+        slippage_bps = int(user.sell_slippage_bps) if user.sell_slippage_bps else 500
+        
+        # Execute the sell swap
+        swap = await execute_jupiter_swap(
+            user=user,
+            input_mint=mint,
+            output_mint=settings.SOL_MINT,
+            amount=amount_lamports,
+            slippage_bps=slippage_bps,
+            label=f"{reason}_SELL",
+        )
+        
+        # Update trade record
+        trade_result = await session.execute(
+            select(Trade).where(Trade.id == trade_id)
+        )
+        trade = trade_result.scalar_one_or_none()
+        
+        if trade:
+            if is_partial:
+                # Update remaining amount
+                trade.amount_tokens = trade.amount_tokens - (amount_lamports / (10 ** token_decimals))
+                trade.profit_usd = (trade.profit_usd or 0) + ((current_price - entry_price) * (amount_lamports / (10 ** token_decimals)))
+                trade.sell_reason = f"{reason} (Partial)"
+            else:
+                # Full sell
                 trade.sell_timestamp = datetime.utcnow()
-                profit_usd = (price - entry_price_usd) * token_amount
-                trade.profit_usd = round(profit_usd, 4)
-                trade.sell_reason = sell_reason
-                trade.price_usd_at_trade = price
-                trade.sell_tx_hash = swap.get("signature") 
-                trade.solscan_sell_url = sell_explorer_url
-                
-                # 🔥 Store fee information if applied
-                if swap.get("fee_applied"):
-                    trade.fee_applied = True
-                    trade.fee_amount = swap.get("estimated_referral_fee", 0)
-                    trade.fee_percentage = swap.get("fee_percentage", 0.0)
-                    
-                    # Log fee collection
-                    logger.info(f"💰 1% fee collected on SELL: {swap.get('estimated_referral_fee', 0)}")
-                
-                await db.commit()
-
-                # 🔥 Enhanced trade instruction with fee info
-                trade_instruction = {
-                    "type": "trade_instruction",
-                    "action": "sell",
-                    "mint": mint,
-                    "reason": sell_reason,
-                    "pnl_pct": round(pnl, 2),
-                    "profit_usd": round(profit_usd, 4),
-                    "raw_tx_base64": swap["raw_tx_base64"],
-                    "signature": swap["signature"],
-                    "solscan_url": f"https://solscan.io/tx/{swap['signature']}"
-                }
-                
-                # 🔥 Store fee information if applied
-                if swap.get("fee_applied"):
-                    trade.fee_applied = True
-                    trade.fee_amount = swap.get("estimated_referral_fee", 0)
-                    trade.fee_percentage = swap.get("fee_percentage", 0.0)
-                    trade.fee_bps = swap.get("fee_bps", None)
-                    trade.fee_mint = swap.get("fee_mint", None)  # Add this line
-                    trade.fee_collected_at = datetime.utcnow()  # Add this line
-                    
-                    # Log fee collection
-                    logger.info(f"💰 1% fee collected on SELL: {swap.get('estimated_referral_fee', 0)}")
-
-                    
-                    # Send fee notification
-                    await websocket_manager.send_personal_message(json.dumps({
-                        "type": "log",
-                        "message": f"💰 1% fee applied to this sell transaction",
-                        "status": "info"
-                    }), user.wallet_address)
-                else:
-                    trade_instruction["fee_applied"] = False
-                
-                await websocket_manager.send_personal_message(json.dumps(trade_instruction), user.wallet_address)
-                
-                # Send final sell confirmation
-                sell_message = f"✅ Sold {trade.token_symbol or mint[:8]}! Profit: ${profit_usd:.4f} ({pnl:.2f}%)"
-                
-                if swap.get("fee_applied"):
-                    sell_message += f" (1% fee applied)"
-                
-                await websocket_manager.send_personal_message(json.dumps({
-                    "type": "log",
-                    "message": sell_message,
-                    "status": "success"
-                }), user.wallet_address)
-                break
-
-            await asyncio.sleep(4)
-        except Exception as e:
-            logger.error(f"Monitor error for {mint}: {e}")
-            await asyncio.sleep(10)
+                trade.sell_reason = reason
+                trade.sell_tx_hash = swap.get("signature")
+                trade.price_usat_trade = current_price
+                trade.profit_usd = (current_price - entry_price) * (amount_lamports / (10 ** token_decimals))
+                trade.solscan_sell_url = f"https://solscan.io/tx/{swap.get('signature')}"
             
-            # If monitor fails repeatedly, check if trade still exists
-            try:
-                db_trade = await db.get(Trade, trade.id)
-                if not db_trade:
-                    logger.warning(f"Trade {mint[:8]}... no longer in DB, stopping monitor")
-                    break
-            except:
-                pass            
+            # Store fee info if applied
+            if swap.get("fee_applied"):
+                trade.fee_applied = True
+                trade.fee_amount = swap.get("estimated_referral_fee", 0)
+                trade.fee_percentage = swap.get("fee_percentage", 0.0)
+                trade.fee_bps = swap.get("fee_bps", None)
+                trade.fee_mint = swap.get("fee_mint", None)
+                trade.fee_collected_at = datetime.utcnow()
             
-                    
+            await session.commit()
+        
+        # Send success message
+        message = f"✅ {reason}: Sold {mint[:8]}. PnL: {pnl:.2f}%"
+        if is_partial:
+            message += " (Partial)"
+        
+        await websocket_manager.send_personal_message(json.dumps({
+            "type": "log",
+            "log_type": "success",
+            "message": message,
+            "timestamp": datetime.utcnow().isoformat()
+        }), user.wallet_address)
+        
+        logger.info(f"✅ {reason} SELL COMPLETED for {mint[:8]}")
+        
+    except Exception as e:
+        logger.error(f"❌ {reason} SELL FAILED for {mint[:8]}: {e}")
+        await websocket_manager.send_personal_message(json.dumps({
+            "type": "log",
+            "log_type": "error",
+            "message": f"❌ {reason} sell failed: {str(e)[:100]}",
+            "timestamp": datetime.utcnow().isoformat()
+        }), user.wallet_address)
+        
+                   
             
             

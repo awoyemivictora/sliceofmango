@@ -1387,89 +1387,6 @@ const FlashSniperTradingInterface: React.FC = () => {
   }, [walletAddress, authToken, balance]);
 
   // Fetch transaction history
-  // useEffect(() => {
-  //   const fetchTransactions = async () => {
-  //     if (!authToken) return;
-  //     try {
-  //       const response = await apiService.request('/trade/history', {
-  //         headers: { Authorization: `Bearer ${authToken}` },
-  //       });
-
-  //       // In your fetchTransactions function, update the mapping:
-  //       const formatted: TransactionItem[] = response.map((t: any, index: number) => {
-  //         // Check if amount_tokens is a string and convert it
-  //         let amountTokens = 0;
-  //         if (t.amount_tokens) {
-  //           if (typeof t.amount_tokens === 'string') {
-  //             amountTokens = parseFloat(t.amount_tokens);
-  //           } else if (typeof t.amount_tokens === 'number') {
-  //             amountTokens = t.amount_tokens;
-  //           }
-  //         }
-          
-  //         // Check if amount_sol is a string and convert it
-  //         let amountSol = 0;
-  //         if (t.amount_sol) {
-  //           if (typeof t.amount_sol === 'string') {
-  //             amountSol = parseFloat(t.amount_sol);
-  //           } else if (typeof t.amount_sol === 'number') {
-  //             amountSol = t.amount_sol;
-  //           }
-  //         }
-          
-  //         // Safely parse profit_sol
-  //         let profitSol: number | undefined = undefined;
-  //         if (t.profit_sol !== null && t.profit_sol !== undefined) {
-  //           if (typeof t.profit_sol === 'string') {
-  //             profitSol = parseFloat(t.profit_sol);
-  //           } else if (typeof t.profit_sol === 'number') {
-  //             profitSol = t.profit_sol;
-  //           }
-  //         }
-          
-  //         // Ensure timestamp is valid
-  //         let timestamp = t.timestamp;
-  //         try {
-  //           const date = new Date(timestamp);
-  //           if (isNaN(date.getTime())) {
-  //             // If invalid, use current time
-  //             timestamp = new Date().toISOString();
-  //           }
-  //         } catch (error) {
-  //           timestamp = new Date().toISOString();
-  //         }
-          
-  //         return {
-  //           id: t.id || `${timestamp}-${index}-${Math.random().toString(36).substr(2, 9)}`,
-  //           type: t.type || 'buy',
-  //           token: t.token_symbol || t.token || t.mint_address?.substring(0, 8) || 'UNKNOWN',
-  //           token_logo: t.token_logo || `https://dd.dexscreener.com/ds-logo/solana/${t.mint_address || 'unknown'}.png`,
-  //           amount_sol: amountSol,
-  //           amount_tokens: amountTokens,
-  //           tx_hash: t.tx_hash,
-  //           timestamp: timestamp,
-  //           profit_sol: profitSol,
-  //           mint_address: t.mint_address,
-  //           explorer_urls: t.tx_hash ? {
-  //             solscan: `https://solscan.io/tx/${t.tx_hash}`,
-  //             dexScreener: `https://dexscreener.com/solana/${t.mint_address || t.tx_hash}`,
-  //             jupiter: `https://jup.ag/token/${t.mint_address}`
-  //           } : undefined
-  //         };
-  //       });
-
-  //       setTransactions(formatted);
-  //     } catch (err) {
-  //       console.error("Failed to load history", err);
-  //     }
-  //   };
-
-  //   fetchTransactions();
-  //   const interval = setInterval(fetchTransactions, 10000); // Every 10 seconds
-  //   return () => clearInterval(interval);
-  // }, [authToken]);
-
-  // Fetch transaction history
   useEffect(() => {
     const fetchTransactions = async () => {
       if (!authToken) return;
@@ -1995,6 +1912,25 @@ const FlashSniperTradingInterface: React.FC = () => {
     );
   };
 
+  const [showWarningBanner, setShowWarningBanner] = useState(() => {
+    // Check localStorage for user preference
+    const bannerDismissed = localStorage.getItem('warningBannerDismissed');
+    return bannerDismissed !== 'true';
+  });
+  
+  // Add this function to handle closing the banner
+  const handleCloseWarningBanner = () => {
+    setShowWarningBanner(false);
+    localStorage.setItem('warningBannerDismissed', 'true');
+  };
+
+  // Add this function to reset/reshow the banner (optional)
+  const handleResetWarningBanner = () => {
+    setShowWarningBanner(true);
+    localStorage.removeItem('warningBannerDismissed');
+  };
+
+
 
   if (!walletKeypair) return <div className="text-white text-center py-8">Loading wallet...</div>;
 
@@ -2005,6 +1941,35 @@ const FlashSniperTradingInterface: React.FC = () => {
         style={{ backgroundImage: 'url(/images/img_grid_layers_v2.png)' }}
       />
       <div className="relative z-10">
+
+        {/* Trading Meme Coins Warning Banner Message at the very Top and Closable */}
+        {showWarningBanner && (
+          <div className="bg-gradient-to-r from-red-800/20 to-red-900/20 border-b border-red-700/30">
+            <div className="container mx-auto px-4 py-2 relative">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-2 flex-1 justify-center">
+                  <svg className="w-4 h-4 text-red-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  <p className="text-red-200 text-xs text-center font-medium">
+                    <span className="font-bold">HIGH RISK:</span> Meme coin trading is speculative. Only invest money you can afford to lose completely.
+                  </p>
+                </div>
+                <button
+                  onClick={handleCloseWarningBanner}
+                  className="text-red-300 hover:text-white hover:bg-red-700/30 transition-all duration-200 p-1.5 rounded-full flex-shrink-0"
+                  aria-label="Dismiss warning message"
+                  title="Dismiss"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <header className="sticky top-0 z-50 bg-primary border-b border-[#ffffff21] h-16 flex items-center justify-between px-4 md:px-8">
           <div className="flex items-center gap-4">
             {/* Make the entire logo area clickable */}

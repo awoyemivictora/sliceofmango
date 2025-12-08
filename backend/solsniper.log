@@ -7552,3 +7552,252 @@ DETAIL:  Key (wallet_address)=(EEiznb2BLQpjLrZqGTb6F9nKwJ8s1CPe2cDcTyGSsMwQ) alr
 2025-12-03 18:55:27,388 - app.security - INFO - Decrypting private key with backend master key
 2025-12-03 19:02:38,089 - app.security - INFO - Decrypting private key with backend master key
 2025-12-03 19:04:13,966 - app.security - INFO - Decrypting private key with backend master key
+2025-12-04 00:18:22,568 - app.routers.auth - INFO - Generated nonce: 8e_O7moYMT6Y7Ps7bmOmYw==
+2025-12-04 00:18:22,630 - app.routers.auth - INFO - Wallet verified successfully: HpgU8pnzJvRwch1CDX6VX7uXM7ozmk2yyWpDbSXoBVKe
+2025-12-04 00:18:22,634 - app.routers.auth - INFO - Generated frontend encryption key: bdbALFQpLniV0kUOpn0uuw==
+2025-12-04 00:18:22,635 - app.routers.auth - INFO - Generated frontend encryption key: EPBNFJ_mQC3OCaV3Uubvmw==
+2025-12-04 00:18:22,649 - app.security - INFO - Encrypting private key with backend master key
+2025-12-04 00:18:22,650 - app.routers.auth - INFO - Private key encrypted with backend master key for HpgU8pnzJvRwch1CDX6VX7uXM7ozmk2yyWpDbSXoBVKe
+2025-12-04 00:18:22,655 - app.security - INFO - Encrypting private key with backend master key
+2025-12-04 00:18:22,655 - app.routers.auth - INFO - Private key encrypted with backend master key for HpgU8pnzJvRwch1CDX6VX7uXM7ozmk2yyWpDbSXoBVKe
+2025-12-04 00:18:22,678 - app.routers.auth - INFO - New user registered: HpgU8pnzJvRwch1CDX6VX7uXM7ozmk2yyWpDbSXoBVKe
+2025-12-04 00:18:22,704 - app.routers.auth - ERROR - Unexpected error in register-or-login: Traceback (most recent call last):
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 545, in _prepare_and_execute
+    self._rows = deque(await prepared_stmt.fetch(*parameters))
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/asyncpg/prepared_stmt.py", line 176, in fetch
+    data = await self.__bind_execute(args, 0, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/asyncpg/prepared_stmt.py", line 267, in __bind_execute
+    data, status, _ = await self.__do_execute(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^
+        lambda protocol: protocol.bind_execute(
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            self._state, args, '', limit, True, timeout))
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/asyncpg/prepared_stmt.py", line 256, in __do_execute
+    return await executor(protocol)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "asyncpg/protocol/protocol.pyx", line 206, in bind_execute
+asyncpg.exceptions.UniqueViolationError: duplicate key value violates unique constraint "users_pkey"
+DETAIL:  Key (wallet_address)=(HpgU8pnzJvRwch1CDX6VX7uXM7ozmk2yyWpDbSXoBVKe) already exists.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1963, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/engine/default.py", line 943, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 580, in execute
+    self._adapt_connection.await_(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self._prepare_and_execute(operation, parameters)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 132, in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 196, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 558, in _prepare_and_execute
+    self._handle_exception(error)
+    ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 508, in _handle_exception
+    self._adapt_connection._handle_exception(error)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 792, in _handle_exception
+    raise translated_error from error
+sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_dbapi.IntegrityError: <class 'asyncpg.exceptions.UniqueViolationError'>: duplicate key value violates unique constraint "users_pkey"
+DETAIL:  Key (wallet_address)=(HpgU8pnzJvRwch1CDX6VX7uXM7ozmk2yyWpDbSXoBVKe) already exists.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/user/clients/flashsnipper.com/backend/app/routers/auth.py", line 172, in register_or_login_wallet
+    await db.commit()
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/ext/asyncio/session.py", line 1014, in commit
+    await greenlet_spawn(self.sync_session.commit)
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 203, in greenlet_spawn
+    result = context.switch(value)
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 2032, in commit
+    trans.commit(_to_root=True)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "<string>", line 2, in commit
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/orm/state_changes.py", line 139, in _go
+    ret_value = fn(self, *arg, **kw)
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 1313, in commit
+    self._prepare_impl()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "<string>", line 2, in _prepare_impl
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/orm/state_changes.py", line 139, in _go
+    ret_value = fn(self, *arg, **kw)
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 1288, in _prepare_impl
+    self.session.flush()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 4345, in flush
+    self._flush(objects)
+    ~~~~~~~~~~~^^^^^^^^^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 4480, in _flush
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/util/langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 4441, in _flush
+    flush_context.execute()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/orm/unitofwork.py", line 466, in execute
+    rec.execute(self)
+    ~~~~~~~~~~~^^^^^^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/orm/unitofwork.py", line 642, in execute
+    util.preloaded.orm_persistence.save_obj(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self.mapper,
+        ^^^^^^^^^^^^
+        uow.states_for_mapper_hierarchy(self.mapper, False, False),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        uow,
+        ^^^^
+    )
+    ^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/orm/persistence.py", line 93, in save_obj
+    _emit_insert_statements(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        base_mapper,
+        ^^^^^^^^^^^^
+    ...<3 lines>...
+        insert,
+        ^^^^^^^
+    )
+    ^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/orm/persistence.py", line 1048, in _emit_insert_statements
+    result = connection.execute(
+        statement, multiparams, execution_options=execution_options
+    )
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1415, in execute
+    return meth(
+        self,
+        distilled_parameters,
+        execution_options or NO_OPTIONS,
+    )
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/sql/elements.py", line 523, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, distilled_params, execution_options
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1637, in _execute_clauseelement
+    ret = self._execute_context(
+        dialect,
+    ...<8 lines>...
+        cache_hit=cache_hit,
+    )
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1842, in _execute_context
+    return self._exec_single_context(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        dialect, context, statement, parameters
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1982, in _exec_single_context
+    self._handle_dbapi_exception(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        e, str_statement, effective_parameters, cursor, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 2351, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1963, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/engine/default.py", line 943, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 580, in execute
+    self._adapt_connection.await_(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self._prepare_and_execute(operation, parameters)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 132, in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 196, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 558, in _prepare_and_execute
+    self._handle_exception(error)
+    ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 508, in _handle_exception
+    self._adapt_connection._handle_exception(error)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 792, in _handle_exception
+    raise translated_error from error
+sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) <class 'asyncpg.exceptions.UniqueViolationError'>: duplicate key value violates unique constraint "users_pkey"
+DETAIL:  Key (wallet_address)=(HpgU8pnzJvRwch1CDX6VX7uXM7ozmk2yyWpDbSXoBVKe) already exists.
+[SQL: INSERT INTO users (wallet_address, encrypted_private_key, is_premium, premium_start_date, premium_end_date, custom_rpc_https, custom_rpc_wss, filter_socials_added, filter_liquidity_burnt, filter_immutable_metadata, filter_mint_authority_renounced, filter_freeze_authority_revoked, filter_check_pool_size_min_sol, filter_top_holders_max_pct, filter_safety_check_period_seconds, buy_amount_sol, buy_slippage_bps, sell_take_profit_pct, sell_stop_loss_pct, sell_timeout_seconds, sell_slippage_bps, bot_check_interval_seconds, partial_sell_pct, trailing_sl_pct, rug_liquidity_drop_pct) VALUES ($1::VARCHAR, $2::VARCHAR, $3::BOOLEAN, $4::TIMESTAMP WITHOUT TIME ZONE, $5::TIMESTAMP WITHOUT TIME ZONE, $6::VARCHAR, $7::VARCHAR, $8::BOOLEAN, $9::BOOLEAN, $10::BOOLEAN, $11::BOOLEAN, $12::BOOLEAN, $13::FLOAT, $14::FLOAT, $15::INTEGER, $16::FLOAT, $17::INTEGER, $18::FLOAT, $19::FLOAT, $20::INTEGER, $21::INTEGER, $22::INTEGER, $23::FLOAT, $24::FLOAT, $25::FLOAT)]
+[parameters: ('HpgU8pnzJvRwch1CDX6VX7uXM7ozmk2yyWpDbSXoBVKe', 'gAAAAABpMMU-qOmDpg-OfRkTKWcBD-oqLx-PBo8Vi6_BM6l9m7j74CK4JRsyAvlbiMn8Od1XMYkv54G8vBhx87OSOFyi69M_4IWx-CvJegrfY7RSspT3kehXU8egh5IAv6kYtIlsSl6obIZCfTFqptaMH-adzPp6DhS-pwo9Kr_ej4UezF_yoaw=', False, None, None, None, None, None, None, None, None, None, None, None, None, 0.1, 1000, 50.0, 20.0, 3600, 1000, 10, 70.0, 15.0, 20.0)]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+
+2025-12-04 00:50:17,472 - app.routers.auth - INFO - Generated nonce: D1jlsolE7ztWn-FRme52oQ==
+2025-12-04 00:50:17,542 - app.routers.auth - INFO - Wallet verified successfully: 4o2wgWanK9VuL9sc4RSubtAi8K9JQdYGVPH7En3PK5Zk
+2025-12-04 00:50:17,547 - app.routers.auth - INFO - Generated frontend encryption key: 1L4ITjkw2vX8w4kITrdYQQ==
+2025-12-04 00:50:17,551 - app.routers.auth - INFO - Generated frontend encryption key: 0QYiRJA97PLCyRL2eXq-OQ==
+2025-12-04 00:50:17,577 - app.security - INFO - Encrypting private key with backend master key
+2025-12-04 00:50:17,579 - app.routers.auth - INFO - Private key encrypted with backend master key for 4o2wgWanK9VuL9sc4RSubtAi8K9JQdYGVPH7En3PK5Zk
+2025-12-04 00:50:17,585 - app.security - INFO - Encrypting private key with backend master key
+2025-12-04 00:50:17,585 - app.routers.auth - INFO - Private key encrypted with backend master key for 4o2wgWanK9VuL9sc4RSubtAi8K9JQdYGVPH7En3PK5Zk
+2025-12-04 00:50:17,645 - app.routers.auth - INFO - User successfully logged in / registered: 4o2wgWanK9VuL9sc4RSubtAi8K9JQdYGVPH7En3PK5Zk
+2025-12-04 00:50:17,649 - app.routers.auth - INFO - User successfully logged in / registered: 4o2wgWanK9VuL9sc4RSubtAi8K9JQdYGVPH7En3PK5Zk
+2025-12-04 09:53:55,131 - app.security - INFO - Decrypting private key with backend master key
+2025-12-04 11:07:50,767 - app.security - INFO - Decrypting private key with backend master key
+2025-12-04 14:04:27,216 - app.security - INFO - Decrypting private key with backend master key
+2025-12-04 14:48:32,977 - app.security - INFO - Decrypting private key with backend master key
+2025-12-04 16:21:00,766 - app.security - INFO - Decrypting private key with backend master key
+2025-12-05 09:21:13,630 - app.security - INFO - Decrypting private key with backend master key
+2025-12-05 12:47:35,935 - app.security - INFO - Decrypting private key with backend master key
+2025-12-05 17:04:49,002 - app.security - INFO - Decrypting private key with backend master key
+2025-12-05 17:56:27,181 - app.security - INFO - Decrypting private key with backend master key
+2025-12-05 18:02:39,537 - app.security - INFO - Decrypting private key with backend master key
+2025-12-05 18:03:57,015 - app.utils.webacy_api - WARNING - Webacy API error 502 for holder-analysis/GVX1aNbo52mxQetx8Qujxid9TE2d56Wi2RVfjR7HNvSh
+2025-12-05 18:10:00,820 - app.security - INFO - Decrypting private key with backend master key
+2025-12-05 18:36:55,651 - app.security - INFO - Decrypting private key with backend master key
+2025-12-05 18:54:19,522 - app.security - INFO - Decrypting private key with backend master key
+2025-12-06 13:26:17,304 - app.security - INFO - Decrypting private key with backend master key
+2025-12-07 03:48:11,084 - app.security - INFO - Decrypting private key with backend master key
+2025-12-07 10:38:30,053 - app.security - INFO - Decrypting private key with backend master key
+2025-12-07 10:39:05,657 - app.security - INFO - Decrypting private key with backend master key
+2025-12-08 09:46:53,391 - app.security - INFO - Decrypting private key with backend master key
+2025-12-08 10:57:15,837 - app.security - INFO - Decrypting private key with backend master key
+2025-12-08 10:59:38,083 - app.security - INFO - Decrypting private key with backend master key
+2025-12-08 14:39:19,103 - app.security - INFO - Decrypting private key with backend master key
+2025-12-08 14:41:40,496 - app.security - INFO - Decrypting private key with backend master key
+2025-12-08 14:58:12,922 - app.security - INFO - Decrypting private key with backend master key
+2025-12-08 15:00:30,169 - app.security - INFO - Decrypting private key with backend master key
+2025-12-08 15:51:42,698 - app.security - INFO - Decrypting private key with backend master key
+2025-12-08 15:54:12,279 - app.security - INFO - Decrypting private key with backend master key
+2025-12-08 16:58:48,988 - app.routers.auth - INFO - Generated nonce: KRc8H5hgAghuMtHN1oELRA==
+2025-12-08 16:58:49,016 - app.routers.auth - INFO - Wallet verified successfully: 9qmkRh68DwLNmE8zLcS14UwSRFB7FxBDw61855y97g4j
+2025-12-08 16:58:49,029 - app.routers.auth - INFO - Generated frontend encryption key: YFPVR_qg4vzUx9zrvXwWTA==
+2025-12-08 16:58:49,049 - app.routers.auth - INFO - Generated frontend encryption key: SzLMh569Ubw17YnzJdMXWg==
+2025-12-08 16:58:49,060 - app.security - INFO - Encrypting private key with backend master key
+2025-12-08 16:58:49,060 - app.routers.auth - INFO - Private key encrypted with backend master key for 9qmkRh68DwLNmE8zLcS14UwSRFB7FxBDw61855y97g4j
+2025-12-08 16:58:49,082 - app.security - INFO - Encrypting private key with backend master key
+2025-12-08 16:58:49,082 - app.routers.auth - INFO - Private key encrypted with backend master key for 9qmkRh68DwLNmE8zLcS14UwSRFB7FxBDw61855y97g4j
+2025-12-08 16:58:49,183 - app.routers.auth - INFO - User successfully logged in / registered: 9qmkRh68DwLNmE8zLcS14UwSRFB7FxBDw61855y97g4j
+2025-12-08 16:58:49,198 - app.routers.auth - INFO - User successfully logged in / registered: 9qmkRh68DwLNmE8zLcS14UwSRFB7FxBDw61855y97g4j
