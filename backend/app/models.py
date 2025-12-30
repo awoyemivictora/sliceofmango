@@ -1,14 +1,52 @@
 # app/models.py
 from sqlalchemy import (
-    BigInteger, Column, Index, Integer, Numeric, String, Float, Boolean, DateTime, ForeignKey, Text, func
+    JSON, BigInteger, Column, Enum, Index, Integer, Numeric, String, Float, Boolean, DateTime, ForeignKey, Text, func
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from datetime import datetime
-from typing import Optional, List
+from typing import Any, Dict, Optional, List
+import enum
 
 
 class Base(DeclarativeBase):
     pass
+
+# =======================================
+# ENUMS
+# =======================================
+class UserRole(str, enum.Enum):
+    SNIPER = "sniper"
+    CREATOR = "creator"
+    BOTH = "both"
+    
+
+class LaunchStatus(str, enum.Enum):
+    SETUP = "setup"
+    METADATA_GENERATED = "metadata_generated"
+    ONCHAIN_CREATION = "onchain_creation"
+    FUNDING = "funding"
+    BUYING = "buying"
+    MONITORING = "monitoring"
+    SELLING = "selling"
+    COMPLETE = "complete"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+    
+
+class BotStatus(str, enum.Enum):
+    PENDING = "PENDING"  # Changed from "pending" to "PENDING"
+    READY = "READY"      # Changed from "ready" to "READY"
+    FUNDED = "FUNDED"    # Changed from "funded" to "FUNDED"
+    ACTIVE = "ACTIVE"    # Changed from "active" to "ACTIVE"
+    INSUFFICIENT_FUNDS = "INSUFFICIENT_FUNDS"
+    FUNDING_FAILED = "FUNDING_FAILED"
+    FAILED = "FAILED"
+    COMPLETED = "COMPLETED"
+    BUY_EXECUTED = "BUY_EXECUTED"
+    SELL_EXECUTED = "SELL_EXECUTED"
+    
+    
+    
 
 
 # ──────────────────────────────────────────────────────────────
@@ -141,16 +179,23 @@ class TokenMetadataArchive(Base):
 class User(Base):
     __tablename__ = "users"
 
+    # Core user info
     wallet_address: Mapped[str] = mapped_column(String, primary_key=True, index=True)
     encrypted_private_key: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    
+    # User role and permissions
+    role: Mapped[UserRole] = mapped_column(Enum(UserRole), default=UserRole.SNIPER)
     is_premium: Mapped[bool] = mapped_column(Boolean, default=False)
     premium_start_date: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     premium_end_date: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
     # Custom RPCs
-    custom_rpc_https: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    custom_rpc_wss: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    # custom_rpc_https: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    # custom_rpc_wss: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
+    # =======================
+    # SNIPER CONFIGURATION
+    # =======================
     # Bot Filters (Premium Only - nullable for basic users)
     filter_socials_added: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True, default=None)
     filter_liquidity_burnt: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True, default=None)
@@ -162,23 +207,58 @@ class User(Base):
     filter_safety_check_period_seconds: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, default=None)
     
     # Buy Trading Settings
-    buy_amount_sol: Mapped[float] = mapped_column(Float, default=0.1)
-    buy_slippage_bps: Mapped[int] = mapped_column(Integer, default=1000)
+    sniper_buy_amount_sol: Mapped[float] = mapped_column(Float, default=0.1)
+    sniper_buy_slippage_bps: Mapped[int] = mapped_column(Integer, default=1000)
     
     # Sell Trading Settings
-    sell_take_profit_pct: Mapped[float] = mapped_column(Float, default=50.0)
-    sell_stop_loss_pct: Mapped[float] = mapped_column(Float, default=20.0)
-    sell_timeout_seconds: Mapped[int] = mapped_column(Integer, default=3600)
-    sell_slippage_bps: Mapped[int] = mapped_column(Integer, default=1000)
+    sniper_sell_take_profit_pct: Mapped[float] = mapped_column(Float, default=50.0)
+    sniper_sell_stop_loss_pct: Mapped[float] = mapped_column(Float, default=20.0)
+    sniper_sell_timeout_seconds: Mapped[int] = mapped_column(Integer, default=3600)
+    sniper_sell_slippage_bps: Mapped[int] = mapped_column(Integer, default=1000)
     
-    bot_check_interval_seconds: Mapped[int] = mapped_column(Integer, default=10)
+    sniper_bot_check_interval_seconds: Mapped[int] = mapped_column(Integer, default=10)
     
-    # For Trade Monitoring Flexibility [I STILL NEED TO ADD THIS TO FRONTEND AS WELL]
-    partial_sell_pct: Mapped[float] = mapped_column(Float, default=70.0)  # Sell 70% on early profit
-    trailing_sl_pct: Mapped[float] = mapped_column(Float, default=15.0)   # Trailing SL drop from peak
-    rug_liquidity_drop_pct: Mapped[float] = mapped_column(Float, default=20.0)  # Rug if liquidity drops >20%
+    # Advanced sniper settings
+    sniper_partial_sell_pct: Mapped[float] = mapped_column(Float, default=70.0)  # Sell 70% on early profit
+    sniper_trailing_sl_pct: Mapped[float] = mapped_column(Float, default=15.0)   # Trailing SL drop from peak
+    sniper_rug_liquidity_drop_pct: Mapped[float] = mapped_column(Float, default=20.0)  # Rug if liquidity drops >20%
     
-    # 🔥 ADD THESE FOR PROFITABILITY TRACKING
+    # =======================
+    # CREATOR CONFIGURATION
+    # =======================
+    # Creator Settings
+    creator_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    creator_last_launch_time: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    creator_total_launches: Mapped[int] = mapped_column(Integer, default=0)
+    creator_successful_launches: Mapped[int] = mapped_column(Integer, default=0)
+    creator_total_profit: Mapped[float] = mapped_column(Float, default=0.0)
+    creator_average_roi: Mapped[float] = mapped_column(Float, default=0.0)
+    
+    # Default launch configuration
+    default_bot_count: Mapped[int] = mapped_column(Integer, default=5)
+    default_bot_buy_amount: Mapped[float] = mapped_column(Float, default=0.0001)
+    default_creator_buy_amount: Mapped[float] = mapped_column(Float, default=0.001)
+    default_sell_strategy_type: Mapped[str] = mapped_column(String, default="volume_based")
+    default_sell_volume_target: Mapped[Optional[float]] = mapped_column(Float, nullable=True, default=5.0)
+    default_sell_time_minutes: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, default=5)
+    default_sell_price_target: Mapped[Optional[float]] = mapped_column(Float, nullable=True, default=2.0)
+    
+    # Creator wallet management
+    creator_wallet_balance: Mapped[float] = mapped_column(Float, default=0.0)
+    creator_bot_reserve_balance: Mapped[float] = mapped_column(Float, default=0.0)
+    creator_min_balance_required: Mapped[float] = mapped_column(Float, default=0.0001)  # Minimum SOL to launch
+    
+    # Bot wallet pool (encrypted bot private keys)
+    bot_wallet_pool: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, nullable=True, default=None)
+    
+    # ====================
+    # SHARED SETTINGS
+    # ====================
+    # Custom RPCs
+    custom_rpc_https: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    custom_rpc_wss: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    
+    # Profitability tracking
     total_volume_sol: Mapped[float] = mapped_column(Float, default=0.0)
     total_fees_paid_sol: Mapped[float] = mapped_column(Float, default=0.0)
     total_trades: Mapped[int] = mapped_column(Integer, default=0)
@@ -197,7 +277,121 @@ class User(Base):
     jito_tip_last_updated: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     jito_tip_account_initialized: Mapped[bool] = mapped_column(Boolean, default=False)
 
+    # Relationships
     trades: Mapped[List["Trade"]] = relationship("Trade", back_populates="user", cascade="all, delete-orphan")
+    token_launches: Mapped[List["TokenLaunch"]] = relationship("TokenLaunch", back_populates="user", cascade="all, delete-orphan")
+    bot_wallets: Mapped[List["BotWallet"]] = relationship("BotWallet", back_populates="user", cascade="all, delete-orphan")
+
+    __table_args__ = (
+        Index('ix_users_role_enabled', "role", "creator_enabled"),
+        Index('ix_users_premium_status', "is_premium", "premium_end_date"),
+    )
+
+# ============================================
+# NEW CREATOR-SPECIFIC MODELS
+# ============================================
+
+class TokenLaunch(Base):
+    __tablename__ = "token_launches"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    launch_id: Mapped[str] = mapped_column(String, unique=True, index=True)
+    user_wallet_address: Mapped[str] = mapped_column(
+        ForeignKey("users.wallet_address", ondelete="CASCADE"), index=True
+    )
+    
+    # Token information
+    mint_address: Mapped[Optional[str]] = mapped_column(String, nullable=True, index=True)
+    metadata_for_token: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, nullable=True)
+    
+    # Launch configuration
+    config: Mapped[Dict[str, Any]] = mapped_column(JSON)
+    
+    # Status tracking
+    status: Mapped[LaunchStatus] = mapped_column(Enum(LaunchStatus), default=LaunchStatus.SETUP)
+    progress: Mapped[int] = mapped_column(Integer, default=0)
+    current_step: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    
+    # Results
+    result: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, nullable=True)
+    success: Mapped[bool] = mapped_column(Boolean, default=False)
+    
+    # Transactions
+    creator_tx_hash: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    bot_buy_bundle_id: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    bot_sell_bundle_id: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    
+    # Performance metrics
+    total_profit: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    roi: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    duration: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # seconds
+    
+    # Timestamps
+    started_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    
+    # Relationships
+    user: Mapped["User"] = relationship("User", back_populates="token_launches")
+    bots: Mapped[List["BotWallet"]] = relationship("BotWallet", back_populates="launch")
+    
+    __table_args__ = (
+        Index('ix_token_launches_user_status', "user_wallet_address", "status"),
+        Index('ix_token_launches_timestamp', "started_at"),
+    )
+
+
+class BotWallet(Base):
+    __tablename__ = "bot_wallets"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_wallet_address: Mapped[str] = mapped_column(
+        ForeignKey("users.wallet_address", ondelete="CASCADE"), index=True
+    )
+    launch_id: Mapped[Optional[str]] = mapped_column(
+        ForeignKey("token_launches.launch_id", ondelete="CASCADE"), nullable=True, index=True
+    )
+    
+    # Bot wallet info (encrypted)
+    public_key: Mapped[str] = mapped_column(String, index=True)
+    encrypted_private_key: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    is_generated: Mapped[bool] = mapped_column(Boolean, default=True)
+    
+    # Status and configuration
+    status: Mapped[BotStatus] = mapped_column(Enum(BotStatus), default=BotStatus.PENDING)
+    buy_amount: Mapped[float] = mapped_column(Float, default=0.0)
+    funded_amount: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    buy_tx_hash: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    sell_tx_hash: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    
+    # Pre-funding status
+    is_pre_funded: Mapped[bool] = mapped_column(Boolean, default=False)
+    pre_funded_amount: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    pre_funded_tx_hash: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    
+    # Balance tracking
+    current_balance: Mapped[float] = mapped_column(Float, default=0.0)
+    token_balance: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    
+    # Performance metrics
+    profit: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    roi: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    last_updated: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    user: Mapped["User"] = relationship("User", back_populates="bot_wallets")
+    launch: Mapped[Optional["TokenLaunch"]] = relationship("TokenLaunch", back_populates="bots")
+    
+    __table_args__ = (
+        Index('ix_bot_wallets_user_status', "user_wallet_address", "status"),
+        Index('ix_bot_wallets_launch_status', "launch_id", "status"),
+        Index('ix_bot_wallets_pre_funded', "is_pre_funded", "user_wallet_address"),
+    )
+
+
 
 
 # ──────────────────────────────────────────────────────────────
@@ -210,19 +404,27 @@ class Trade(Base):
     user_wallet_address: Mapped[str] = mapped_column(
         ForeignKey("users.wallet_address", ondelete="CASCADE"), index=True
     )
+    
+    # Trade type - 'sniper_buy', 'sniper_sell', 'creator_buy', 'creator_sell', 'bot_buy', 'bot_sell'
+    trade_type: Mapped[str] = mapped_column(String)
 
+    # Token information
     mint_address: Mapped[str] = mapped_column(String, index=True)
     token_symbol: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    trade_type: Mapped[str] = mapped_column(String)
+    
+    # Amounts
     amount_sol: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     amount_tokens: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     price_sol_per_token: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     price_usd_at_trade: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     price_sol_at_trade: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    buy_tx_hash: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    sell_tx_hash: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    sniper_buy_tx_hash: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    sniper_sell_tx_hash: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    
+    # Profit tracking
     profit_usd: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     profit_sol: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    
     log_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     buy_price: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     entry_price: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
@@ -254,6 +456,24 @@ class Trade(Base):
 
     # 🔥 ADD THIS FIELD to store strategy JSON
     strategy_data: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    
+    # Transactions
+    tx_hash: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    bundle_id: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    
+    # Profit tracking
+    profit_sol: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    profit_usd: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    
+    # Related info
+    launch_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, index=True)
+    bot_wallet_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, index=True)
+    
+    # Metadata
+    metadata_for_token: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, nullable=True)
+    
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     user: Mapped["User"] = relationship("User", back_populates="trades")
     
@@ -263,6 +483,69 @@ class Trade(Base):
         Index('ix_trades_mint_user', "mint_address", "user_wallet_address"),
         Index('ix_trades_profit', "user_wallet_address", "profit_usd"),
         Index('ix_trades_fee_applied', "fee_applied", "buy_timestamp"),  # New index for fee queries
+        Index('ix_trades_user_type', "user_wallet_address", "trade_type", "created_at"),
+        Index('ix_trades_launch', "launch_id", "created_at"),
+        Index('ix_trades_mint_type', "mint_address", "trade_type"),
+    )
+
+# ============================================
+# NEW LAUNCH STATS MODEL
+# ============================================
+
+class LaunchStats(Base):
+    __tablename__ = "launch_stats"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    date: Mapped[datetime] = mapped_column(DateTime, index=True)
+    
+    # Aggregate stats
+    total_launches: Mapped[int] = mapped_column(Integer, default=0)
+    successful_launches: Mapped[int] = mapped_column(Integer, default=0)
+    failed_launches: Mapped[int] = mapped_column(Integer, default=0)
+    total_profit: Mapped[float] = mapped_column(Float, default=0.0)
+    average_roi: Mapped[float] = mapped_column(Float, default=0.0)
+    
+    # Bot performance
+    total_bots_used: Mapped[int] = mapped_column(Integer, default=0)
+    successful_bot_trades: Mapped[int] = mapped_column(Integer, default=0)
+    total_bot_profit: Mapped[float] = mapped_column(Float, default=0.0)
+    
+    # User distribution
+    active_creators: Mapped[int] = mapped_column(Integer, default=0)
+    active_snipers: Mapped[int] = mapped_column(Integer, default=0)
+
+
+# ============================================
+# NEW LAUNCH QUEUE MODEL
+# ============================================
+
+class LaunchQueue(Base):
+    __tablename__ = "launch_queue"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_wallet_address: Mapped[str] = mapped_column(String, index=True)
+    launch_id: Mapped[str] = mapped_column(String, unique=True, index=True)
+    
+    # Queue status
+    status: Mapped[str] = mapped_column(String, default="pending")  # pending, processing, completed, failed
+    priority: Mapped[int] = mapped_column(Integer, default=0)  # Higher = higher priority
+    
+    # Launch config
+    config: Mapped[Dict[str, Any]] = mapped_column(JSON)
+    metadata_for_token: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, nullable=True)
+    
+    # Timing
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    scheduled_for: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    
+    # Result
+    result: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, nullable=True)
+    
+    __table_args__ = (
+        Index('ix_launch_queue_status_priority', "status", "priority", "created_at"),
+        Index('ix_launch_queue_scheduled', "scheduled_for", "status"),
     )
 
 

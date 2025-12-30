@@ -893,7 +893,7 @@ const FlashSniperTradingInterface: React.FC = () => {
   //   }
 
   //   try {
-  //     const response = await apiService.request('/user/jito-tip/info', {
+  //     const response = await apiService.request('/snipers/user/jito-tip/info', {
   //       headers: { Authorization: `Bearer ${authToken}` }, 
   //     });
 
@@ -942,7 +942,7 @@ const FlashSniperTradingInterface: React.FC = () => {
   //   }
 
   //   try {
-  //       const response = await apiService.request('/user/jito-tip/fund', {
+  //       const response = await apiService.request('/snipers/user/jito-tip/fund', {
   //           method: 'POST',
   //           headers: {
   //               'Content-Type': 'application/json',
@@ -967,7 +967,7 @@ const FlashSniperTradingInterface: React.FC = () => {
   //   const tipPerTx = parseFloat(JitoTipSettings.tipPerTx.replace(/,/g, ''));
 
   //   try {
-  //     const response = await apiService.request('/user/jito-tip/settings', {
+  //     const response = await apiService.request('/snipers/user/jito-tip/settings', {
   //       method: 'PUT',
   //       headers: {
   //         'Content-Type': 'application/json',
@@ -2139,7 +2139,7 @@ const FlashSniperTradingInterface: React.FC = () => {
     const fetchPremiumStatus = async () => {
       if (!authToken) return;
       try {
-        const response = await apiService.request('/user/profile', {
+        const response = await apiService.request('/snipers/user/profile', {
           headers: { Authorization: `Bearer ${authToken}` },
         });
         setIsPremium(response.is_premium || false);
@@ -2994,7 +2994,7 @@ const FlashSniperTradingInterface: React.FC = () => {
                               <button
                                 onClick={async () => {
                                   try {
-                                    const response = await fetch('/api/user/update-rpc', {
+                                    const response = await fetch('/api/snipers/user/update-rpc', {
                                       method: 'POST',
                                       headers: { Authorization: `Bearer ${authToken}`, 'Content-Type': 'application/json' },
                                       body: JSON.stringify(customRpc),

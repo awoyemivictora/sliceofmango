@@ -67,6 +67,13 @@ class Settings(BaseSettings):
     JITO_USE_FOR_CRITICAL_TRADES: bool = os.getenv("JITO_USE_FOR_CRITICAL_TRADES")
 
     ONCHAIN_API_KEY: str = os.getenv("ONCHAIN_API_KEY")
+    
+    OPENAI_API_KEY: str = os.getenv("ONCHAIN_API_KEY")
+    OPENAI_TIMEOUT: str = os.getenv("OPENAI_TIMEOUT")
+    OPENAI_MODEL: str = os.getenv("OPENAI_MODEL")
+    OPENAI_IMAGE_MODEL: str = os.getenv("OPENAI_IMAGE_MODEL")
+    
+    ONCHAIN_CLIENT_URL: str = os.getenv("ONCHAIN_CLIENT_URL")
 
     
     

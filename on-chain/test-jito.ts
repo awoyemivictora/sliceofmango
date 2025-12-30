@@ -1,5 +1,5 @@
 import { Connection, Keypair, SystemProgram, PublicKey, TransactionMessage, VersionedTransaction, LAMPORTS_PER_SOL } from '@solana/web3.js';
-import { jitoBundleSender } from './jito-integration';
+import { jitoBundleSender } from './jito_bundles/jito-integration';
 
 const RPC_URL = process.env.RPC_URL || 'https://api.mainnet-beta.solana.com';
 const connection = new Connection(RPC_URL, 'confirmed');

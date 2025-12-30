@@ -25,8 +25,8 @@ import {
     PumpFunInstructionBuilder,
     BondingCurveMath,
     PumpFunPda
-} from './pumpfun-idl-client';
-import { jitoBundleSender, JitoBundleSender } from "./jito-integration";
+} from '../pumpfun/pumpfun-idl-client';
+import { jitoBundleSender, JitoBundleSender } from "../jito_bundles/jito-integration";
 
 // ============================================
 // CONFIGURATION

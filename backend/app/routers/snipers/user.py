@@ -7,9 +7,9 @@ import logging
 from app.database import get_db
 from app.dependencies import get_current_user_by_wallet
 from app.models import User, Trade
+from app.schemas.snipers.trade import TradeLog
+from app.schemas.snipers.user import UserBotSettingsResponse, UserBotSettingsUpdate, UserProfile
 from app.security import decrypt_private_key_backend, get_current_user
-from app.schemas import UserBotSettingsResponse, UserBotSettingsUpdate, UserProfile, TradeLog
-from app.main import websocket_manager
 from app.utils.shared import load_bot_state
 from app.config import settings as setting_api
 from pydantic import BaseModel
@@ -18,6 +18,7 @@ from app.utils import redis_client
 from app.utils.jito_manager import jito_tip_manager
 from solana.rpc.async_api import AsyncClient
 from solders.pubkey import Pubkey
+from app.utils.bot_components import websocket_manager
 
 
 # Configure logging
@@ -26,8 +27,8 @@ logger = logging.getLogger(__name__)
 
 
 router = APIRouter(
-    prefix="/user",
-    tags=['User']
+    prefix="/snipers/user",
+    tags=['Sniper Users']
 )
 
 
@@ -433,7 +434,7 @@ async def get_encrypted_private_key(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# Endpoing to quickly check if a user is active
+# Endpoint to quickly check if a user is active
 @router.get("/check-active/{wallet_address}")
 async def check_user_active(
     wallet_address: str,

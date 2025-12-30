@@ -1,64 +1,64 @@
-from datetime import datetime
-import uuid
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, WebSocket, WebSocketDisconnect, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
-from app.database import get_db
-from app.models import Snipe, User
-from app.schemas import SnipeCreate, SnipeResponse
-from app.dependencies import get_current_user_by_wallet
-from app.utils.bot_logger import get_logger
-from typing import List, Dict, Any
+# from datetime import datetime
+# import uuid
+# from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, WebSocket, WebSocketDisconnect, status
+# from sqlalchemy.ext.asyncio import AsyncSession
+# from sqlalchemy.future import select
+# from app.database import get_db
+# from app.models import User
+# from app.dependencies import get_current_user_by_wallet
+# from app.schemas.snipers.trade import SnipeResponse
+# from app.utils.bot_logger import get_logger
+# from typing import List, Dict, Any
 
-logger = get_logger(__name__)
+# logger = get_logger(__name__)
 
-router = APIRouter(
-    prefix="/snipe",
-    tags=['Snipe']
-)
-
-
-@router.get("/all-snipes", response_model=List[SnipeResponse])
-async def get_user_snipe_logs(
-    current_user: User = Depends(get_current_user_by_wallet),
-    db: AsyncSession = Depends(get_db),
-    limit: int = 10,
-    offset: int = 0
-):
-    """
-    Retrieves a list of a user's past snipe operations and their logs.
-    """
-    result = await db.execute(
-        select(Snipe)
-        .where(Snipe.user_wallet_address == current_user.wallet_address)
-        .order_by(Snipe.started_at.desc())
-        .limit(limit)
-        .offset(offset)
-    )
-    snipes = result.scalars().all()
-    logger.info(f"Retrieved {len(snipes)} snipe logs for user {current_user.wallet_address}")
-    return snipes
+# router = APIRouter(
+#     prefix="/snipe",
+#     tags=['Snipe']
+# )
 
 
+# @router.get("/all-snipes", response_model=List[SnipeResponse])
+# async def get_user_snipe_logs(
+#     current_user: User = Depends(get_current_user_by_wallet),
+#     db: AsyncSession = Depends(get_db),
+#     limit: int = 10,
+#     offset: int = 0
+# ):
+#     """
+#     Retrieves a list of a user's past snipe operations and their logs.
+#     """
+#     result = await db.execute(
+#         select(Snipe)
+#         .where(Snipe.user_wallet_address == current_user.wallet_address)
+#         .order_by(Snipe.started_at.desc())
+#         .limit(limit)
+#         .offset(offset)
+#     )
+#     snipes = result.scalars().all()
+#     logger.info(f"Retrieved {len(snipes)} snipe logs for user {current_user.wallet_address}")
+#     return snipes
 
 
-@router.get("/{snipe_id}/full_log", response_model=Dict[str, Any])
-async def get_single_snipe_full_log(
-    snipe_id: str,
-    current_user: User = Depends(get_current_user_by_wallet),
-    db: AsyncSession = Depends(get_db)
-):
-    """
-    Retrieves the full log details for a specific snipe operation.
-    """
-    result = await db.execute(select(Snipe).where(Snipe.id == snipe_id))
-    snipe_record = result.scalar_one_or_none()
 
-    if not snipe_record or snipe_record.user_wallet_address != current_user.wallet_address:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Snipe log not found or not authorized.")
 
-    logger.info(f"Retrieved full log for snipe {snipe_id} for user {current_user.wallet_address}")
-    return {"snipe_id": snipe_record.id, "logs": snipe_record.logs, "status": snipe_record.status}
+# @router.get("/{snipe_id}/full_log", response_model=Dict[str, Any])
+# async def get_single_snipe_full_log(
+#     snipe_id: str,
+#     current_user: User = Depends(get_current_user_by_wallet),
+#     db: AsyncSession = Depends(get_db)
+# ):
+#     """
+#     Retrieves the full log details for a specific snipe operation.
+#     """
+#     result = await db.execute(select(Snipe).where(Snipe.id == snipe_id))
+#     snipe_record = result.scalar_one_or_none()
+
+#     if not snipe_record or snipe_record.user_wallet_address != current_user.wallet_address:
+#         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Snipe log not found or not authorized.")
+
+#     logger.info(f"Retrieved full log for snipe {snipe_id} for user {current_user.wallet_address}")
+#     return {"snipe_id": snipe_record.id, "logs": snipe_record.logs, "status": snipe_record.status}
 
 
 # # In-memory store for active snipes and WebSocket connections

@@ -16,13 +16,10 @@ from solders.pubkey import Pubkey
 from app.database import AsyncSessionLocal, get_db
 from app.middleware.rate_limiter import rate_limited
 from app.models import TokenMetadata, User, Trade
-from app.schemas import (
-    BulkTradeLog, ImmediateSnipeRequest, StartBotRequest, UpdateBotSettingsRequest,
-    GetTradeQuoteRequest, GetTradeQuoteResponse,
-    SendSignedTransactionRequest, SendSignedTransactionResponse
-)
 from app.dependencies import get_current_user_by_wallet
 from app.config import settings
+from app.schemas.snipers.bot import UpdateBotSettingsRequest
+from app.schemas.snipers.trade import BulkTradeLog, GetTradeQuoteRequest, GetTradeQuoteResponse, ImmediateSnipeRequest, SendSignedTransactionRequest, SendSignedTransactionResponse
 from app.utils.bot_components import execute_jupiter_swap, monitor_position, websocket_manager
 from app.security import get_current_user
 from app.utils import bot_components

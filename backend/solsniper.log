@@ -8055,3 +8055,397 @@ DETAIL:  Key (wallet_address)=(HpgU8pnzJvRwch1CDX6VX7uXM7ozmk2yyWpDbSXoBVKe) alr
 2025-12-19 17:06:37,258 - app.security - INFO - Decrypting private key with backend master key
 2025-12-21 06:37:17,675 - app.security - INFO - Decrypting private key with backend master key
 2025-12-21 07:09:06,568 - app.security - INFO - Decrypting private key with backend master key
+2025-12-21 07:35:16,212 - app.security - INFO - Decrypting private key with backend master key
+2025-12-23 00:04:07,589 - app.routers.snipers.auth - INFO - Generated nonce: HNpvp0e7hdS_ZH3IfV7Pmg==
+2025-12-23 00:04:07,614 - app.routers.snipers.auth - INFO - Wallet verified successfully: 37eJGSSuEeu46hbX3LwrkcjBZVeSGovhGgzrhM2Yd2z8
+2025-12-23 00:04:07,618 - app.routers.snipers.auth - INFO - Generated frontend encryption key: _4tR2QsolEYVsSoGnTCEnw==
+2025-12-23 00:04:07,624 - app.routers.snipers.auth - INFO - Generated frontend encryption key: hVaoB4QpKiX8ID7Q--xhVg==
+2025-12-23 00:04:07,655 - app.security - INFO - Encrypting private key with backend master key
+2025-12-23 00:04:07,656 - app.routers.snipers.auth - INFO - Private key encrypted with backend master key for 37eJGSSuEeu46hbX3LwrkcjBZVeSGovhGgzrhM2Yd2z8
+2025-12-23 00:04:07,676 - app.routers.snipers.auth - ERROR - Unexpected error in register-or-login: Traceback (most recent call last):
+  File "/Users/user/clients/flashsnipper.com/backend/app/routers/snipers/auth.py", line 187, in register_or_login_wallet
+    await db.execute(do_nothing_stmt)
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/ext/asyncio/session.py", line 463, in execute
+    result = await greenlet_spawn(
+             ^^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 190, in greenlet_spawn
+    result = context.switch(*args, **kwargs)
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 2365, in execute
+    return self._execute_internal(
+           ~~~~~~~~~~~~~~~~~~~~~~^
+        statement,
+        ^^^^^^^^^^
+    ...<4 lines>...
+        _add_event=_add_event,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 2251, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self,
+        ^^^^^
+    ...<4 lines>...
+        conn,
+        ^^^^^
+    )
+    ^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/orm/bulk_persistence.py", line 1294, in orm_execute_statement
+    result = conn.execute(
+        statement, params or {}, execution_options=execution_options
+    )
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1415, in execute
+    return meth(
+        self,
+        distilled_parameters,
+        execution_options or NO_OPTIONS,
+    )
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/sql/elements.py", line 523, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, distilled_params, execution_options
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1629, in _execute_clauseelement
+    compiled_sql, extracted_params, cache_hit = elem._compile_w_cache(
+                                                ~~~~~~~~~~~~~~~~~~~~~^
+        dialect=dialect,
+        ^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+        linting=self.dialect.compiler_linting | compiler.WARN_LINTING,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/sql/elements.py", line 724, in _compile_w_cache
+    compiled_sql = self._compiler(
+        dialect,
+    ...<4 lines>...
+        **kw,
+    )
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/sql/elements.py", line 320, in _compiler
+    return dialect.statement_compiler(dialect, self, **kw)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/sql/compiler.py", line 1446, in __init__
+    Compiled.__init__(self, dialect, statement, **kwargs)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/sql/compiler.py", line 886, in __init__
+    self.string = self.process(self.statement, **compile_kwargs)
+                  ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/sql/compiler.py", line 932, in process
+    return obj._compiler_dispatch(self, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/sql/annotation.py", line 344, in _compiler_dispatch
+    return self.__element.__class__._compiler_dispatch(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, visitor, **kw
+        ^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/sql/visitors.py", line 141, in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/sql/compiler.py", line 5843, in visit_insert
+    crud_params_struct = crud._get_crud_params(
+        self,
+    ...<4 lines>...
+        **kw,
+    )
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/sql/crud.py", line 335, in _get_crud_params
+    raise exc.CompileError(
+    ...<2 lines>...
+    )
+sqlalchemy.exc.CompileError: Unconsumed column names: sell_timeout_seconds, buy_slippage_bps, sell_stop_loss_pct, partial_sell_pct, buy_amount_sol, sell_take_profit_pct, rug_liquidity_drop_pct, bot_check_interval_seconds, trailing_sl_pct, sell_slippage_bps
+
+2025-12-23 00:04:07,678 - app.security - INFO - Encrypting private key with backend master key
+2025-12-23 00:04:07,679 - app.routers.snipers.auth - INFO - Private key encrypted with backend master key for 37eJGSSuEeu46hbX3LwrkcjBZVeSGovhGgzrhM2Yd2z8
+2025-12-23 00:04:07,681 - app.routers.snipers.auth - ERROR - Unexpected error in register-or-login: Traceback (most recent call last):
+  File "/Users/user/clients/flashsnipper.com/backend/app/routers/snipers/auth.py", line 187, in register_or_login_wallet
+    await db.execute(do_nothing_stmt)
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/ext/asyncio/session.py", line 463, in execute
+    result = await greenlet_spawn(
+             ^^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 190, in greenlet_spawn
+    result = context.switch(*args, **kwargs)
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 2365, in execute
+    return self._execute_internal(
+           ~~~~~~~~~~~~~~~~~~~~~~^
+        statement,
+        ^^^^^^^^^^
+    ...<4 lines>...
+        _add_event=_add_event,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 2251, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self,
+        ^^^^^
+    ...<4 lines>...
+        conn,
+        ^^^^^
+    )
+    ^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/orm/bulk_persistence.py", line 1294, in orm_execute_statement
+    result = conn.execute(
+        statement, params or {}, execution_options=execution_options
+    )
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1415, in execute
+    return meth(
+        self,
+        distilled_parameters,
+        execution_options or NO_OPTIONS,
+    )
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/sql/elements.py", line 523, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, distilled_params, execution_options
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1629, in _execute_clauseelement
+    compiled_sql, extracted_params, cache_hit = elem._compile_w_cache(
+                                                ~~~~~~~~~~~~~~~~~~~~~^
+        dialect=dialect,
+        ^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+        linting=self.dialect.compiler_linting | compiler.WARN_LINTING,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/sql/elements.py", line 724, in _compile_w_cache
+    compiled_sql = self._compiler(
+        dialect,
+    ...<4 lines>...
+        **kw,
+    )
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/sql/elements.py", line 320, in _compiler
+    return dialect.statement_compiler(dialect, self, **kw)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/sql/compiler.py", line 1446, in __init__
+    Compiled.__init__(self, dialect, statement, **kwargs)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/sql/compiler.py", line 886, in __init__
+    self.string = self.process(self.statement, **compile_kwargs)
+                  ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/sql/compiler.py", line 932, in process
+    return obj._compiler_dispatch(self, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/sql/annotation.py", line 344, in _compiler_dispatch
+    return self.__element.__class__._compiler_dispatch(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, visitor, **kw
+        ^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/sql/visitors.py", line 141, in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/sql/compiler.py", line 5843, in visit_insert
+    crud_params_struct = crud._get_crud_params(
+        self,
+    ...<4 lines>...
+        **kw,
+    )
+  File "/Users/user/clients/flashsnipper.com/backend/venv/lib/python3.13/site-packages/sqlalchemy/sql/crud.py", line 335, in _get_crud_params
+    raise exc.CompileError(
+    ...<2 lines>...
+    )
+sqlalchemy.exc.CompileError: Unconsumed column names: sell_timeout_seconds, buy_slippage_bps, sell_stop_loss_pct, partial_sell_pct, buy_amount_sol, sell_take_profit_pct, rug_liquidity_drop_pct, bot_check_interval_seconds, trailing_sl_pct, sell_slippage_bps
+
+2025-12-23 00:10:34,228 - app.routers.snipers.auth - INFO - Generated nonce: SgQclD8WScBcBogGsu523g==
+2025-12-23 00:10:34,246 - app.routers.snipers.auth - INFO - Wallet verified successfully: CsQ8d6szA63bN39KhfnJuDBV2GixqMC41QtuzDYRT9SQ
+2025-12-23 00:10:34,250 - app.routers.snipers.auth - INFO - Generated frontend encryption key: cHjel__xr5dSSVnsfA0SsQ==
+2025-12-23 00:10:34,255 - app.routers.snipers.auth - INFO - Generated frontend encryption key: XSbgwklQh7SwKtMCjf4oxw==
+2025-12-23 00:10:34,270 - app.security - INFO - Encrypting private key with backend master key
+2025-12-23 00:10:34,271 - app.routers.snipers.auth - INFO - Private key encrypted with backend master key for CsQ8d6szA63bN39KhfnJuDBV2GixqMC41QtuzDYRT9SQ
+2025-12-23 00:10:34,286 - app.security - INFO - Encrypting private key with backend master key
+2025-12-23 00:10:34,286 - app.routers.snipers.auth - INFO - Private key encrypted with backend master key for CsQ8d6szA63bN39KhfnJuDBV2GixqMC41QtuzDYRT9SQ
+2025-12-23 00:10:34,425 - app.routers.snipers.auth - INFO - User successfully logged in / registered: CsQ8d6szA63bN39KhfnJuDBV2GixqMC41QtuzDYRT9SQ
+2025-12-23 00:10:34,429 - app.routers.snipers.auth - INFO - User successfully logged in / registered: CsQ8d6szA63bN39KhfnJuDBV2GixqMC41QtuzDYRT9SQ
+2025-12-23 11:13:42,031 - app.security - INFO - Decrypting private key with backend master key
+2025-12-23 11:13:42,058 - app.security - INFO - Decrypting private key with backend master key
+2025-12-23 19:56:00,753 - app.security - INFO - Decrypting private key with backend master key
+2025-12-23 19:59:06,770 - app.routers.snipers.auth - INFO - Generated nonce: 9W7_60aI61WbIH_01wKokw==
+2025-12-23 19:59:06,800 - app.routers.snipers.auth - INFO - Wallet verified successfully: AsUW5Pz1E38MkA8tMv394mYawuTfNqtbmhDKfFAFpCh3
+2025-12-23 19:59:06,808 - app.routers.snipers.auth - INFO - Generated frontend encryption key: Fo7FvjTNgX6j6M4Dj587Pg==
+2025-12-23 19:59:06,818 - app.routers.snipers.auth - INFO - Generated frontend encryption key: 4PiAG6RIOdyZzQ9SoT1nqQ==
+2025-12-23 19:59:06,832 - app.security - INFO - Encrypting private key with backend master key
+2025-12-23 19:59:06,832 - app.routers.snipers.auth - INFO - Private key encrypted with backend master key for AsUW5Pz1E38MkA8tMv394mYawuTfNqtbmhDKfFAFpCh3
+2025-12-23 19:59:06,836 - app.security - INFO - Encrypting private key with backend master key
+2025-12-23 19:59:06,836 - app.routers.snipers.auth - INFO - Private key encrypted with backend master key for AsUW5Pz1E38MkA8tMv394mYawuTfNqtbmhDKfFAFpCh3
+2025-12-23 19:59:06,877 - app.routers.snipers.auth - INFO - User successfully logged in / registered: AsUW5Pz1E38MkA8tMv394mYawuTfNqtbmhDKfFAFpCh3
+2025-12-23 19:59:06,880 - app.routers.snipers.auth - INFO - User successfully logged in / registered: AsUW5Pz1E38MkA8tMv394mYawuTfNqtbmhDKfFAFpCh3
+2025-12-23 20:05:49,455 - app.routers.snipers.auth - INFO - Generated nonce: 6u194CEutnrhaJIZA7ThJg==
+2025-12-23 20:05:49,472 - app.routers.snipers.auth - INFO - Wallet verified successfully: Da37nhvTXWwoHDekBXUB2zvyzRus6T2p6gC73KWuP8Td
+2025-12-23 20:05:49,476 - app.routers.snipers.auth - INFO - Generated frontend encryption key: hG1otkRp-V__hfQ9d6A4Jg==
+2025-12-23 20:05:49,481 - app.routers.snipers.auth - INFO - Generated frontend encryption key: BEI4X2wXffVTfm8NfBV9fQ==
+2025-12-23 20:05:49,489 - app.security - INFO - Encrypting private key with backend master key
+2025-12-23 20:05:49,489 - app.routers.snipers.auth - INFO - Private key encrypted with backend master key for Da37nhvTXWwoHDekBXUB2zvyzRus6T2p6gC73KWuP8Td
+2025-12-23 20:05:49,494 - app.security - INFO - Encrypting private key with backend master key
+2025-12-23 20:05:49,495 - app.routers.snipers.auth - INFO - Private key encrypted with backend master key for Da37nhvTXWwoHDekBXUB2zvyzRus6T2p6gC73KWuP8Td
+2025-12-23 20:05:49,532 - app.routers.snipers.auth - INFO - User successfully logged in / registered: Da37nhvTXWwoHDekBXUB2zvyzRus6T2p6gC73KWuP8Td
+2025-12-23 20:05:49,565 - app.routers.snipers.auth - INFO - User successfully logged in / registered: Da37nhvTXWwoHDekBXUB2zvyzRus6T2p6gC73KWuP8Td
+2025-12-23 20:45:59,982 - app.routers.snipers.auth - INFO - Generated nonce: OeaYlUXwzuBRnW1Zhu8NVA==
+2025-12-23 20:46:00,008 - app.routers.snipers.auth - INFO - Wallet verified successfully: 4ixENrzQA9AbEs9yVDtFWw5knfP2VsnqTVkFzePvRSoi
+2025-12-23 20:46:00,042 - app.routers.snipers.auth - INFO - Generated frontend encryption key: ABX3vccZAN0-Zg15nKXOIQ==
+2025-12-23 20:46:00,058 - app.routers.snipers.auth - INFO - Generated frontend encryption key: vMSwjZDQ35y2Bo4G0_P9IA==
+2025-12-23 20:46:00,084 - app.security - INFO - Encrypting private key with backend master key
+2025-12-23 20:46:00,084 - app.routers.snipers.auth - INFO - Private key encrypted with backend master key for 4ixENrzQA9AbEs9yVDtFWw5knfP2VsnqTVkFzePvRSoi
+2025-12-23 20:46:00,090 - app.security - INFO - Encrypting private key with backend master key
+2025-12-23 20:46:00,090 - app.routers.snipers.auth - INFO - Private key encrypted with backend master key for 4ixENrzQA9AbEs9yVDtFWw5knfP2VsnqTVkFzePvRSoi
+2025-12-23 20:46:00,298 - app.routers.snipers.auth - INFO - User successfully logged in / registered: 4ixENrzQA9AbEs9yVDtFWw5knfP2VsnqTVkFzePvRSoi
+2025-12-23 20:46:00,308 - app.routers.snipers.auth - INFO - User successfully logged in / registered: 4ixENrzQA9AbEs9yVDtFWw5knfP2VsnqTVkFzePvRSoi
+2025-12-23 21:07:00,348 - app.routers.snipers.auth - INFO - Generated nonce: vxvWHrFlc9pC9LNvjgfXNw==
+2025-12-23 21:07:00,410 - app.routers.snipers.auth - INFO - Wallet verified successfully: CupNKrhCa1Pcm7xEESjsoY7w5wPZkjjC869gwhcHAKDf
+2025-12-23 21:07:00,524 - app.routers.snipers.auth - INFO - Generated frontend encryption key: SFLk75yKLXYVDdEH1exmBg==
+2025-12-23 21:07:00,566 - app.routers.snipers.auth - INFO - Generated frontend encryption key: A-RwLHPh6as3vvzNx6WqXA==
+2025-12-23 21:07:00,582 - app.security - INFO - Encrypting private key with backend master key
+2025-12-23 21:07:00,583 - app.routers.snipers.auth - INFO - Private key encrypted with backend master key for CupNKrhCa1Pcm7xEESjsoY7w5wPZkjjC869gwhcHAKDf
+2025-12-23 21:07:00,586 - app.security - INFO - Encrypting private key with backend master key
+2025-12-23 21:07:00,586 - app.routers.snipers.auth - INFO - Private key encrypted with backend master key for CupNKrhCa1Pcm7xEESjsoY7w5wPZkjjC869gwhcHAKDf
+2025-12-23 21:07:00,621 - app.routers.snipers.auth - INFO - User successfully logged in / registered: CupNKrhCa1Pcm7xEESjsoY7w5wPZkjjC869gwhcHAKDf
+2025-12-23 21:07:00,626 - app.routers.snipers.auth - INFO - User successfully logged in / registered: CupNKrhCa1Pcm7xEESjsoY7w5wPZkjjC869gwhcHAKDf
+2025-12-23 21:22:20,736 - app.routers.snipers.auth - INFO - Generated nonce: R2LNknU5kc8j5WkxK3LkdA==
+2025-12-23 21:22:20,816 - app.routers.snipers.auth - INFO - Wallet verified successfully: 6FqPfBM4Cx5RKA2dPFN9qTR3KYt93V5GHXPWNxmc6pwZ
+2025-12-23 21:22:20,841 - app.routers.snipers.auth - INFO - Generated frontend encryption key: OUgM1w7MAmyr8-n0y4VjHA==
+2025-12-23 21:22:20,852 - app.routers.snipers.auth - INFO - Generated frontend encryption key: 57JzTuxaDH5lk-j2XK-29g==
+2025-12-23 21:22:20,885 - app.security - INFO - Encrypting private key with backend master key
+2025-12-23 21:22:20,885 - app.routers.snipers.auth - INFO - Private key encrypted with backend master key for 6FqPfBM4Cx5RKA2dPFN9qTR3KYt93V5GHXPWNxmc6pwZ
+2025-12-23 21:22:20,895 - app.security - INFO - Encrypting private key with backend master key
+2025-12-23 21:22:20,895 - app.routers.snipers.auth - INFO - Private key encrypted with backend master key for 6FqPfBM4Cx5RKA2dPFN9qTR3KYt93V5GHXPWNxmc6pwZ
+2025-12-23 21:22:20,973 - app.routers.snipers.auth - INFO - User successfully logged in / registered: 6FqPfBM4Cx5RKA2dPFN9qTR3KYt93V5GHXPWNxmc6pwZ
+2025-12-23 21:22:20,976 - app.routers.snipers.auth - INFO - User successfully logged in / registered: 6FqPfBM4Cx5RKA2dPFN9qTR3KYt93V5GHXPWNxmc6pwZ
+2025-12-23 23:17:25,464 - app.security - INFO - Decrypting private key with backend master key
+2025-12-23 23:17:25,481 - app.security - INFO - Decrypting private key with backend master key
+2025-12-23 23:17:27,482 - app.security - INFO - Decrypting private key with backend master key
+2025-12-23 23:17:28,061 - app.security - INFO - Decrypting private key with backend master key
+2025-12-23 23:43:05,021 - app.security - INFO - Decrypting private key with backend master key
+2025-12-23 23:43:05,063 - app.security - INFO - Decrypting private key with backend master key
+2025-12-23 23:49:49,395 - app.security - INFO - Decrypting private key with backend master key
+2025-12-23 23:49:49,437 - app.security - INFO - Decrypting private key with backend master key
+2025-12-23 23:53:26,066 - app.security - INFO - Decrypting private key with backend master key
+2025-12-23 23:53:26,094 - app.security - INFO - Decrypting private key with backend master key
+2025-12-24 00:02:30,014 - app.routers.snipers.auth - INFO - Generated nonce: QscdRXZpERHcG-bKFoWakw==
+2025-12-24 00:02:30,032 - app.routers.snipers.auth - INFO - Wallet verified successfully: F27HSkjqj4Er29Zc34fBcZoHfoUM3277zXwWKpiWR6w3
+2025-12-24 00:02:30,037 - app.routers.snipers.auth - INFO - Generated frontend encryption key: sUhfI1R4vsCmgiWXB6xywQ==
+2025-12-24 00:02:30,043 - app.routers.snipers.auth - INFO - Generated frontend encryption key: EqKS3K7qi_x4xzwT3rQlfw==
+2025-12-24 00:02:30,063 - app.security - INFO - Encrypting private key with backend master key
+2025-12-24 00:02:30,063 - app.routers.snipers.auth - INFO - Private key encrypted with backend master key for F27HSkjqj4Er29Zc34fBcZoHfoUM3277zXwWKpiWR6w3
+2025-12-24 00:02:30,067 - app.security - INFO - Encrypting private key with backend master key
+2025-12-24 00:02:30,068 - app.routers.snipers.auth - INFO - Private key encrypted with backend master key for F27HSkjqj4Er29Zc34fBcZoHfoUM3277zXwWKpiWR6w3
+2025-12-24 00:02:30,112 - app.routers.snipers.auth - INFO - User successfully logged in / registered: F27HSkjqj4Er29Zc34fBcZoHfoUM3277zXwWKpiWR6w3
+2025-12-24 00:02:30,116 - app.routers.snipers.auth - INFO - User successfully logged in / registered: F27HSkjqj4Er29Zc34fBcZoHfoUM3277zXwWKpiWR6w3
+2025-12-24 00:04:39,082 - app.security - INFO - Encrypting private key with backend master key
+2025-12-24 00:04:39,086 - app.security - INFO - Encrypting private key with backend master key
+2025-12-24 00:04:39,086 - app.security - INFO - Encrypting private key with backend master key
+2025-12-24 00:04:39,086 - app.security - INFO - Encrypting private key with backend master key
+2025-12-24 00:04:39,086 - app.security - INFO - Encrypting private key with backend master key
+2025-12-24 00:04:39,086 - app.security - INFO - Encrypting private key with backend master key
+2025-12-24 00:04:39,086 - app.security - INFO - Encrypting private key with backend master key
+2025-12-24 00:04:39,086 - app.security - INFO - Encrypting private key with backend master key
+2025-12-24 00:04:39,087 - app.security - INFO - Encrypting private key with backend master key
+2025-12-24 00:04:39,087 - app.security - INFO - Encrypting private key with backend master key
+2025-12-24 00:04:39,090 - app.security - INFO - Encrypting private key with backend master key
+2025-12-24 00:04:39,090 - app.security - INFO - Encrypting private key with backend master key
+2025-12-24 00:04:39,090 - app.security - INFO - Encrypting private key with backend master key
+2025-12-24 00:04:39,091 - app.security - INFO - Encrypting private key with backend master key
+2025-12-24 00:04:39,091 - app.security - INFO - Encrypting private key with backend master key
+2025-12-24 00:04:39,091 - app.security - INFO - Encrypting private key with backend master key
+2025-12-24 00:04:39,091 - app.security - INFO - Encrypting private key with backend master key
+2025-12-24 00:04:39,091 - app.security - INFO - Encrypting private key with backend master key
+2025-12-24 00:04:39,092 - app.security - INFO - Encrypting private key with backend master key
+2025-12-24 00:04:39,092 - app.security - INFO - Encrypting private key with backend master key
+2025-12-24 00:11:47,459 - app.security - INFO - Decrypting private key with backend master key
+2025-12-24 00:12:59,577 - app.security - INFO - Decrypting private key with backend master key
+2025-12-24 03:01:34,915 - app.security - INFO - Decrypting private key with backend master key
+2025-12-24 13:20:16,669 - app.security - INFO - Decrypting private key with backend master key
+2025-12-24 13:28:31,834 - app.security - INFO - Decrypting private key with backend master key
+2025-12-24 13:37:55,275 - app.security - INFO - Decrypting private key with backend master key
+2025-12-24 15:56:10,571 - app.security - INFO - Decrypting private key with backend master key
+2025-12-24 16:03:39,323 - app.security - INFO - Decrypting private key with backend master key
+2025-12-24 16:21:58,601 - app.security - INFO - Decrypting private key with backend master key
+2025-12-24 16:27:30,627 - app.security - INFO - Decrypting private key with backend master key
+2025-12-27 21:39:13,135 - app.routers.snipers.auth - INFO - Generated nonce: KwmTzTjjUZG6qK7_-yaFiA==
+2025-12-27 21:39:13,186 - app.routers.snipers.auth - INFO - Wallet verified successfully: 5tzWDczMax5MFa7Mauci9toMmQoajPayr9D5JX1rNTg8
+2025-12-27 21:39:13,191 - app.routers.snipers.auth - INFO - Generated frontend encryption key: I5_aQ18FjcyPD0PKA7SrbA==
+2025-12-27 21:39:13,193 - app.routers.snipers.auth - INFO - Generated frontend encryption key: u_ge3-ISXWsqyKcCFQKhJA==
+2025-12-27 21:39:13,212 - app.security - INFO - Encrypting private key with backend master key
+2025-12-27 21:39:13,213 - app.routers.snipers.auth - INFO - Private key encrypted with backend master key for 5tzWDczMax5MFa7Mauci9toMmQoajPayr9D5JX1rNTg8
+2025-12-27 21:39:13,216 - app.security - INFO - Encrypting private key with backend master key
+2025-12-27 21:39:13,216 - app.routers.snipers.auth - INFO - Private key encrypted with backend master key for 5tzWDczMax5MFa7Mauci9toMmQoajPayr9D5JX1rNTg8
+2025-12-27 21:39:13,256 - app.routers.snipers.auth - INFO - User successfully logged in / registered: 5tzWDczMax5MFa7Mauci9toMmQoajPayr9D5JX1rNTg8
+2025-12-27 21:39:13,259 - app.routers.snipers.auth - INFO - User successfully logged in / registered: 5tzWDczMax5MFa7Mauci9toMmQoajPayr9D5JX1rNTg8
+2025-12-27 21:39:13,969 - app.routers.snipers.auth - INFO - Generated nonce: jswsoe0vGpVULpXnVOB9Yw==
+2025-12-27 21:39:13,990 - app.routers.snipers.auth - INFO - Generated nonce: 7JhBUmXcUiy4QetDuKxYLw==
+2025-12-27 21:39:13,993 - app.routers.snipers.auth - INFO - Wallet verified successfully: GRJSmX1rW5DuyEz9jLKKLUM83XVw2fTxVnUtQ2C9QU9M
+2025-12-27 21:39:14,005 - app.routers.snipers.auth - INFO - Wallet verified successfully: GRJSmX1rW5DuyEz9jLKKLUM83XVw2fTxVnUtQ2C9QU9M
+2025-12-27 21:39:14,007 - app.routers.snipers.auth - INFO - Generated frontend encryption key: X6ka3OJ--NVXE5aeY13MjQ==
+2025-12-27 21:39:14,011 - app.routers.snipers.auth - INFO - Generated frontend encryption key: m37dbMjwoCtIsiO19j7pGw==
+2025-12-27 21:39:14,013 - app.security - INFO - Encrypting private key with backend master key
+2025-12-27 21:39:14,013 - app.routers.snipers.auth - INFO - Private key encrypted with backend master key for GRJSmX1rW5DuyEz9jLKKLUM83XVw2fTxVnUtQ2C9QU9M
+2025-12-27 21:39:14,018 - app.security - INFO - Encrypting private key with backend master key
+2025-12-27 21:39:14,018 - app.routers.snipers.auth - INFO - Private key encrypted with backend master key for GRJSmX1rW5DuyEz9jLKKLUM83XVw2fTxVnUtQ2C9QU9M
+2025-12-27 21:39:14,027 - app.routers.snipers.auth - INFO - User successfully logged in / registered: GRJSmX1rW5DuyEz9jLKKLUM83XVw2fTxVnUtQ2C9QU9M
+2025-12-27 21:39:14,036 - app.routers.snipers.auth - INFO - User successfully logged in / registered: GRJSmX1rW5DuyEz9jLKKLUM83XVw2fTxVnUtQ2C9QU9M
+2025-12-27 21:41:42,115 - app.routers.snipers.auth - INFO - Generated nonce: YOsL98MUwcFtgWFanOdhHQ==
+2025-12-27 21:41:42,161 - app.routers.snipers.auth - INFO - Wallet verified successfully: 8HXZFCMojkMLPmsod8HMow61hZEss59ec2rSu999wrMp
+2025-12-27 21:41:42,166 - app.routers.snipers.auth - INFO - Generated frontend encryption key: QWCtxK8re0h9U5gDgEZ93w==
+2025-12-27 21:41:42,171 - app.routers.snipers.auth - INFO - Generated frontend encryption key: lF9VVCzkAd9DvreyuacOQQ==
+2025-12-27 21:41:42,193 - app.security - INFO - Encrypting private key with backend master key
+2025-12-27 21:41:42,193 - app.routers.snipers.auth - INFO - Private key encrypted with backend master key for 8HXZFCMojkMLPmsod8HMow61hZEss59ec2rSu999wrMp
+2025-12-27 21:41:42,199 - app.security - INFO - Encrypting private key with backend master key
+2025-12-27 21:41:42,199 - app.routers.snipers.auth - INFO - Private key encrypted with backend master key for 8HXZFCMojkMLPmsod8HMow61hZEss59ec2rSu999wrMp
+2025-12-27 21:41:42,238 - app.routers.snipers.auth - INFO - User successfully logged in / registered: 8HXZFCMojkMLPmsod8HMow61hZEss59ec2rSu999wrMp
+2025-12-27 21:41:42,240 - app.routers.snipers.auth - INFO - User successfully logged in / registered: 8HXZFCMojkMLPmsod8HMow61hZEss59ec2rSu999wrMp
+2025-12-27 21:43:54,090 - app.security - INFO - Encrypting private key with backend master key
+2025-12-27 21:43:54,091 - app.security - INFO - Encrypting private key with backend master key
+2025-12-27 21:43:54,092 - app.security - INFO - Encrypting private key with backend master key
+2025-12-27 21:43:54,092 - app.security - INFO - Encrypting private key with backend master key
+2025-12-27 21:43:54,092 - app.security - INFO - Encrypting private key with backend master key
+2025-12-27 21:43:54,118 - app.security - INFO - Encrypting private key with backend master key
+2025-12-27 21:43:54,119 - app.security - INFO - Encrypting private key with backend master key
+2025-12-27 21:43:54,120 - app.security - INFO - Encrypting private key with backend master key
+2025-12-27 21:43:54,120 - app.security - INFO - Encrypting private key with backend master key
+2025-12-27 21:43:54,120 - app.security - INFO - Encrypting private key with backend master key
+2025-12-27 21:45:57,360 - app.security - INFO - Decrypting private key with backend master key
+2025-12-27 21:46:01,287 - app.security - INFO - Decrypting private key with backend master key
+2025-12-28 08:16:39,588 - app.security - INFO - Decrypting private key with backend master key
+2025-12-28 09:30:57,818 - app.security - INFO - Decrypting private key with backend master key
+2025-12-28 09:31:02,865 - app.security - INFO - Decrypting private key with backend master key
+2025-12-28 09:31:07,082 - app.security - INFO - Decrypting private key with backend master key
+2025-12-28 09:31:13,947 - app.security - INFO - Decrypting private key with backend master key
+2025-12-28 09:31:20,716 - app.security - INFO - Decrypting private key with backend master key
+2025-12-28 15:06:47,000 - app.security - INFO - Decrypting private key with backend master key
+2025-12-28 15:06:50,549 - app.security - INFO - Decrypting private key with backend master key
+2025-12-28 15:06:54,277 - app.security - INFO - Decrypting private key with backend master key
+2025-12-29 13:38:37,163 - app.security - INFO - Decrypting private key with backend master key
+2025-12-29 14:27:40,783 - app.security - INFO - Decrypting private key with backend master key
+2025-12-29 14:33:32,575 - app.security - INFO - Decrypting private key with backend master key
+2025-12-29 14:44:14,007 - app.security - INFO - Decrypting private key with backend master key
+2025-12-29 14:45:25,120 - app.security - INFO - Decrypting private key with backend master key
+2025-12-29 15:48:50,086 - app.security - INFO - Decrypting private key with backend master key
+2025-12-29 15:59:32,615 - app.security - INFO - Decrypting private key with backend master key
+2025-12-29 16:02:18,100 - app.security - INFO - Decrypting private key with backend master key
+2025-12-29 16:35:01,454 - app.security - INFO - Decrypting private key with backend master key
+2025-12-29 16:38:49,173 - app.security - INFO - Decrypting private key with backend master key
+2025-12-29 16:44:17,711 - app.security - INFO - Decrypting private key with backend master key
+2025-12-29 16:48:05,800 - app.security - INFO - Decrypting private key with backend master key
+2025-12-29 17:02:15,343 - app.security - INFO - Decrypting private key with backend master key
+2025-12-30 09:54:39,541 - app.security - INFO - Decrypting private key with backend master key
+2025-12-30 10:04:26,053 - app.security - INFO - Decrypting private key with backend master key
+2025-12-30 10:06:12,047 - app.security - INFO - Decrypting private key with backend master key
+2025-12-30 10:24:43,457 - app.security - INFO - Decrypting private key with backend master key
+2025-12-30 10:25:37,954 - app.security - INFO - Decrypting private key with backend master key
+2025-12-30 10:27:02,609 - app.security - INFO - Decrypting private key with backend master key
+2025-12-30 10:31:49,808 - app.security - INFO - Decrypting private key with backend master key
+2025-12-30 10:44:07,525 - app.security - INFO - Decrypting private key with backend master key
+2025-12-30 10:54:03,556 - app.security - INFO - Decrypting private key with backend master key
+2025-12-30 11:08:43,815 - app.security - INFO - Decrypting private key with backend master key
+2025-12-30 12:22:15,784 - app.security - INFO - Decrypting private key with backend master key
+2025-12-30 12:27:26,725 - app.security - INFO - Decrypting private key with backend master key

@@ -2,15 +2,11 @@ import logging
 import os
 from fastapi import FastAPI, HTTPException, Depends, WebSocket, WebSocketDisconnect, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 import json
 import asyncio
-import traceback
-from typing import Dict, List, Optional
+from typing import Dict, List
 from datetime import datetime, timedelta
-import grpc
-import base58
 import base64
 from sqlalchemy import delete, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,35 +14,30 @@ from dotenv import load_dotenv
 import aiohttp
 from tenacity import retry, stop_after_attempt, wait_exponential
 from solders.pubkey import Pubkey
-from solders.keypair import Keypair
 from solders.transaction import VersionedTransaction
 from solana.rpc.async_api import AsyncClient
 from app.dependencies import get_current_user_by_wallet
 from app.models import Subscription, TokenMetadataArchive, Trade, User, TokenMetadata, NewTokens
 from app.database import AsyncSessionLocal, get_db
-from app.schemas import LogTradeRequest, SubscriptionRequest
+from app.routers.creators import openai_router, tokencreate_router, creator_user_router, prefund_router
+from app.routers.snipers import auth_router, token_router, trade_router, sniper_user_router
+from app.schemas.snipers.bot import LogTradeRequest
+from app.schemas.snipers.subscription import SubscriptionRequest
 from app.utils.jupiter_api import fetch_jupiter_with_retry, get_jupiter_token_data
 from app.utils.profitability_engine import engine as profitability_engine
 from app.utils.dexscreener_api import fetch_dexscreener_with_retry, get_dexscreener_data
 from app.utils.webacy_api import check_webacy_risk
 from app import models, database
 from app.config import settings
-from app.security import decrypt_private_key_backend
 import redis.asyncio as redis
 from app.utils.bot_components import ConnectionManager, check_and_restart_stale_monitors, execute_user_buy, periodic_fee_cleanup, websocket_manager
 import logging
 import os
 from logging.handlers import TimedRotatingFileHandler
 from pathlib import Path
-# Add generated stubs
-import sys
-sys.path.append('app/generated')
-from app.generated.geyser_pb2 import SubscribeRequest, GetVersionRequest, CommitmentLevel
-from app.generated.geyser_pb2_grpc import GeyserStub
-from app.utils import redis_client, fee_manager
+from app.utils import redis_client
 from collections import deque
 from typing import Set
-import time
 from app.utils.shared import save_bot_state, load_bot_state
 
 
@@ -123,6 +114,8 @@ app = FastAPI(
     title="FlashSniper API",
     description="A powerful Solana sniping bot with AI analysis and rug pull protection.",
     version="0.2.0",
+    # docs_url="/docs" if os.getenv("ENVIRONMENT") != "production" else None,
+    # redoc_url="/redoc" if os.getenv("ENVIRONMENT") != "production" else None,
 )
 
 if settings.ENVIRONMENT == "development":
@@ -154,15 +147,18 @@ app.add_middleware(
     max_age=600
 )
 
-# Import routers AFTER app creation to avoid circular imports
-from app.routers import auth, token, trade, user, util
+# General routers for both creators and snipers
+app.include_router(auth_router)
+# Routers for snipers
+app.include_router(token_router)
+app.include_router(trade_router)
+app.include_router(sniper_user_router)
+# Routers for creators
+app.include_router(openai_router)
+app.include_router(tokencreate_router)
+app.include_router(creator_user_router)
+app.include_router(prefund_router)
 
-# Include routers
-app.include_router(auth.router)
-app.include_router(token.router)
-app.include_router(trade.router)
-app.include_router(user.router)
-app.include_router(util.router)
 
 
 # ===================================================================
