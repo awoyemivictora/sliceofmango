@@ -1,5 +1,7 @@
 // services/tokenLaunch.ts
 import { apiService } from './api';
+import { convertToBackendConfig, createCustomMetadataFromAI } from '@/utils/configConverter';
+
 
 export interface LaunchConfig {
   // Core token info
@@ -53,6 +55,7 @@ export interface BotArmyWallet {
   buyAmount: number;
 }
 
+
 export interface TokenMetadata {
   name: string;
   symbol: string;
@@ -65,7 +68,29 @@ export interface TokenMetadata {
   }>;
   image_prompt?: string;
   created_at: string;
+
+  // ✅ KEEP IPFS fields for display
+  ipfs_cid?: string;
+  ipfs_uri?: string;
+  
+  // ✅ ADD THESE NEW FIELDS for the simplified response
+  metadata_uri?: string; // IPFS URL for the metadata JSON
+  image_url?: string;    // HTTP URL for the image (different from metadata_uri!)
 }
+
+// Add new interface for the simplified response
+export interface SimpleMetadataResponse {
+  success: boolean;
+  name: string;
+  symbol: string;
+  metadata_uri: string;  // IPFS URL containing the full JSON metadata
+  image_url: string;     // HTTP URL for just the image
+  description?: string;
+  request_id?: string;
+  generation_time_ms?: number;
+}
+
+
 
 export interface LaunchResult {
   success: boolean;
@@ -227,37 +252,79 @@ export interface AtomicLaunchResponse {
 
 class TokenLaunchService {
   // Helper method to convert frontend config to backend format
+  // private convertToBackendConfig(config: Partial<LaunchConfig>): BackendLaunchConfig {
+  //   return {
+  //     use_ai_metadata: config.useAIForMetadata ?? true,
+  //     custom_metadata: config.customMetadata,
+  //     bot_count: config.botCount ?? 10,
+  //     creator_buy_amount: config.creatorBuyAmount ?? 0.5,
+  //     bot_buy_amount: config.botWalletBuyAmount ?? 0.1,
+      
+  //     // FIXED: Keep the value as-is (already lowercase with underscores)
+  //     sell_strategy_type: config.sellTiming || 'volume_based',
+      
+  //     // Make sure these values are set properly
+  //     sell_volume_target: config.sellVolumeTrigger || (config.sellTiming === 'volume_based' ? 5.0 : 0),
+  //     sell_price_target: config.sellPriceTarget || (config.sellTiming === 'price_target' ? 2.0 : 0),
+  //     sell_time_minutes: config.sellTimeTrigger || (config.sellTiming === 'time_based' ? 5 : 0),
+      
+  //     metadata_style: config.metadataStyle ?? 'ai-generated',
+  //     use_jito_bundle: config.useJitoBundle ?? true,
+  //     priority: config.priority ?? 10,
+  //   };
+  // }
+
   private convertToBackendConfig(config: Partial<LaunchConfig>): BackendLaunchConfig {
-    return {
-      use_ai_metadata: config.useAIForMetadata ?? true,
-      custom_metadata: config.customMetadata,
-      bot_count: config.botCount ?? 10,
-      creator_buy_amount: config.creatorBuyAmount ?? 0.5,
-      bot_buy_amount: config.botWalletBuyAmount ?? 0.1,
-      
-      // FIXED: Keep the value as-is (already lowercase with underscores)
-      sell_strategy_type: config.sellTiming || 'volume_based',
-      
-      // Make sure these values are set properly
-      sell_volume_target: config.sellVolumeTrigger || (config.sellTiming === 'volume_based' ? 5.0 : 0),
-      sell_price_target: config.sellPriceTarget || (config.sellTiming === 'price_target' ? 2.0 : 0),
-      sell_time_minutes: config.sellTimeTrigger || (config.sellTiming === 'time_based' ? 5 : 0),
-      
-      metadata_style: config.metadataStyle ?? 'ai-generated',
-      use_jito_bundle: config.useJitoBundle ?? true,
-      priority: config.priority ?? 10,
-    };
+    // ✅ Use the external converter
+    return convertToBackendConfig(config as LaunchConfig);
   }
 
   // Create a new launch
+  // async createLaunch(config: Partial<LaunchConfig>) {
+  //   const backendConfig = this.convertToBackendConfig(config);
+    
+  //   const launchRequest = {
+  //     config: backendConfig,
+  //     schedule_for: null,
+  //     priority: config.priority ?? 10,
+  //   };
+
+  //   return await apiService.request('/creators/token/launch', {
+  //     method: 'POST',
+  //     body: JSON.stringify(launchRequest),
+  //   });
+  // }
+
   async createLaunch(config: Partial<LaunchConfig>) {
-    const backendConfig = this.convertToBackendConfig(config);
+    // ✅ Prepare the config with any AI metadata
+    const launchConfigWithMetadata = { ...config };
+    
+    // If we have AI-generated metadata in customMetadata, ensure it's properly structured
+    if (config.customMetadata && config.customMetadata.metadata_uri) {
+      console.log('📤 Frontend: Passing metadata_uri to backend:', 
+        config.customMetadata.metadata_uri.substring(0, 50) + '...');
+    }
+    
+    const backendConfig = this.convertToBackendConfig(launchConfigWithMetadata);
     
     const launchRequest = {
       config: backendConfig,
       schedule_for: null,
       priority: config.priority ?? 10,
     };
+
+    console.log('📤 Launch Request:', {
+      ...launchRequest,
+      config: {
+        ...launchRequest.config,
+        custom_metadata: launchRequest.config.custom_metadata ? {
+          ...launchRequest.config.custom_metadata,
+          metadata_uri: launchRequest.config.custom_metadata.metadata_uri 
+            ? `${launchRequest.config.custom_metadata.metadata_uri.substring(0, 50)}...` 
+            : 'null'
+        } : 'none'
+      }
+    });
 
     return await apiService.request('/creators/token/launch', {
       method: 'POST',

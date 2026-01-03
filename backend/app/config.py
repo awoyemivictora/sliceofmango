@@ -74,7 +74,24 @@ class Settings(BaseSettings):
     OPENAI_IMAGE_MODEL: str = os.getenv("OPENAI_IMAGE_MODEL")
     
     ONCHAIN_CLIENT_URL: str = os.getenv("ONCHAIN_CLIENT_URL")
+    
+    # Cloudflare R2 Settings
+    CLOUDFLARE_R2_ACCOUNT_ID: str = ""
+    CLOUDFLARE_R2_ACCESS_KEY_ID: str = ""
+    CLOUDFLARE_R2_SECRET_ACCESS_KEY: str = ""
+    CLOUDFLARE_R2_BUCKET_NAME: str = "flashsniper-assets"
+    CLOUDFLARE_R2_PUBLIC_URL: str = "https://pub<your-bucket-id>.r2.dev"    # From R2 dashboard
 
+    PINATA_API_KEY: str = ""
+    PINATA_SECRET_KEY: str = ""
+    PINATA_JWT: str = ""
+    
+    # IPFS Gateways (fallback options)
+    IPFS_GATEWAYS: list = [
+        "https://ipfs.io/ipfs/{cid}",
+        "https://gateway.pinata.cloud/ipfs/{cid}",
+        "https://cloudflare-ipfs.com/ipfs/{cid}"
+    ]
     
     
 settings = Settings()

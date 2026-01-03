@@ -10,7 +10,8 @@ import { launchWebSocket } from '@/services/websocket';
 import { config } from '@/config/production';
 import { registerWallet, verifyWallet, getNonce } from '@/services/auth';
 import PreFundingManager from '@/components/PreFundingManager';
-import { convertToBackendConfig } from '@/utils/configConverter';
+import { convertToBackendConfig, createCustomMetadataFromAI, validateMetadataForLaunch } from '@/utils/configConverter';
+import { convertIpfsToHttpUrl, isIpfsUrl } from '@/utils/ipfs';
 
 const MIN_SOL_FOR_CREATOR_MODE = 0.0001;
 
@@ -370,6 +371,37 @@ const TokenCreator: React.FC = () => {
   // ============================================
   // UTILITY FUNCTIONS
   // ============================================
+  const validateMetadataForLaunch = (): boolean => {
+    // Check if we have the minimum required info
+    const hasName = launchConfig.tokenName.trim().length > 0;
+    const hasSymbol = launchConfig.tokenSymbol.trim().length > 0;
+    
+    if (!hasName || !hasSymbol) {
+      alert('Token name and symbol are required for launch');
+      return false;
+    }
+    
+    // If using AI metadata, check if we have metadata_uri
+    if (launchConfig.useAIForMetadata && generatedMetadata) {
+      if (!generatedMetadata.metadata_uri) {
+        alert('AI metadata generation failed to create IPFS URI. Please regenerate metadata.');
+        return false;
+      }
+      console.log('✅ AI metadata has URI:', generatedMetadata.metadata_uri);
+    }
+    
+    // If manual entry, warn about missing IPFS
+    if (!launchConfig.useAIForMetadata && !generatedMetadata?.metadata_uri) {
+      const proceed = window.confirm(
+        'Manual token creation without IPFS metadata may have limited functionality. ' +
+        'Consider using AI metadata generation for full features. Continue anyway?'
+      );
+      if (!proceed) return false;
+    }
+    
+    return true;
+  };
+
   // Add new launch methods
   const handlePreFundComplete = (result: any) => {
     setPreFundResult(result);
@@ -515,6 +547,85 @@ const TokenCreator: React.FC = () => {
   // ============================================
   // AI METADATA GENERATION
   // ============================================
+
+  // const generateAIMetadata = useCallback(async () => {
+  //   if (!launchConfig.useAIForMetadata) return;
+    
+  //   setAiGenerating(true);
+  //   setLaunchStatus(prev => ({
+  //     ...prev,
+  //     message: 'Generating AI metadata...',
+  //     currentStep: 'AI Generation'
+  //   }));
+    
+  //   try {
+  //     const response = await apiService.request('/ai/generate-metadata', {
+  //       method: 'POST',
+  //       headers: { 'Content-Type': 'application/json' },
+  //       body: JSON.stringify({
+  //         style: launchConfig.metadataStyle,
+  //         keywords: launchConfig.metadataKeywords,
+  //         category: 'meme',
+  //         use_dalle: launchConfig.useDalle
+  //       })
+  //     });
+
+  //     // console.log('🔍 Backend response:', response);
+      
+  //     if (response.success) {
+  //       const metadata: TokenMetadata = response.metadata_for_token;
+  //       setGeneratedMetadata(metadata);
+        
+  //       // Convert IPFS URL to HTTP for display
+  //       const displayImageUrl = convertIpfsToHttpUrl(metadata.image);
+
+  //       // console.log('🔍 Image URL from backend:', metadata.image);
+  //       // console.log('🔍 Display Image URL:', displayImageUrl);
+  //       // console.log('🔍 Is IPFS URL?', isIpfsUrl(metadata.image));
+          
+  //       setLaunchConfig(prev => ({
+  //         ...prev,
+  //         tokenName: metadata.name,
+  //         tokenSymbol: metadata.symbol,
+  //         tokenDescription: metadata.description,
+  //         imageUrl: displayImageUrl // Use HTTP URL for display
+  //       }));
+
+  //       // Set metadata generated flag to true
+  //       setMetadataGenerated(true);
+        
+  //       setLaunchStatus(prev => ({
+  //         ...prev,
+  //         phase: 'metadata',
+  //         message: '✅ AI metadata generated successfully',
+  //         progress: 20
+  //       }));
+        
+  //       setShowPreview(true);
+        
+  //       // Log IPFS info if available
+  //       if (metadata.ipfs_cid) {
+  //         console.log('📦 IPFS Metadata:', {
+  //           cid: metadata.ipfs_cid,
+  //           uri: metadata.ipfs_uri,
+  //           imageUrl: metadata.image
+  //         });
+  //       }
+  //     }
+  //   } catch (error) {
+  //     console.error('AI metadata generation failed:', error);
+  //     setLaunchStatus(prev => ({
+  //       ...prev,
+  //       message: '❌ AI generation failed, using defaults',
+  //       progress: 10
+  //     }));
+  //     generateDefaultMetadata();
+  //   } finally {
+  //     setAiGenerating(false);
+  //   }
+  // }, [launchConfig]);
+
+
   const generateAIMetadata = useCallback(async () => {
     if (!launchConfig.useAIForMetadata) return;
     
@@ -536,20 +647,57 @@ const TokenCreator: React.FC = () => {
           use_dalle: launchConfig.useDalle
         })
       });
+
+      console.log('🔍 Backend response:', response);
       
       if (response.success) {
-        const metadata: TokenMetadata = response.metadata_for_token;
+        // ✅ Create custom metadata for backend
+        const customMetadata = createCustomMetadataFromAI(response);
+        
+        // ✅ Create a display metadata object
+        const metadata: TokenMetadata = {
+          name: response.name,
+          symbol: response.symbol,
+          description: response.description || 'Token created via Flash Sniper',
+          image: response.image_url,
+          external_url: "https://pump.fun",
+          attributes: [
+            { trait_type: "Created On", value: new Date().toLocaleDateString() },
+            { trait_type: "AI Generated", value: "Yes" },
+            { trait_type: "Launch Strategy", value: "Orchestrated Launch" }
+          ],
+          created_at: new Date().toISOString(),
+          image_prompt: launchConfig.metadataKeywords,
+          
+          // ✅ Store the metadata_uri
+          metadata_uri: response.metadata_uri,
+          ipfs_uri: response.metadata_uri,
+          ipfs_cid: response.metadata_uri ? extractIpfsCid(response.metadata_uri) : undefined
+        };
+        
         setGeneratedMetadata(metadata);
         
+        // Convert IPFS URL to HTTP for display
+        const displayImageUrl = convertIpfsToHttpUrl(response.image_url);
+
+        console.log('✅ AI Metadata Generated:');
+        console.log('   Name:', response.name);
+        console.log('   Symbol:', response.symbol);
+        console.log('   Metadata URI:', response.metadata_uri);
+        console.log('   Image URL:', response.image_url);
+        
+        // ✅ Update launch config with the critical fields
         setLaunchConfig(prev => ({
           ...prev,
-          tokenName: metadata.name,
-          tokenSymbol: metadata.symbol,
-          tokenDescription: metadata.description,
-          imageUrl: metadata.image
+          tokenName: response.name,
+          tokenSymbol: response.symbol,
+          tokenDescription: response.description || 'Token created via Flash Sniper',
+          imageUrl: displayImageUrl,
+          
+          // ✅ Store the custom metadata for backend use
+          customMetadata: customMetadata
         }));
 
-        // Set metadata generated flag to true
         setMetadataGenerated(true);
         
         setLaunchStatus(prev => ({
@@ -560,6 +708,9 @@ const TokenCreator: React.FC = () => {
         }));
         
         setShowPreview(true);
+        
+      } else {
+        throw new Error('AI metadata generation failed: ' + (response.error || 'Unknown error'));
       }
     } catch (error) {
       console.error('AI metadata generation failed:', error);
@@ -573,7 +724,19 @@ const TokenCreator: React.FC = () => {
       setAiGenerating(false);
     }
   }, [launchConfig]);
+
+  // Add helper function to extract IPFS CID
+  const extractIpfsCid = (ipfsUrl: string): string | undefined => {
+    try {
+      const match = ipfsUrl.match(/ipfs\/([a-zA-Z0-9]+)/);
+      return match ? match[1] : undefined;
+    } catch {
+      return undefined;
+    }
+  };
   
+
+
   const generateDefaultMetadata = () => {
     const defaultMetadata: TokenMetadata = {
       name: launchConfig.tokenName || "AI Meme Token",
@@ -631,7 +794,7 @@ const TokenCreator: React.FC = () => {
         metadataStyle: 'ai-generated' as const,
         metadataKeywords: 'micro, test, solana, experimental',
         sellTiming: 'price_target' as const,  // CHANGED: lowercase with underscore
-        sellPriceTarget: 2.0,
+        sellPriceTarget: 50,
         sellTimeTrigger: 1,    // Added: required field
         sellVolumeTrigger: 0   // Added: required field
       }
@@ -649,6 +812,91 @@ const TokenCreator: React.FC = () => {
       message: `Applied ${preset} preset configuration`
     }));
   }, []);
+  
+  // const handleQuickLaunch = async (preset: 'meme' | 'professional' | 'micro') => {
+  //   if (!userWallet) {
+  //     alert('Please connect wallet first');
+  //     return;
+  //   }
+    
+  //   // Check if creator mode is enabled
+  //   if (!creatorStats?.user?.creator_enabled) {
+  //     const enable = window.confirm('Creator mode is not enabled. Enable it now?');
+  //     if (enable) {
+  //       await tokenLaunchService.enableCreatorMode();
+  //       alert('Creator mode enabled! Please try again.');
+  //       return;
+  //     }
+  //     return;
+  //   }
+    
+  //   setIsLoading(true);
+    
+  //   const presets = {
+  //     meme: {
+  //       botCount: 10,
+  //       creatorBuyAmount: 0.001,
+  //       botBuyAmount: 0.0001,
+  //       style: 'meme',
+  //       keywords: 'meme, viral, community, solana, crypto',
+  //       useDalle: false,
+  //       sellStrategyType: 'volume_based' as const,  // CHANGED: UPPERCASE
+  //       sellVolumeTarget: 5.0,
+  //       sellTimeMinutes: 1,  // ADDED: required field
+  //       sellPriceTarget: 1.1   // ADDED: required field
+  //     },
+  //     professional: {
+  //       botCount: 20,
+  //       creatorBuyAmount: 0.01,
+  //       botBuyAmount: 0.001,
+  //       style: 'professional',
+  //       keywords: 'utility, defi, solana, blockchain, technology',
+  //       useDalle: true,
+  //       sellStrategyType: 'time_based' as const,  // CHANGED: UPPERCASE
+  //       sellTimeMinutes: 5,   // ADDED: must be >= 1
+  //       sellVolumeTarget: 0,  // ADDED: required field
+  //       sellPriceTarget: 1.1    // ADDED: required field
+  //     },
+  //     micro: {
+  //       botCount: 5,
+  //       creatorBuyAmount: 0.01,
+  //       botBuyAmount: 0.005,
+  //       style: 'ai-generated',
+  //       keywords: 'micro, test, solana, experimental',
+  //       useDalle: false,
+  //       sellStrategyType: 'price_target' as const,  // CHANGED: UPPERCASE
+  //       sellPriceTarget: 50,   // ADDED: must be >= 1.1
+  //       sellTimeMinutes: 1,    // ADDED: required field
+  //       sellVolumeTarget: 0    // ADDED: required field
+  //     }
+  //   };
+    
+  //   try {
+  //     const response = await tokenLaunchService.quickLaunch(presets[preset]);
+      
+  //     if (response.success) {
+  //       // ... rest of your existing success handling code
+  //     } else {
+  //       throw new Error(response.error || 'Failed to start launch');
+  //     }
+  //   } catch (error: any) {
+  //     console.error('Quick launch failed:', error);
+  //     setLaunchStatus({
+  //       phase: 'failed',
+  //       progress: 0,
+  //       message: `❌ Quick launch failed: ${error.message}`,
+  //       currentStep: 'Failed',
+  //       estimatedTimeRemaining: 0
+  //     });
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
+
+
+  // ============================================
+  // LAUNCH ORCHESTRATION
+  // ============================================
   
   const handleQuickLaunch = async (preset: 'meme' | 'professional' | 'micro') => {
     if (!userWallet) {
@@ -712,7 +960,30 @@ const TokenCreator: React.FC = () => {
       const response = await tokenLaunchService.quickLaunch(presets[preset]);
       
       if (response.success) {
-        // ... rest of your existing success handling code
+        const launchId = response.launch_id;
+        setActiveLaunchId(launchId);
+        
+        // Setup WebSocket connection for real-time updates
+        launchWebSocket.connect(launchId);
+
+        // ... rest of WebSocket handling code ...
+      
+        // ✅ IMPORTANT: Update the launch config with the returned metadata
+        if (response.metadata) {
+          setLaunchConfig(prev => ({
+            ...prev,
+            tokenName: response.metadata.name,
+            tokenSymbol: response.metadata.symbol,
+            // Store custom metadata for later reference
+            customMetadata: {
+              name: response.metadata.name,
+              symbol: response.metadata.symbol,
+              metadata_uri: response.metadata.metadata_uri,
+              image_url: response.metadata.image_url,
+              description: response.metadata.description
+            }
+          }));
+        }
       } else {
         throw new Error(response.error || 'Failed to start launch');
       }
@@ -729,11 +1000,7 @@ const TokenCreator: React.FC = () => {
       setIsLoading(false);
     }
   };
-
-
-  // ============================================
-  // LAUNCH ORCHESTRATION
-  // ============================================
+  
   const startOrchestratedLaunch = async () => {
     console.log('=== DEBUG LAUNCH START ===');
     console.log('UI Display Values:');
@@ -744,6 +1011,7 @@ const TokenCreator: React.FC = () => {
     console.log('- User Balance:', userBalance);
     console.log('- Atomic Mode:', atomicLaunchMode);
     console.log('- Use Pre-funded:', usePreFundedBots);
+
 
     // Use the UI calculation that the user sees
     if (userBalance < totalRequiredSol) {
@@ -837,7 +1105,12 @@ const TokenCreator: React.FC = () => {
     } catch (balanceError) {
       console.warn('Backend balance check failed, using UI calculation:', balanceError);
     }
-    
+
+    // ✅ Add metadata validation
+    if (!validateMetadataForLaunch()) {
+      return;
+    }
+ 
     // Check if we should use pre-funded bots
     const shouldUsePreFunded = usePreFundedBots && atomicLaunchMode;
     
@@ -853,6 +1126,163 @@ const TokenCreator: React.FC = () => {
   // ============================================
   // REGULAR LAUNCH (Existing code moved here)
   // ============================================
+  // const executeRegularLaunch = async () => {
+  //   setIsLoading(true);
+    
+  //   setLaunchStatus({
+  //     phase: 'setup',
+  //     progress: 0,
+  //     message: 'Starting regular launch...',
+  //     currentStep: 'Initialization',
+  //     estimatedTimeRemaining: 180
+  //   });
+    
+  //   const bots = generateBotArmy(launchConfig.botCount);
+  //   setBotArmy(bots);
+    
+  //   try {
+  //     // Generate or use existing metadata
+  //     let metadata = generatedMetadata;
+  //     if (launchConfig.useAIForMetadata && !metadata) {
+  //       await generateAIMetadata();
+  //       metadata = generatedMetadata;
+  //     }
+      
+  //     // Prepare launch config for backend
+  //     const backendConfig: Partial<LaunchConfig> = {
+  //       tokenName: launchConfig.tokenName,
+  //       tokenSymbol: launchConfig.tokenSymbol,
+  //       tokenDescription: launchConfig.tokenDescription,
+  //       imageUrl: launchConfig.imageUrl,
+  //       creatorWallet: launchConfig.creatorWallet || (userWallet ? userWallet.publicKey.toBase58() : ''),
+  //       botCount: launchConfig.botCount,
+  //       creatorBuyAmount: launchConfig.creatorBuyAmount,
+  //       botWalletBuyAmount: launchConfig.botWalletBuyAmount,
+  //       targetProfitPercentage: launchConfig.targetProfitPercentage,
+        
+  //       // Use the existing sellTiming property (already has correct format)
+  //       sellTiming: launchConfig.sellTiming, // This should already be 'volume_based', 'time_based', or 'price_target'
+        
+  //       // These are the correct property names based on your LaunchConfig interface
+  //       sellVolumeTrigger: launchConfig.sellTiming === 'volume_based' ? launchConfig.sellVolumeTrigger : 0,
+  //       sellTimeTrigger: launchConfig.sellTiming === 'time_based' ? Math.max(launchConfig.sellTimeTrigger, 1) : 1, // Minimum 1
+  //       sellPriceTarget: launchConfig.sellTiming === 'price_target' ? Math.max(launchConfig.sellPriceTarget, 1.1) : 1.1, // Minimum 1.1
+        
+  //       useAIForMetadata: launchConfig.useAIForMetadata,
+  //       metadataStyle: launchConfig.metadataStyle,
+  //       metadataKeywords: launchConfig.metadataKeywords,
+  //       useDalle: launchConfig.useDalle,
+  //       useJitoBundle: launchConfig.useJitoBundle !== false,
+  //       priority: launchConfig.priority || 10,
+  //       botSpread: launchConfig.botSpread || 'random',
+  //     };
+      
+  //     if (metadata) {
+  //       backendConfig.customMetadata = {
+  //         name: metadata.name,
+  //         symbol: metadata.symbol,
+  //         description: metadata.description,
+  //         image: metadata.image,
+  //         attributes: metadata.attributes
+  //       };
+  //     }
+      
+  //     console.log('Sending launch config:', backendConfig);
+      
+  //     // Call backend to create launch
+  //     const response = await tokenLaunchService.createLaunch(backendConfig);
+      
+  //     console.log('Launch response:', response);
+      
+  //     if (response.success) {
+  //       const launchId = response.launch_id;
+  //       setActiveLaunchId(launchId);
+        
+  //       // Setup WebSocket connection for real-time updates
+  //       launchWebSocket.connect(launchId);
+        
+  //       launchWebSocket.on('update', (data: LaunchStatus) => {
+  //         setLaunchStatus({
+  //           phase: data.status.toLowerCase().replace(/_/g, '-') as any,
+  //           progress: data.progress,
+  //           message: data.message,
+  //           currentStep: data.current_step,
+  //           estimatedTimeRemaining: data.estimated_time_remaining
+  //         });
+  //       });
+        
+  //       launchWebSocket.on('complete', (data: any) => {
+  //         setLaunchStatus({
+  //           phase: 'complete',
+  //           progress: 100,
+  //           message: '🎉 Launch completed successfully!',
+  //           currentStep: 'Complete',
+  //           estimatedTimeRemaining: 0
+  //         });
+          
+  //         // Add to results
+  //         setLaunchResults(prev => [...prev, {
+  //           success: data.success || true,
+  //           mintAddress: data.mint_address,
+  //           creatorTransaction: data.creator_tx_hash,
+  //           botBuyBundleId: data.bot_buy_bundle_id,
+  //           botSellBundleId: data.bot_sell_bundle_id,
+  //           totalProfit: data.total_profit || 0,
+  //           roi: data.roi || 0,
+  //           duration: data.duration || 0
+  //         }]);
+  //       });
+        
+  //       launchWebSocket.on('failed', (data: any) => {
+  //         setLaunchStatus({
+  //           phase: 'failed',
+  //           progress: 0,
+  //           message: `❌ Launch failed: ${data.error || 'Unknown error'}`,
+  //           currentStep: 'Failed',
+  //           estimatedTimeRemaining: 0
+  //         });
+  //       });
+        
+  //       // Also poll for status updates (fallback)
+  //       const pollStatus = async () => {
+  //         try {
+  //           const status = await tokenLaunchService.getLaunchStatus(launchId);
+  //           setLaunchStatus({
+  //             phase: status.status.toLowerCase().replace(/_/g, '-') as any,
+  //             progress: status.progress,
+  //             message: status.message,
+  //             currentStep: status.current_step,
+  //             estimatedTimeRemaining: status.estimated_time_remaining
+  //           });
+            
+  //           if (status.status !== 'COMPLETE' && status.status !== 'FAILED') {
+  //             setTimeout(pollStatus, 2000);
+  //           }
+  //         } catch (error) {
+  //           console.error('Polling failed:', error);
+  //         }
+  //       };
+        
+  //       pollStatus();
+        
+  //     } else {
+  //       throw new Error(response.error || 'Failed to start launch');
+  //     }
+      
+  //   } catch (error: any) {
+  //     console.error('Launch failed:', error);
+  //     setLaunchStatus({
+  //       phase: 'failed',
+  //       progress: 0,
+  //       message: `❌ Regular launch failed: ${error.message}`,
+  //       currentStep: 'Failed',
+  //       estimatedTimeRemaining: 0
+  //     });
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
+
   const executeRegularLaunch = async () => {
     setIsLoading(true);
     
@@ -864,9 +1294,6 @@ const TokenCreator: React.FC = () => {
       estimatedTimeRemaining: 180
     });
     
-    const bots = generateBotArmy(launchConfig.botCount);
-    setBotArmy(bots);
-    
     try {
       // Generate or use existing metadata
       let metadata = generatedMetadata;
@@ -875,7 +1302,7 @@ const TokenCreator: React.FC = () => {
         metadata = generatedMetadata;
       }
       
-      // Prepare launch config for backend
+      // ✅ CRITICAL: Prepare launch config with proper metadata structure
       const backendConfig: Partial<LaunchConfig> = {
         tokenName: launchConfig.tokenName,
         tokenSymbol: launchConfig.tokenSymbol,
@@ -886,14 +1313,21 @@ const TokenCreator: React.FC = () => {
         creatorBuyAmount: launchConfig.creatorBuyAmount,
         botWalletBuyAmount: launchConfig.botWalletBuyAmount,
         targetProfitPercentage: launchConfig.targetProfitPercentage,
-        
-        // Use the existing sellTiming property (already has correct format)
-        sellTiming: launchConfig.sellTiming, // This should already be 'volume_based', 'time_based', or 'price_target'
-        
-        // These are the correct property names based on your LaunchConfig interface
-        sellVolumeTrigger: launchConfig.sellTiming === 'volume_based' ? launchConfig.sellVolumeTrigger : 0,
-        sellTimeTrigger: launchConfig.sellTiming === 'time_based' ? Math.max(launchConfig.sellTimeTrigger, 1) : 1, // Minimum 1
-        sellPriceTarget: launchConfig.sellTiming === 'price_target' ? Math.max(launchConfig.sellPriceTarget, 1.1) : 1.1, // Minimum 1.1
+        sellTiming: launchConfig.sellTiming,
+
+        // sellVolumeTrigger: launchConfig.sellTiming === 'volume_based' ? launchConfig.sellVolumeTrigger : 0,
+        // sellTimeTrigger: launchConfig.sellTiming === 'time_based' ? Math.max(launchConfig.sellTimeTrigger, 1) : 1,
+        // sellPriceTarget: launchConfig.sellTiming === 'price_target' ? Math.max(launchConfig.sellPriceTarget, 1.1) : 1.1,
+
+        // Ensure minimum values even for 'immediate' strategy
+        sellVolumeTrigger: launchConfig.sellTiming === 'volume_based' ? 
+          Math.max(launchConfig.sellVolumeTrigger, 5.0) : 5.0,
+          
+        sellTimeTrigger: launchConfig.sellTiming === 'time_based' ? 
+          Math.max(launchConfig.sellTimeTrigger, 1) : 1, // Minimum 1 even for immediate
+          
+        sellPriceTarget: launchConfig.sellTiming === 'price_target' ? 
+          Math.max(launchConfig.sellPriceTarget, 1.1) : 1.1, // Minimum 1.1 even for immediate
         
         useAIForMetadata: launchConfig.useAIForMetadata,
         metadataStyle: launchConfig.metadataStyle,
@@ -904,22 +1338,58 @@ const TokenCreator: React.FC = () => {
         botSpread: launchConfig.botSpread || 'random',
       };
       
-      if (metadata) {
+      // ✅ If we have AI-generated metadata, use the metadata_uri
+      // if (metadata && metadata.metadata_uri) {
+      //   console.log('✅ Using AI-generated metadata URI:', metadata.metadata_uri);
+      //   backendConfig.customMetadata = {
+      //     name: metadata.name,
+      //     symbol: metadata.symbol,
+      //     description: metadata.description,
+      //     uri: metadata.metadata_uri, // ✅ This is the key field!
+      //     image: metadata.image
+      //   };
+      // } 
+
+      // ✅ If we have AI-generated metadata, use the metadata_uri
+      if (metadata && metadata.metadata_uri) {
+        console.log('✅ Using AI-generated metadata URI:', metadata.metadata_uri);
         backendConfig.customMetadata = {
           name: metadata.name,
           symbol: metadata.symbol,
           description: metadata.description,
+          metadata_uri: metadata.metadata_uri, // ✅ Use metadata_uri field
+          uri: metadata.metadata_uri, // ✅ Also include uri for compatibility
           image: metadata.image,
-          attributes: metadata.attributes
+          image_url: metadata.image
         };
       }
       
-      console.log('Sending launch config:', backendConfig);
+      // ✅ If user manually entered token info (no AI generation)
+      else if (launchConfig.tokenName && launchConfig.tokenSymbol) {
+        console.log('⚠️ Using manually entered token info (no IPFS URI)');
+        backendConfig.customMetadata = {
+          name: launchConfig.tokenName,
+          symbol: launchConfig.tokenSymbol,
+          description: launchConfig.tokenDescription || 'Token created via Flash Sniper',
+          // For manual tokens without IPFS, we need to handle this differently
+          metadata_uri: null // Will need fallback in backend
+        };
+      }
+      
+      console.log('📤 Sending launch config to backend:', {
+        ...backendConfig,
+        customMetadata: backendConfig.customMetadata ? {
+          ...backendConfig.customMetadata,
+          metadata_uri: backendConfig.customMetadata.metadata_uri 
+            ? `${backendConfig.customMetadata.metadata_uri.substring(0, 50)}...` 
+            : 'null'
+        } : 'none'
+      });
       
       // Call backend to create launch
       const response = await tokenLaunchService.createLaunch(backendConfig);
       
-      console.log('Launch response:', response);
+      console.log('📥 Launch response:', response);
       
       if (response.success) {
         const launchId = response.launch_id;
@@ -1732,6 +2202,9 @@ const TokenCreator: React.FC = () => {
 
     const phaseConfig = getPhaseConfig();
 
+    // Add IPFS status
+    const hasIpfsMetadata = generatedMetadata?.ipfs_cid;
+
     return (
       <div className="bg-dark-2 rounded-lg shadow-lg overflow-hidden border border-[#22253e]">
         {/* Header */}
@@ -1843,6 +2316,24 @@ const TokenCreator: React.FC = () => {
               </div>
               <div className="text-sm font-mono text-gray-300 break-all bg-dark-2 p-2 rounded-lg border border-[#22253e]">
                 {activeLaunchId}
+              </div>
+            </div>
+          )}
+
+          {/* IPFS Status Section */}
+          {hasIpfsMetadata && (
+            <div className="bg-dark-1 rounded-xl p-3 border border-emerald-500/30">
+              <div className="flex items-center gap-2 mb-2">
+                <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                </svg>
+                <span className="text-sm text-emerald-400 font-medium">IPFS Storage Ready</span>
+              </div>
+              <div className="text-xs text-gray-400">
+                Metadata pinned to IPFS (CID: {generatedMetadata?.ipfs_cid?.slice(0, 12) || 'N/A'}...)
+              </div>
+              <div className="mt-2 text-xs text-gray-500">
+                <div className="truncate">URI: {generatedMetadata.ipfs_uri}</div>
               </div>
             </div>
           )}
@@ -2017,8 +2508,133 @@ const TokenCreator: React.FC = () => {
     );
   };
 
+
+  // const MetadataPreview = () => {
+  //   if (!generatedMetadata || !showPreview) return null;
+    
+  //   // Convert IPFS URL to HTTP URL for display
+  //   const displayImageUrl = useMemo(() => {
+  //     if (!generatedMetadata?.image) return '';
+  //     return convertIpfsToHttpUrl(generatedMetadata.image);
+  //   }, [generatedMetadata?.image]);
+    
+  //   return (
+  //     <div className="bg-gradient-to-br from-gray-900/50 to-dark-2/50 backdrop-blur-sm rounded-2xl p-5 border border-gray-800/50 mb-6 shadow-lg">
+  //       <div className="flex justify-between items-center mb-4">
+  //         <div className="flex items-center gap-3">
+  //           <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-xl flex items-center justify-center shadow-lg">
+  //             <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  //               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+  //             </svg>
+  //           </div>
+  //           <div>
+  //             <h3 className="text-white font-bold">AI Generated Metadata</h3>
+  //             <p className="text-sm text-gray-400">Preview your token details</p>
+  //           </div>
+  //         </div>
+  //         <button
+  //           onClick={() => setShowPreview(false)}
+  //           className="text-gray-400 hover:text-white transition-colors"
+  //         >
+  //           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  //             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+  //           </svg>
+  //         </button>
+  //       </div>
+        
+  //       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+  //         <div className="md:col-span-2">
+  //           <div className="bg-gray-900/50 rounded-xl p-4 border border-gray-800/50">
+  //             <div className="flex items-start justify-between mb-4">
+  //               <div>
+  //                 <h4 className="text-xl font-bold text-white mb-1">{generatedMetadata.name}</h4>
+  //                 <div className="text-sm text-gray-400 font-mono">${generatedMetadata.symbol}</div>
+  //               </div>
+  //               <div className="px-3 py-1 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 rounded-full border border-cyan-500/30">
+  //                 <span className="text-sm font-medium text-cyan-400">AI Generated</span>
+  //               </div>
+  //             </div>
+              
+  //             <p className="text-gray-300 mb-4">{generatedMetadata.description}</p>
+              
+  //             {/* IPFS Info Badge */}
+  //             {generatedMetadata.ipfs_cid && (
+  //               <div className="mb-4 p-3 bg-gradient-to-r from-purple-500/10 to-indigo-500/10 rounded-lg border border-purple-500/30">
+  //                 <div className="flex items-center gap-2 text-purple-400">
+  //                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  //                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+  //                   </svg>
+  //                   <span className="text-sm font-medium">IPFS Storage</span>
+  //                   <span className="text-xs bg-purple-900/30 px-2 py-1 rounded">
+  //                     CID: {generatedMetadata.ipfs_cid.slice(0, 8)}...
+  //                   </span>
+  //                 </div>
+  //               </div>
+  //             )}
+              
+  //             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+  //               {generatedMetadata.attributes.map((attr, index) => (
+  //                 <div key={index} className="bg-gray-800/50 rounded-lg p-3 border border-gray-700/50">
+  //                   <div className="text-xs text-gray-400 mb-1">{attr.trait_type}</div>
+  //                   <div className="text-sm text-white font-medium">{attr.value}</div>
+  //                 </div>
+  //               ))}
+  //             </div>
+  //           </div>
+  //         </div>
+          
+  //         <div>
+  //           <div className="bg-gray-900/50 rounded-xl overflow-hidden border border-gray-800/50">
+  //             <img 
+  //               src={displayImageUrl} 
+  //               alt={generatedMetadata.name}
+  //               className="w-full h-48 object-cover"
+  //               onError={(e) => {
+  //                 // Fallback if IPFS gateway fails
+  //                 e.currentTarget.src = "https://placehold.co/600x400/6366f1/ffffff?text=" + 
+  //                   encodeURIComponent(generatedMetadata.name);
+  //               }}
+  //             />
+  //             <div className="p-4">
+  //               <div className="text-sm text-gray-400 mb-2 flex items-center justify-between">
+  //                 <span>Token Image</span>
+  //                 {isIpfsUrl(generatedMetadata.image) && (
+  //                   <span className="text-xs text-purple-400 bg-purple-900/30 px-2 py-1 rounded">
+  //                     IPFS
+  //                   </span>
+  //                 )}
+  //               </div>
+  //               {generatedMetadata.image_prompt && (
+  //                 <div className="text-xs text-gray-500 italic">
+  //                   "{generatedMetadata.image_prompt.slice(0, 100)}..."
+  //                 </div>
+  //               )}
+                
+  //               {/* Show IPFS URI if available */}
+  //               {generatedMetadata.ipfs_uri && (
+  //                 <div className="mt-2">
+  //                   <div className="text-xs text-gray-500 mb-1">IPFS URI:</div>
+  //                   <div className="text-xs font-mono text-gray-400 truncate">
+  //                     {generatedMetadata.ipfs_uri}
+  //                   </div>
+  //                 </div>
+  //               )}
+  //             </div>
+  //           </div>
+  //         </div>
+  //       </div>
+  //     </div>
+  //   );
+  // };
+
   const MetadataPreview = () => {
     if (!generatedMetadata || !showPreview) return null;
+    
+    // Convert IPFS URL to HTTP URL for display
+    const displayImageUrl = useMemo(() => {
+      if (!generatedMetadata?.image) return '';
+      return convertIpfsToHttpUrl(generatedMetadata.image);
+    }, [generatedMetadata?.image]);
     
     return (
       <div className="bg-gradient-to-br from-gray-900/50 to-dark-2/50 backdrop-blur-sm rounded-2xl p-5 border border-gray-800/50 mb-6 shadow-lg">
@@ -2059,6 +2675,39 @@ const TokenCreator: React.FC = () => {
               
               <p className="text-gray-300 mb-4">{generatedMetadata.description}</p>
               
+              {/* ✅ Show Metadata URI for on-chain use */}
+              {generatedMetadata.metadata_uri && (
+                <div className="mb-4 p-3 bg-gradient-to-r from-purple-500/10 to-indigo-500/10 rounded-lg border border-purple-500/30">
+                  <div className="flex items-center gap-2 text-purple-400 mb-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                    </svg>
+                    <span className="text-sm font-medium">On-Chain Metadata URI</span>
+                  </div>
+                  <div className="text-xs font-mono text-gray-400 break-all bg-gray-900/50 p-2 rounded">
+                    {generatedMetadata.metadata_uri}
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    This URI will be used for on-chain token creation
+                  </div>
+                </div>
+              )}
+              
+              {/* IPFS Info Badge */}
+              {generatedMetadata.ipfs_cid && (
+                <div className="mb-4 p-3 bg-gradient-to-r from-purple-500/10 to-indigo-500/10 rounded-lg border border-purple-500/30">
+                  <div className="flex items-center gap-2 text-purple-400">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                    </svg>
+                    <span className="text-sm font-medium">IPFS Storage</span>
+                    <span className="text-xs bg-purple-900/30 px-2 py-1 rounded">
+                      CID: {generatedMetadata.ipfs_cid.slice(0, 8)}...
+                    </span>
+                  </div>
+                </div>
+              )}
+              
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {generatedMetadata.attributes.map((attr, index) => (
                   <div key={index} className="bg-gray-800/50 rounded-lg p-3 border border-gray-700/50">
@@ -2073,15 +2722,37 @@ const TokenCreator: React.FC = () => {
           <div>
             <div className="bg-gray-900/50 rounded-xl overflow-hidden border border-gray-800/50">
               <img 
-                src={generatedMetadata.image} 
+                src={displayImageUrl} 
                 alt={generatedMetadata.name}
                 className="w-full h-48 object-cover"
+                onError={(e) => {
+                  // Fallback if IPFS gateway fails
+                  e.currentTarget.src = "https://placehold.co/600x400/6366f1/ffffff?text=" + 
+                    encodeURIComponent(generatedMetadata.name);
+                }}
               />
               <div className="p-4">
-                <div className="text-sm text-gray-400 mb-2">Token Image</div>
+                <div className="text-sm text-gray-400 mb-2 flex items-center justify-between">
+                  <span>Token Image</span>
+                  {isIpfsUrl(generatedMetadata.image) && (
+                    <span className="text-xs text-purple-400 bg-purple-900/30 px-2 py-1 rounded">
+                      IPFS
+                    </span>
+                  )}
+                </div>
                 {generatedMetadata.image_prompt && (
                   <div className="text-xs text-gray-500 italic">
                     "{generatedMetadata.image_prompt.slice(0, 100)}..."
+                  </div>
+                )}
+                
+                {/* Show IPFS URI if available */}
+                {generatedMetadata.ipfs_uri && (
+                  <div className="mt-2">
+                    <div className="text-xs text-gray-500 mb-1">IPFS URI:</div>
+                    <div className="text-xs font-mono text-gray-400 truncate">
+                      {generatedMetadata.ipfs_uri}
+                    </div>
                   </div>
                 )}
               </div>
@@ -2091,7 +2762,7 @@ const TokenCreator: React.FC = () => {
       </div>
     );
   };
-  
+
   const QuickStartPresets = () => {
     const presets = [
       {
@@ -3380,6 +4051,17 @@ const TokenCreator: React.FC = () => {
                               />
                             </div>
                           )}
+
+                          {/* {launchConfig.sellTiming === 'immediate' && (
+                            <div className="p-3 bg-gradient-to-r from-amber-900/20 to-yellow-900/20 rounded-xl border border-amber-500/30">
+                              <div className="flex items-center gap-2 text-amber-400">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                </svg>
+                                <span className="text-sm font-medium">Bots will sell immediately after buying</span>
+                              </div>
+                            </div>
+                          )} */}
 
                           {launchConfig.sellTiming === 'immediate' && (
                             <div className="p-3 bg-gradient-to-r from-amber-900/20 to-yellow-900/20 rounded-xl border border-amber-500/30">

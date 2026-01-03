@@ -1,13 +1,17 @@
 import base64
 from datetime import datetime
+import time
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from typing import Any, Dict, List
 import logging
-from app.schemas.creators.openai import Attribute, BatchMetadataRequest, BatchMetadataResponse, MetadataRequest, MetadataResponse, TokenMetadata
+from app.schemas.creators.openai import Attribute, BatchMetadataRequest, BatchMetadataResponse, MetadataRequest, SimpleMetadataResponse, TokenMetadata
 from openai import OpenAI
 import json 
 from app.config import settings
 import asyncio
+from app.services.cloudflare_r2 import r2_service
+from app.services.ipfs_service import ipfs_service
+import aiohttp
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -163,6 +167,8 @@ def _generate_image_prompt(metadata_dict: Dict[str, Any]) -> str:
     
     return base_prompt + safety_addendum
 
+
+
 #=====================================
 # AI Endpoints
 #=====================================
@@ -194,11 +200,359 @@ async def test_endpoint():
             "timestamp": datetime.utcnow().isoformat(),
         }
 
-# ✅ Working
-@router.post("/generate-metadata", response_model=MetadataResponse)
+# # ✅ THIS IS ONLY RETURNING GENERATED OPENAI IMAGE
+# @router.post("/generate-metadata", response_model=MetadataResponse)
+# async def generate_metadata(request: MetadataRequest):
+#     """
+#     Generate AI-powered token metadata
+#     """
+#     import time
+#     start_time = time.time()
+    
+#     try:
+#         logger.info(f"Generating metadata for request: style={request.style}, keywords={request.keywords}")
+        
+#         # Prepare the user prompt
+#         user_prompt = f"""
+#         Create complete token metadata for a Solana token with these specifications:
+        
+#         STYLE: {request.style}
+#         KEYWORDS: {request.keywords}
+#         CATEGORY: {request.category}
+#         THEME: {request.theme or 'crypto innovation'}
+        
+#         Requirements:
+#         1. Token Name: Creative, memorable, max 20 characters
+#         2. Token Symbol: 3-6 uppercase characters, catchy
+#         3. Description: 1-2 compelling sentences explaining the token's purpose/vision
+#         4. Attributes: 5-7 relevant traits with creative values
+        
+#         Output must be valid JSON with this exact structure:
+#         {{
+#             "name": "string",
+#             "symbol": "string",
+#             "description": "string",
+#             "attributes": [
+#                 {{"trait_type": "string", "value": "string"}},
+#                 ...
+#             ]
+#         }}
+#         """
+        
+#         # Use standard chat completions API
+#         chat_response = client.chat.completions.create(
+#             model=settings.OPENAI_MODEL,
+#             messages=[
+#                 {
+#                     "role": "system", 
+#                     "content": _get_system_prompt(request.style)
+#                 },
+#                 {
+#                     "role": "user", 
+#                     "content": user_prompt
+#                 }
+#             ],
+#             response_format={"type": "json_object"},
+#             temperature=0.8,
+#             max_tokens=1000,
+#         )
+        
+#         # Parse the JSON response
+#         content = chat_response.choices[0].message.content
+        
+#         if not content:
+#             logger.error("Empty response from OpenAI")
+#             raise HTTPException(status_code=500, detail="Empty response from OpenAI")
+        
+#         try:
+#             metadata_dict = json.loads(content)
+#         except json.JSONDecodeError as e:
+#             logger.error(f"Failed to parse OpenAI response as JSON: {e}")
+#             logger.error(f"Raw response: {content}")
+#             # Try to extract JSON from the response
+#             import re
+#             json_match = re.search(r'\{.*\}', content, re.DOTALL)
+#             if json_match:
+#                 metadata_dict = json.loads(json_match.group())
+#             else:
+#                 # Create fallback metadata
+#                 metadata_dict = {
+#                     "name": f"{request.style.capitalize()}Token",
+#                     "symbol": "TKN",
+#                     "description": f"A {request.style} token on Solana blockchain",
+#                     "attributes": _get_example_attributes(request.category)
+#                 }
+        
+#         # Validate required fields
+#         if not metadata_dict.get("name") or not metadata_dict.get("symbol"):
+#             logger.error(f"Missing required fields in metadata: {metadata_dict}")
+#             metadata_dict["name"] = metadata_dict.get("name", f"{request.style.capitalize()}Token")
+#             metadata_dict["symbol"] = metadata_dict.get("symbol", "TKN")
+        
+#         # Ensure symbol is uppercase
+#         metadata_dict["symbol"] = metadata_dict["symbol"].upper()
+        
+#         # Generate or use image
+#         image_url = request.existing_image
+        
+#         if request.use_dalle and not request.existing_image:
+#             try:
+#                 # Generate DALL-E image
+#                 image_prompt = _generate_image_prompt({
+#                     **metadata_dict,
+#                     "category": request.category
+#                 })
+                
+#                 logger.info(f"Generating DALL-E image with prompt: {image_prompt[:100]}...")
+                
+#                 image_response = client.images.generate(
+#                     model=settings.OPENAI_IMAGE_MODEL,
+#                     prompt=image_prompt,
+#                     size="1024x1024",
+#                     quality="standard",
+#                     n=1,
+#                     response_format="url",
+#                 )
+                
+#                 image_url = image_response.data[0].url 
+#                 metadata_dict["image_prompt"] = image_prompt
+#                 logger.info(f"DALL-E image generated: {image_url[:50]}...")
+                
+#             except Exception as image_error:
+#                 logger.error(f"DALL-E generation failed: {image_error}")
+#                 # Use a fallback image if DALL-E fails
+#                 image_url = "https://placehold.co/500x400/6366f1/ffffff?text=" + metadata_dict["name"].replace(" ", "+")
+        
+#         # Ensure image URL exists
+#         if not image_url:
+#             image_url = "https://placehold.co/600x400/6366f1/ffffff?text=" + metadata_dict["name"].replace(" ", "+")
+        
+#         # Ensure we have attributes
+#         attributes = metadata_dict.get("attributes", [])
+#         if not attributes:
+#             attributes = _get_example_attributes(request.category)
+        
+#         # Build the metadata object
+#         metadata = TokenMetadata(
+#             name=metadata_dict["name"],
+#             symbol=metadata_dict["symbol"],
+#             description=metadata_dict.get("description", "Token created via Flash Sniper"),
+#             image=image_url,
+#             external_url="https://pump.fun",
+#             attributes=[Attribute(**attr) for attr in attributes],
+#             image_prompt=metadata_dict.get("image_prompt"),
+#             created_at=datetime.utcnow()
+#         )
+        
+#         generation_time = int((time.time() - start_time) * 1000)
+        
+#         logger.info(f"Metadata generated successfully in {generation_time}ms: {metadata.name} ({metadata.symbol})")
+        
+#         # FIX: Return with the correct field name "metadata_for_token" as per schema
+#         return MetadataResponse(
+#             success=True,
+#             metadata_for_token=metadata,  # Changed from "metadata" to "metadata_for_token"
+#             request_id=chat_response.id,
+#             generation_time_ms=generation_time
+#         )
+        
+#     except HTTPException:
+#         raise
+#     except Exception as e:
+#         logger.error(f"AI metadata generation failed: {str(e)}", exc_info=True)
+#         raise HTTPException(
+#             status_code=500, 
+#             detail=f"AI metadata generation failed: {str(e)}"
+#         )
+     
+# # THIS IS UPLOADING GENERATED OPENAI IMAGE TO CLOUDFLARE R2 BUCKET (SEEMS NOT TO BE SUPPORTED BY PUMP.FUN)
+# @router.post("/generate-metadata", response_model=MetadataResponse)
+# async def generate_metadata(request: MetadataRequest):
+#     """
+#     Generate AI-powered token metadata with Cloudflare R2 image hosting
+#     """
+#     import time
+#     start_time = time.time()
+    
+#     try:
+#         logger.info(f"Generating metadata for request: style={request.style}, keywords={request.keywords}")
+        
+#         # Prepare the user prompt
+#         user_prompt = f"""
+#         Create complete token metadata for a Solana token with these specifications:
+        
+#         STYLE: {request.style}
+#         KEYWORDS: {request.keywords}
+#         CATEGORY: {request.category}
+#         THEME: {request.theme or 'crypto innovation'}
+        
+#         Requirements:
+#         1. Token Name: Creative, memorable, max 20 characters
+#         2. Token Symbol: 3-6 uppercase characters, catchy
+#         3. Description: 1-2 compelling sentences explaining the token's purpose/vision
+#         4. Attributes: 5-7 relevant traits with creative values
+        
+#         Output must be valid JSON with this exact structure:
+#         {{
+#             "name": "string",
+#             "symbol": "string",
+#             "description": "string",
+#             "attributes": [
+#                 {{"trait_type": "string", "value": "string"}},
+#                 ...
+#             ]
+#         }}
+#         """
+        
+#         # Use standard chat completions API
+#         chat_response = client.chat.completions.create(
+#             model=settings.OPENAI_MODEL,
+#             messages=[
+#                 {
+#                     "role": "system", 
+#                     "content": _get_system_prompt(request.style)
+#                 },
+#                 {
+#                     "role": "user", 
+#                     "content": user_prompt
+#                 }
+#             ],
+#             response_format={"type": "json_object"},
+#             temperature=0.8,
+#             max_tokens=1000,
+#         )
+        
+#         # Parse the JSON response
+#         content = chat_response.choices[0].message.content
+        
+#         if not content:
+#             logger.error("Empty response from OpenAI")
+#             raise HTTPException(status_code=500, detail="Empty response from OpenAI")
+        
+#         try:
+#             metadata_dict = json.loads(content)
+#         except json.JSONDecodeError as e:
+#             logger.error(f"Failed to parse OpenAI response as JSON: {e}")
+#             logger.error(f"Raw response: {content}")
+#             # Try to extract JSON from the response
+#             import re
+#             json_match = re.search(r'\{.*\}', content, re.DOTALL)
+#             if json_match:
+#                 metadata_dict = json.loads(json_match.group())
+#             else:
+#                 # Create fallback metadata
+#                 metadata_dict = {
+#                     "name": f"{request.style.capitalize()}Token",
+#                     "symbol": "TKN",
+#                     "description": f"A {request.style} token on Solana blockchain",
+#                     "attributes": _get_example_attributes(request.category)
+#                 }
+        
+#         # Validate required fields
+#         if not metadata_dict.get("name") or not metadata_dict.get("symbol"):
+#             logger.error(f"Missing required fields in metadata: {metadata_dict}")
+#             metadata_dict["name"] = metadata_dict.get("name", f"{request.style.capitalize()}Token")
+#             metadata_dict["symbol"] = metadata_dict.get("symbol", "TKN")
+        
+#         # Ensure symbol is uppercase
+#         metadata_dict["symbol"] = metadata_dict["symbol"].upper()
+        
+#         # Generate or use image
+#         image_url = request.existing_image
+        
+#         if request.use_dalle and not request.existing_image:
+#             try:
+#                 # Generate DALL-E image
+#                 image_prompt = _generate_image_prompt({
+#                     **metadata_dict,
+#                     "category": request.category
+#                 })
+                
+#                 logger.info(f"Generating DALL-E image with prompt: {image_prompt[:100]}...")
+                
+#                 image_response = client.images.generate(
+#                     model=settings.OPENAI_IMAGE_MODEL,
+#                     prompt=image_prompt,
+#                     size="1024x1024", # Smaller size for faster download
+#                     quality="standard",
+#                     n=1,
+#                     response_format="url",
+#                 )
+                
+#                 openai_image_url = image_response.data[0].url 
+#                 metadata_dict["image_prompt"] = image_prompt
+#                 logger.info(f"DALL-E image generated: {openai_image_url[:50]}...")
+                
+#                 # ✅ CRITICAL: Re-host image to Cloudflare R2
+#                 # We have to do this because the generated image uri from openai is too long
+#                 # and it'll make our token transaction exceed the bytes accepted by pumpfun solana versioned transaction
+#                 logger.info("Uploading image to Cloudflare R2...")
+                
+#                 # Download and upload to R2
+#                 r2_image_url = await r2_service.upload_from_url(openai_image_url)
+                
+#                 if r2_image_url:
+#                     image_url = r2_image_url
+#                     logger.info(f"Image uploaded to R2: {image_url}")
+#                 else:
+#                     # Fallback: Use OpenAI URL directly (temporary)
+#                     logger.warning('R2 upload failed, using OpenAI URL (TEMPORARY)')
+#                     image_url = openai_image_url
+                
+#             except Exception as image_error:
+#                 logger.error(f"DALL-E generation failed: {image_error}")
+#                 # Use a fallback image if DALL-E fails
+#                 image_url = "https://placehold.co/500x400/6366f1/ffffff?text=" + metadata_dict["name"].replace(" ", "+")
+        
+#         # Ensure image URL exists
+#         if not image_url:
+#             image_url = "https://placehold.co/600x400/6366f1/ffffff?text=" + metadata_dict["name"].replace(" ", "+")
+        
+#         # Ensure we have attributes
+#         attributes = metadata_dict.get("attributes", [])
+#         if not attributes:
+#             attributes = _get_example_attributes(request.category)
+        
+#         # Build the metadata object
+#         metadata = TokenMetadata(
+#             name=metadata_dict["name"],
+#             symbol=metadata_dict["symbol"],
+#             description=metadata_dict.get("description", "Token created via Flash Sniper"),
+#             image=image_url,    # This will be the R2 URL or placeholder
+#             external_url="https://pump.fun",
+#             attributes=[Attribute(**attr) for attr in attributes],
+#             image_prompt=metadata_dict.get("image_prompt"),
+#             created_at=datetime.utcnow()
+#         )
+        
+#         generation_time = int((time.time() - start_time) * 1000)
+        
+#         logger.info(f"Metadata generated successfully in {generation_time}ms: {metadata.name} ({metadata.symbol})")
+        
+#         # FIX: Return with the correct field name "metadata_for_token" as per schema
+#         return MetadataResponse(
+#             success=True,
+#             metadata_for_token=metadata,  # Changed from "metadata" to "metadata_for_token"
+#             request_id=chat_response.id,
+#             generation_time_ms=generation_time
+#         )
+        
+#     except HTTPException:
+#         raise
+#     except Exception as e:
+#         logger.error(f"AI metadata generation failed: {str(e)}", exc_info=True)
+#         raise HTTPException(
+#             status_code=500, 
+#             detail=f"AI metadata generation failed: {str(e)}"
+#         )
+    
+
+
+# THIS IS UPLOADING GENERATED OPENAI IMAGE TO IPFS (SUPPORTED BY PUMP.FUN)
+@router.post("/generate-metadata", response_model=SimpleMetadataResponse)
 async def generate_metadata(request: MetadataRequest):
     """
-    Generate AI-powered token metadata
+    Generate AI-powered token metadata with IPFS storage
     """
     import time
     start_time = time.time()
@@ -219,17 +573,12 @@ async def generate_metadata(request: MetadataRequest):
         1. Token Name: Creative, memorable, max 20 characters
         2. Token Symbol: 3-6 uppercase characters, catchy
         3. Description: 1-2 compelling sentences explaining the token's purpose/vision
-        4. Attributes: 5-7 relevant traits with creative values
         
         Output must be valid JSON with this exact structure:
         {{
             "name": "string",
             "symbol": "string",
             "description": "string",
-            "attributes": [
-                {{"trait_type": "string", "value": "string"}},
-                ...
-            ]
         }}
         """
         
@@ -308,56 +657,80 @@ async def generate_metadata(request: MetadataRequest):
                     response_format="url",
                 )
                 
-                image_url = image_response.data[0].url 
+                openai_image_url = image_response.data[0].url 
                 metadata_dict["image_prompt"] = image_prompt
-                logger.info(f"DALL-E image generated: {image_url[:50]}...")
+                image_url = openai_image_url
+                logger.info(f"DALL-E image generated: {openai_image_url}")
                 
             except Exception as image_error:
                 logger.error(f"DALL-E generation failed: {image_error}")
-                # Use a fallback image if DALL-E fails
                 image_url = "https://placehold.co/500x400/6366f1/ffffff?text=" + metadata_dict["name"].replace(" ", "+")
         
         # Ensure image URL exists
         if not image_url:
             image_url = "https://placehold.co/600x400/6366f1/ffffff?text=" + metadata_dict["name"].replace(" ", "+")
         
-        # Ensure we have attributes
-        attributes = metadata_dict.get("attributes", [])
-        if not attributes:
-            attributes = _get_example_attributes(request.category)
+        # ✅ CRITICAL FIX: After generating metadata, upload to IPFS
+        complete_metadata = {
+            "name": metadata_dict["name"],
+            "symbol": metadata_dict["symbol"],
+            "description": metadata_dict.get("description", "Token created via Flash Sniper"),
+            "image": image_url,  # This will be updated to IPFS if uploaded
+            "external_url": "https://pump.fun",
+            "showName": True,
+            "createdOn": "https://pump.fun",
+            "twitter": "",
+            "website": "https://pump.fun",
+        }
         
-        # Build the metadata object
-        metadata = TokenMetadata(
-            name=metadata_dict["name"],
-            symbol=metadata_dict["symbol"],
-            description=metadata_dict.get("description", "Token created via Flash Sniper"),
-            image=image_url,
-            external_url="https://pump.fun",
-            attributes=[Attribute(**attr) for attr in attributes],
-            image_prompt=metadata_dict.get("image_prompt"),
-            created_at=datetime.utcnow()
-        )
+        # Upload to IPFS
+        logger.info("Uploading metadata and image to IPFS...")
+        ipfs_result = await ipfs_service.upload_metadata_with_image(complete_metadata)
         
+        if not ipfs_result["success"]:
+            logger.warning(f"IPFS upload failed: {ipfs_result.get('error')}")
+            # Fallback: use direct URLs
+            metadata_uri = None
+            image_url_for_onchain = image_url  # Use original image URL
+        else:
+            # ✅ CRITICAL: Use the METADATA URI for on-chain, not the image URI!
+            metadata_uri = ipfs_result["metadata_uri"]  # This is https://ipfs.io/ipfs/Qmb2FKs9LykhZtuqpmjpocqMvWFWbRgzLn91RnMM89hb3E
+            image_url_for_onchain = ipfs_result["full_metadata"]["image"]  # Get HTTP URL from IPFS
+            logger.info(f"✅ Metadata uploaded to IPFS: {metadata_uri}")
+            logger.info(f"✅ Image URL: {image_url_for_onchain}")
+            logger.info(f"✅ METADATA URI (for on-chain): {metadata_uri}")  # DEBUG LOG
+
         generation_time = int((time.time() - start_time) * 1000)
         
-        logger.info(f"Metadata generated successfully in {generation_time}ms: {metadata.name} ({metadata.symbol})")
+        logger.info(f"✅ Metadata generated successfully in {generation_time}ms")
+        logger.info(f"📄 Token Name: {metadata_dict['name']}")
+        logger.info(f"📄 Token Symbol: {metadata_dict['symbol']}")
+        logger.info(f"🔗 Image URL: {image_url_for_onchain}")
+        logger.info(f"🔗 METADATA URI (for on-chain): {metadata_uri}")
         
-        # FIX: Return with the correct field name "metadata_for_token" as per schema
-        return MetadataResponse(
+        # ✅ RETURN SIMPLIFIED RESPONSE WITH JUST WHAT WE NEED
+        return SimpleMetadataResponse(
             success=True,
-            metadata_for_token=metadata,  # Changed from "metadata" to "metadata_for_token"
+            name=metadata_dict["name"],
+            symbol=metadata_dict["symbol"],
+            metadata_uri=metadata_uri,  # This is the KEY field for on-chain
+            image_url=image_url_for_onchain,
+            description=metadata_dict.get("description"),
             request_id=chat_response.id,
             generation_time_ms=generation_time
         )
         
-    except HTTPException:
-        raise
     except Exception as e:
         logger.error(f"AI metadata generation failed: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=500, 
             detail=f"AI metadata generation failed: {str(e)}"
         )
+      
+      
+      
+      
+      
         
 # ✅ Working    
 @router.post("/generate-metadata-batch", response_model=BatchMetadataResponse)
@@ -676,3 +1049,153 @@ async def upload_and_generate_metadata(
         raise HTTPException(status_code=500, detail=f"Upload and generation failed: {str(e)}")
 
 
+
+# ===================== CLOUDFLARE R2 BUCKET IMAGE TESTING ====================
+@router.get("/simple-r2-test")
+async def simple_r2_test_fixed():
+    """Test R2 without requiring ListBuckets permission"""
+    try:
+        import boto3
+        from botocore.config import Config
+        
+        # Create client directly
+        s3 = boto3.client(
+            's3',
+            endpoint_url=f'https://{settings.CLOUDFLARE_R2_ACCOUNT_ID}.r2.cloudflarestorage.com',
+            aws_access_key_id=settings.CLOUDFLARE_R2_ACCESS_KEY_ID,
+            aws_secret_access_key=settings.CLOUDFLARE_R2_SECRET_ACCESS_KEY,
+            config=Config(s3={'addressing_style': 'virtual'})
+        )
+        
+        # Try to upload a small test file instead of listing buckets
+        test_key = f"test-connection-{int(time.time())}.txt"
+        
+        try:
+            # Try to put an object (this tests write permission)
+            s3.put_object(
+                Bucket=settings.CLOUDFLARE_R2_BUCKET_NAME,
+                Key=test_key,
+                Body=b'Test connection to R2',
+                ContentType='text/plain'
+            )
+            
+            logger.info(f"Successfully uploaded test file: {test_key}")
+            
+            # Try to read it back (tests read permission)
+            response = s3.get_object(
+                Bucket=settings.CLOUDFLARE_R2_BUCKET_NAME,
+                Key=test_key
+            )
+            content = response['Body'].read()
+            
+            # Clean up
+            s3.delete_object(
+                Bucket=settings.CLOUDFLARE_R2_BUCKET_NAME,
+                Key=test_key
+            )
+            
+            return {
+                "success": True,
+                "message": "R2 connection successful!",
+                "test": "Write, read, and delete operations all work",
+                "bucket": settings.CLOUDFLARE_R2_BUCKET_NAME,
+                "account_id": settings.CLOUDFLARE_R2_ACCOUNT_ID
+            }
+            
+        except Exception as e:
+            error_code = ""
+            if hasattr(e, 'response'):
+                error_code = e.response.get('Error', {}).get('Code', '')
+            
+            return {
+                "success": False,
+                "message": f"Failed to upload to bucket: {str(e)}",
+                "error_code": error_code,
+                "suggestion": "Check if bucket exists and token has write permissions",
+                "bucket": settings.CLOUDFLARE_R2_BUCKET_NAME
+            }
+        
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "account_id": settings.CLOUDFLARE_R2_ACCOUNT_ID,
+            "bucket_name": settings.CLOUDFLARE_R2_BUCKET_NAME,
+            "suggestion": "Check credentials and account ID"
+        }      
+     
+     
+# ===================== IPFS IMAGE TESTING ====================
+
+@router.post("/upload-to-ipfs")
+async def upload_to_ipfs(metadata: TokenMetadata):
+    """
+    Upload existing metadata to IPFS
+    """
+    try:
+        # Convert metadata to IPFS format
+        metadata_dict = metadata.to_ipfs_metadata()
+        
+        # Upload to IPFS
+        result = await ipfs_service.upload_metadata_with_image(metadata_dict)
+        
+        if not result["success"]:
+            raise HTTPException(status_code=500, detail=f"IPFS upload failed: {result.get('error')}")
+        
+        # Update metadata with IPFS info
+        metadata.ipfs_cid = result["metadata_cid"]
+        metadata.ipfs_uri = result["metadata_uri"]
+        
+        if result["image_cid"]:
+            metadata.image = f"ipfs://{result['image_cid']}"
+        
+        return {
+            "success": True,
+            "metadata": metadata.dict(),
+            "ipfs_cid": result["metadata_cid"],
+            "ipfs_uri": result["metadata_uri"],
+            "gateway_url": ipfs_service.get_gateway_url(result["metadata_cid"])
+        }
+        
+    except Exception as e:
+        logger.error(f"IPFS upload failed: {e}")
+        raise HTTPException(status_code=500, detail=f"IPFS upload failed: {str(e)}")
+
+@router.get("/ipfs-test")
+async def test_ipfs_connection():
+    """
+    Test Pinata IPFS connection
+    """
+    try:
+        # Try to pin a simple test JSON
+        test_data = {
+            "test": "This is a test from Flash Sniper",
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+        cid = await ipfs_service.pin_json(test_data, "test_connection")
+        
+        if cid:
+            return {
+                "success": True,
+                "message": "IPFS connection successful",
+                "cid": cid,
+                "gateway_url": ipfs_service.get_gateway_url(cid),
+                "ipfs_uri": f"ipfs://{cid}"
+            }
+        else:
+            return {
+                "success": False,
+                "message": "Failed to connect to IPFS"
+            }
+            
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "message": "Check your Pinata credentials"
+        }
+       
+       
+       
+        

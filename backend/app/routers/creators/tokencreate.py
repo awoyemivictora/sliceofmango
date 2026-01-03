@@ -249,6 +249,91 @@ class LaunchCoordinator:
         
         return bot_cost + creator_cost + fees
     
+    # async def _get_metadata(self, config: LaunchConfigCreate):
+    #     """Get or generate metadata using OpenAI"""
+    #     try:
+    #         logger.info(f"Generating metadata for launch {self.launch_id}")
+            
+    #         # Convert config to dict for easier access
+    #         config_dict = config.model_dump()
+            
+    #         if config_dict.get("custom_metadata"):
+    #             # Use custom metadata provided by user
+    #             custom_data = config_dict["custom_metadata"]
+                
+    #             # Instead of trying to create TokenMetadata DB model,
+    #             # create a simple dict to store metadata
+    #             self.metadata_for_token = {
+    #                 "name": custom_data.get("name", f"Token_{int(datetime.utcnow().timestamp())}"),
+    #                 "symbol": custom_data.get("symbol", "TKN"),
+    #                 "description": custom_data.get("description", "Token created via Flash Sniper"),
+    #                 "image": custom_data.get("image", "https://placehold.co/600x400"),
+    #                 "attributes": [
+    #                     {"trait_type": "Platform", "value": "Flash Sniper"},
+    #                     {"trait_type": "Created", "value": datetime.utcnow().strftime("%Y-%m-%d")},
+    #                 ]
+    #             }
+                
+    #         elif config_dict.get("use_ai_metadata", True):
+    #             # Generate AI metadata
+    #             metadata_request = MetadataRequest(
+    #                 style=config_dict.get("metadata_style", "meme"),
+    #                 keywords=config_dict.get("metadata_keywords", ""),
+    #                 category=config_dict.get("metadata_category", "meme"),
+    #                 theme=f"Launch by {self.user.wallet_address[:8]}...",
+    #                 use_dalle=config_dict.get("use_dalle_generation", False)
+    #             )
+                
+    #             # Call the OpenAI metadata generation function
+    #             response = await generate_metadata(metadata_request)
+                
+    #             if not response or not response.metadata_for_token:
+    #                 raise Exception("AI metadata generation failed")
+                
+    #             # Convert Pydantic model to dict
+    #             self.metadata_for_token = response.metadata_for_token.dict()
+    #             logger.info(f"AI metadata generated: {self.metadata_for_token['name']} ({self.metadata_for_token['symbol']})")
+                
+    #         else:
+    #             # Generate basic metadata
+    #             timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+    #             self.metadata_for_token = {
+    #                 "name": f"Token_{timestamp}",
+    #                 "symbol": f"TKN{timestamp[-4:]}",
+    #                 "description": "Token created via Flash Sniper",
+    #                 "image": "https://placehold.co/600x400",
+    #                 "attributes": [
+    #                     {"trait_type": "Platform", "value": "Flash Sniper"},
+    #                     {"trait_type": "Created", "value": datetime.utcnow().strftime("%Y-%m-%d")},
+    #                 ]
+    #             }
+            
+    #         # Add creator attribution
+    #         self.metadata_for_token["attributes"].append({
+    #             "trait_type": "Creator",
+    #             "value": self.user.wallet_address[:8] + "..."
+    #         })
+            
+    #         logger.info(f"Metadata ready: {self.metadata_for_token['name']}")
+            
+    #     except Exception as e:
+    #         logger.error(f"Failed to generate metadata: {e}", exc_info=True)
+    #         # Fallback to basic metadata
+    #         timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+    #         self.metadata_for_token = {
+    #             "name": f"Token_{timestamp}",
+    #             "symbol": f"TKN{timestamp[-4:]}",
+    #             "description": "Token created via Flash Sniper",
+    #             "image": "https://placehold.co/600x400",
+    #             "attributes": [
+    #                 {"trait_type": "Platform", "value": "Flash Sniper"},
+    #                 {"trait_type": "Created", "value": datetime.utcnow().strftime("%Y-%m-%d")},
+    #                 {"trait_type": "Creator", "value": self.user.wallet_address[:8] + "..."},
+    #             ]
+    #         }
+    
+    
+    # app/routers/creators/tokencreate.py - Update _get_metadata method
     async def _get_metadata(self, config: LaunchConfigCreate):
         """Get or generate metadata using OpenAI"""
         try:
@@ -261,19 +346,20 @@ class LaunchCoordinator:
                 # Use custom metadata provided by user
                 custom_data = config_dict["custom_metadata"]
                 
-                # Instead of trying to create TokenMetadata DB model,
-                # create a simple dict to store metadata
-                self.metadata_for_token = {
-                    "name": custom_data.get("name", f"Token_{int(datetime.utcnow().timestamp())}"),
-                    "symbol": custom_data.get("symbol", "TKN"),
-                    "description": custom_data.get("description", "Token created via Flash Sniper"),
-                    "image": custom_data.get("image", "https://placehold.co/600x400"),
-                    "attributes": [
-                        {"trait_type": "Platform", "value": "Flash Sniper"},
-                        {"trait_type": "Created", "value": datetime.utcnow().strftime("%Y-%m-%d")},
-                    ]
-                }
-                
+                # ✅ Check if custom metadata already has a URI
+                if custom_data.get("metadata_uri"):
+                    # User provided complete metadata including URI
+                    self.metadata_for_token = {
+                        "name": custom_data.get("name"),
+                        "symbol": custom_data.get("symbol"),
+                        "metadata_uri": custom_data.get("metadata_uri"),
+                        "image_url": custom_data.get("image_url", custom_data.get("image"))
+                    }
+                else:
+                    # Generate metadata for custom token
+                    # You might want to call generate_metadata here with custom data
+                    raise Exception("Custom metadata must include metadata_uri for on-chain use")
+                    
             elif config_dict.get("use_ai_metadata", True):
                 # Generate AI metadata
                 metadata_request = MetadataRequest(
@@ -287,12 +373,20 @@ class LaunchCoordinator:
                 # Call the OpenAI metadata generation function
                 response = await generate_metadata(metadata_request)
                 
-                if not response or not response.metadata_for_token:
+                if not response or not response.success:
                     raise Exception("AI metadata generation failed")
                 
-                # Convert Pydantic model to dict
-                self.metadata_for_token = response.metadata_for_token.dict()
+                # ✅ Use the simplified response directly
+                self.metadata_for_token = {
+                    "name": response.name,
+                    "symbol": response.symbol,
+                    "metadata_uri": response.metadata_uri,  # This is what goes on-chain
+                    "image_url": response.image_url,
+                    "description": response.description
+                }
+                
                 logger.info(f"AI metadata generated: {self.metadata_for_token['name']} ({self.metadata_for_token['symbol']})")
+                logger.info(f"Metadata URI: {self.metadata_for_token['metadata_uri']}")
                 
             else:
                 # Generate basic metadata
@@ -301,20 +395,17 @@ class LaunchCoordinator:
                     "name": f"Token_{timestamp}",
                     "symbol": f"TKN{timestamp[-4:]}",
                     "description": "Token created via Flash Sniper",
-                    "image": "https://placehold.co/600x400",
-                    "attributes": [
-                        {"trait_type": "Platform", "value": "Flash Sniper"},
-                        {"trait_type": "Created", "value": datetime.utcnow().strftime("%Y-%m-%d")},
-                    ]
+                    "image_url": "https://placehold.co/600x400",
+                    # For basic tokens without IPFS, we can use a data URI or placeholder
+                    "metadata_uri": f"data:application/json,{json.dumps({
+                        'name': f'Token_{timestamp}',
+                        'symbol': f'TKN{timestamp[-4:]}',
+                        'image': 'https://placehold.co/600x400'
+                    })}"
                 }
             
-            # Add creator attribution
-            self.metadata_for_token["attributes"].append({
-                "trait_type": "Creator",
-                "value": self.user.wallet_address[:8] + "..."
-            })
-            
-            logger.info(f"Metadata ready: {self.metadata_for_token['name']}")
+            logger.info(f"✅ Metadata ready: {self.metadata_for_token['name']}")
+            logger.info(f"✅ Metadata URI: {self.metadata_for_token.get('metadata_uri', 'No URI')}")
             
         except Exception as e:
             logger.error(f"Failed to generate metadata: {e}", exc_info=True)
@@ -324,13 +415,13 @@ class LaunchCoordinator:
                 "name": f"Token_{timestamp}",
                 "symbol": f"TKN{timestamp[-4:]}",
                 "description": "Token created via Flash Sniper",
-                "image": "https://placehold.co/600x400",
-                "attributes": [
-                    {"trait_type": "Platform", "value": "Flash Sniper"},
-                    {"trait_type": "Created", "value": datetime.utcnow().strftime("%Y-%m-%d")},
-                    {"trait_type": "Creator", "value": self.user.wallet_address[:8] + "..."},
-                ]
-            }
+                "image_url": "https://placehold.co/600x400",
+                "metadata_uri": f"data:application/json,{json.dumps({
+                    'name': f'Token_{timestamp}',
+                    'symbol': f'TKN{timestamp[-4:]}',
+                    'image': 'https://placehold.co/600x400'
+                })}"
+            }  
     
     async def _get_available_funded_bots(self, count: int, min_balance: float = 0.0001):
         """Get bot wallets that have sufficient balance for buying"""
@@ -475,26 +566,23 @@ class LaunchCoordinator:
         except Exception as e:
             logger.error(f"Failed to update launch with metadata: {e}", exc_info=True)
             
-    # Create token + creator buy + bot's buy in a single transaction
     # async def _create_token_onchain(self) -> Dict[str, Any]:
-    #     """Create token with atomic creator buy and bot buys"""
+    #     """Create token with 2-step approach (like top 1% bots)"""
     #     try:
-    #         # CRITICAL FIX: Ensure metadata exists
+    #         # Ensure metadata exists
     #         if not self.metadata_for_token:
-    #             logger.warning(f"metadata_for_token is None for launch {self.launch_id}, generating fallback metadata")
     #             await self._ensure_metadata()
                 
-    #             # If still None, create basic metadata
     #             if not self.metadata_for_token:
     #                 timestamp = int(datetime.utcnow().timestamp())
     #                 self.metadata_for_token = {
     #                     "name": f"Token_{timestamp}",
     #                     "symbol": f"TKN{timestamp % 10000:04d}",
-    #                     "image": "https://placehold.co/600x400",
+    #                     "image": "https://placehold.co/400x400",
     #                     "description": "Token created via Flash Sniper"
     #                 }
             
-    #         # Use the atomic launch endpoint
+    #         # Prepare bot configs
     #         bot_configs = []
     #         for bot in self.bot_wallets:
     #             bot_configs.append({
@@ -502,35 +590,30 @@ class LaunchCoordinator:
     #                 "amount_sol": self.launch_config.get("bot_buy_amount", 0.0001)
     #             })
             
-    #         # Check if we have any bots to include
-    #         if not bot_configs:
-    #             logger.warning(f"No bot wallets found for launch {self.launch_id}")
-                
-    #         atomic_payload = {
-    #             "user_wallet": self.user.wallet_address,
-    #             "metadata": {
-    #                 "name": self.metadata_for_token.get("name", f"Token_{int(datetime.utcnow().timestamp())}"),
-    #                 "symbol": self.metadata_for_token.get("symbol", "TKN"),
-    #                 "uri": self.metadata_for_token.get("image", "https://placehold.co/600x400")
-    #             },
-    #             "creator_buy_amount": self.launch_config.get("creator_buy_amount", 0.001),
-    #             "bot_wallets": bot_configs,
-    #             "use_jito": self.launch_config.get("use_jito_bundle", True),
-    #             "slippage_bps": 500
-    #         }
+    #         logger.info(f"🔧 Starting 2-step launch with {len(bot_configs)} bots")
             
-    #         logger.info(f"Calling atomic launch with {len(bot_configs)} bots")
-    #         logger.info(f"Token metadata: {atomic_payload['metadata']}")
-            
-    #         async with httpx.AsyncClient(timeout=90.0) as client:
+    #         # Call the new 2-step endpoint
+    #         async with httpx.AsyncClient(timeout=30.0) as client:
     #             response = await client.post(
-    #                 f"{settings.ONCHAIN_CLIENT_URL}/api/onchain/atomic-launch",
-    #                 json=atomic_payload,
+    #                 f"{settings.ONCHAIN_CLIENT_URL}/api/onchain/atomic-launch",  # NEW ENDPOINT
+    #                 json={
+    #                     "user_wallet": self.user.wallet_address,
+    #                     "metadata": {
+    #                         "name": self.metadata_for_token.get("name"),
+    #                         "symbol": self.metadata_for_token.get("symbol"),
+    #                         "uri": self.metadata_for_token.get("image", "https://placehold.co/400x400")
+    #                     },
+    #                     "creator_buy_amount": self.launch_config.get("creator_buy_amount", 0.001),
+    #                     "bot_buys": bot_configs,
+    #                     "use_jito": self.launch_config.get("use_jito_bundle", True),
+    #                     "slippage_bps": 500
+    #                 },
     #                 headers={"X-API-Key": settings.ONCHAIN_API_KEY}
     #             )
                 
     #             if response.status_code != 200:
-    #                 return {"success": False, "error": f"HTTP {response.status_code}: {response.text}"}
+    #                 error_text = response.text[:200] if response.text else "No error message"
+    #                 return {"success": False, "error": f"HTTP {response.status_code}: {error_text}"}
                 
     #             result = response.json()
                 
@@ -542,34 +625,66 @@ class LaunchCoordinator:
     #             # Update launch record
     #             if self.launch_record:
     #                 self.launch_record.mint_address = self.mint_address
-    #                 self.launch_record.atomic_bundle = True
+    #                 self.launch_record.creator_tx_hash = result.get("signatures", [None])[0]
     #                 self.launch_record.bot_buy_bundle_id = result.get("bundle_id")
+    #                 self.launch_record.atomic_bundle = True
     #                 await self.db.commit()
                 
-    #             logger.info(f"✅ Atomic launch successful: {self.mint_address}")
+    #             logger.info(f"✅ 2-step launch successful: {self.mint_address}")
                 
     #             return result
                 
     #     except Exception as e:
-    #         logger.error(f"Atomic launch failed: {e}", exc_info=True)
+    #         logger.error(f"2-step launch failed: {e}", exc_info=True)
     #         return {"success": False, "error": str(e)}
         
-        
+
     async def _create_token_onchain(self) -> Dict[str, Any]:
-        """Create token with 2-step approach (like top 1% bots)"""
+        """Create token with 2-step approach"""
         try:
             # Ensure metadata exists
             if not self.metadata_for_token:
                 await self._ensure_metadata()
-                
-                if not self.metadata_for_token:
-                    timestamp = int(datetime.utcnow().timestamp())
-                    self.metadata_for_token = {
-                        "name": f"Token_{timestamp}",
-                        "symbol": f"TKN{timestamp % 10000:04d}",
-                        "image": "https://placehold.co/400x400",
-                        "description": "Token created via Flash Sniper"
-                    }
+            
+            # ✅ ADD DETAILED DEBUG LOGGING
+            logger.info(f"=== METADATA DEBUG ===")
+            logger.info(f"Metadata dict keys: {list(self.metadata_for_token.keys())}")
+            logger.info(f"Name: {self.metadata_for_token.get('name')}")
+            logger.info(f"Symbol: {self.metadata_for_token.get('symbol')}")
+            logger.info(f"URI: {self.metadata_for_token.get('uri')}")
+            logger.info(f"Metadata URI: {self.metadata_for_token.get('metadata_uri')}")
+            logger.info(f"Image: {self.metadata_for_token.get('image')}")
+            logger.info(f"Image URL: {self.metadata_for_token.get('image_url')}")
+            
+            # ✅ CRITICAL: Extract the correct URI field
+            # Try multiple possible field names
+            metadata_uri = (
+                self.metadata_for_token.get('uri') or
+                self.metadata_for_token.get('metadata_uri') or
+                self.metadata_for_token.get('image_url') or
+                self.metadata_for_token.get('image')
+            )
+            
+            token_name = self.metadata_for_token.get('name')
+            token_symbol = self.metadata_for_token.get('symbol')
+            
+            if not token_name or not token_symbol or not metadata_uri:
+                logger.error("❌ Missing required metadata fields")
+                logger.error(f"Available: name={token_name}, symbol={token_symbol}")
+                logger.error(f"URI sources: uri={self.metadata_for_token.get('uri')}, "
+                            f"metadata_uri={self.metadata_for_token.get('metadata_uri')}, "
+                            f"image_url={self.metadata_for_token.get('image_url')}, "
+                            f"image={self.metadata_for_token.get('image')}")
+                raise Exception("Missing required metadata fields for token creation")
+            
+            logger.info(f"🔗 Using metadata URI for on-chain: {metadata_uri}")
+            
+            # ✅ SIMPLIFIED ON-CHAIN PAYLOAD
+            onchain_metadata = {
+                "name": token_name,
+                "symbol": token_symbol,
+                "uri": metadata_uri  # ✅ Only the URI goes on-chain
+            }
             
             # Prepare bot configs
             bot_configs = []
@@ -579,19 +694,15 @@ class LaunchCoordinator:
                     "amount_sol": self.launch_config.get("bot_buy_amount", 0.0001)
                 })
             
-            logger.info(f"🔧 Starting 2-step launch with {len(bot_configs)} bots")
+            logger.info(f"🔧 Starting launch with {len(bot_configs)} bots")
             
-            # Call the new 2-step endpoint
+            # Call the on-chain service with simplified metadata
             async with httpx.AsyncClient(timeout=30.0) as client:
                 response = await client.post(
-                    f"{settings.ONCHAIN_CLIENT_URL}/api/onchain/atomic-launch",  # NEW ENDPOINT
+                    f"{settings.ONCHAIN_CLIENT_URL}/api/onchain/atomic-launch",
                     json={
                         "user_wallet": self.user.wallet_address,
-                        "metadata": {
-                            "name": self.metadata_for_token.get("name"),
-                            "symbol": self.metadata_for_token.get("symbol"),
-                            "uri": self.metadata_for_token.get("image", "https://placehold.co/400x400")
-                        },
+                        "metadata": onchain_metadata,  # ✅ Only name, symbol, URI
                         "creator_buy_amount": self.launch_config.get("creator_buy_amount", 0.001),
                         "bot_buys": bot_configs,
                         "use_jito": self.launch_config.get("use_jito_bundle", True),
@@ -619,15 +730,15 @@ class LaunchCoordinator:
                     self.launch_record.atomic_bundle = True
                     await self.db.commit()
                 
-                logger.info(f"✅ 2-step launch successful: {self.mint_address}")
+                logger.info(f"✅ Launch successful: {self.mint_address}")
                 
                 return result
                 
         except Exception as e:
-            logger.error(f"2-step launch failed: {e}", exc_info=True)
+            logger.error(f"Launch failed: {e}", exc_info=True)
             return {"success": False, "error": str(e)}
         
-    
+        
     # Update bot funding
     async def _fund_bot_wallets(self) -> Dict[str, Any]:
         """Fund bot wallets using on-chain service"""
@@ -888,6 +999,43 @@ class LaunchCoordinator:
         
         return bot_cost + creator_cost + fees
     
+    # async def _ensure_metadata(self):
+    #     """Ensure metadata exists, generate if not"""
+    #     if not self.metadata_for_token:
+    #         logger.info(f"No metadata found for launch {self.launch_id}, generating...")
+            
+    #         if self.launch_config:
+    #             # Try to get from custom_metadata
+    #             custom_metadata = self.launch_config.get("custom_metadata")
+    #             if custom_metadata:
+    #                 self.metadata_for_token = custom_metadata
+    #                 logger.info(f"Using custom metadata from config")
+    #             else:
+    #                 # Try to generate metadata if not exists
+    #                 try:
+    #                     # Create a config object for metadata generation
+    #                     config_for_metadata = LaunchConfigCreate(**self.launch_config) if isinstance(self.launch_config, dict) else self.launch_config
+    #                     await self._get_metadata(config_for_metadata)
+    #                     logger.info(f"Generated metadata via _get_metadata")
+    #                 except Exception as e:
+    #                     logger.error(f"Failed to generate metadata: {e}")
+                        
+    #         # Fallback if still None
+    #         if not self.metadata_for_token:
+    #             timestamp = int(datetime.utcnow().timestamp())
+    #             self.metadata_for_token = {
+    #                 "name": f"Token_{timestamp}",
+    #                 "symbol": f"TKN{timestamp % 10000:04d}",
+    #                 "image": "https://placehold.co/600x400",
+    #                 "description": "Token created via Flash Sniper",
+    #                 "attributes": [
+    #                     {"trait_type": "Platform", "value": "Flash Sniper"},
+    #                     {"trait_type": "Created", "value": datetime.utcnow().strftime("%Y-%m-%d")},
+    #                 ]
+    #             }
+    #             logger.info(f"Created fallback metadata: {self.metadata_for_token['name']}")
+            
+    # app/routers/creators/tokencreate.py - Update _ensure_metadata method
     async def _ensure_metadata(self):
         """Ensure metadata exists, generate if not"""
         if not self.metadata_for_token:
@@ -899,6 +1047,12 @@ class LaunchCoordinator:
                 if custom_metadata:
                     self.metadata_for_token = custom_metadata
                     logger.info(f"Using custom metadata from config")
+                    
+                    # ✅ Ensure URI exists
+                    if "uri" not in self.metadata_for_token:
+                        # Try to use image as fallback URI
+                        self.metadata_for_token["uri"] = self.metadata_for_token.get("image", "https://placehold.co/600x400")
+                        logger.info(f"Added fallback URI: {self.metadata_for_token['uri']}")
                 else:
                     # Try to generate metadata if not exists
                     try:
@@ -916,6 +1070,7 @@ class LaunchCoordinator:
                     "name": f"Token_{timestamp}",
                     "symbol": f"TKN{timestamp % 10000:04d}",
                     "image": "https://placehold.co/600x400",
+                    "uri": "https://placehold.co/600x400",  # ✅ Include URI!
                     "description": "Token created via Flash Sniper",
                     "attributes": [
                         {"trait_type": "Platform", "value": "Flash Sniper"},
@@ -923,8 +1078,11 @@ class LaunchCoordinator:
                     ]
                 }
                 logger.info(f"Created fallback metadata: {self.metadata_for_token['name']}")
-            
-    
+        
+        # ✅ Log what we have
+        logger.info(f"Final metadata keys: {list(self.metadata_for_token.keys())}")
+        logger.info(f"Metadata URI: {self.metadata_for_token.get('uri', 'No URI found')}")
+        
 # ============================================
 # API ENDPOINTS
 # ============================================
@@ -991,6 +1149,11 @@ async def create_token_launch(
         logger.error(f"Failed to create launch: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to create launch: {str(e)}")
 
+
+
+
+# app/routers/creators/tokencreate.py - Update quick_launch method
+
 @router.post("/quick-launch", response_model=Dict[str, Any])
 async def quick_launch(
     request: QuickLaunchRequest,
@@ -1015,24 +1178,31 @@ async def quick_launch(
         # Call the OpenAI metadata generation
         metadata_response = await generate_metadata(metadata_request)
         
-        if not metadata_response or not metadata_response.metadata_for_token:
+        if not metadata_response or not metadata_response.success:
             raise HTTPException(
                 status_code=500, 
                 detail="AI metadata generation failed"
             )
         
+        # ✅ Use the simplified response directly
+        metadata_dict = {
+            "name": metadata_response.name,
+            "symbol": metadata_response.symbol,
+            "description": metadata_response.description,
+            "image_url": metadata_response.image_url,
+            "metadata_uri": metadata_response.metadata_uri  # ✅ This is the key!
+        }
+        
+        logger.info(f"✅ AI Metadata generated:")
+        logger.info(f"   Name: {metadata_dict['name']}")
+        logger.info(f"   Symbol: {metadata_dict['symbol']}")
+        logger.info(f"   Metadata URI: {metadata_dict['metadata_uri'][:100]}...")
+        logger.info(f"   Image URL: {metadata_dict['image_url'][:100]}...")
+        
         # Create launch config
         launch_config = LaunchConfigCreate(
-            use_ai_metadata=False,  # We already generated it
-            custom_metadata={
-                "name": metadata_response.metadata_for_token.name,
-                "symbol": metadata_response.metadata_for_token.symbol,
-                "description": metadata_response.metadata_for_token.description,
-                "image": metadata_response.metadata_for_token.image,
-                "attributes": [
-                    attr.dict() for attr in metadata_response.metadata_for_token.attributes
-                ]
-            },
+            use_ai_metadata=False,
+            custom_metadata=metadata_dict,  # ✅ Pass the simplified metadata
             bot_count=request.bot_count,
             creator_buy_amount=request.creator_buy_amount,
             bot_buy_amount=request.bot_buy_amount,
@@ -1040,7 +1210,6 @@ async def quick_launch(
             sell_volume_target=request.sell_volume_target,
             sell_price_target=request.sell_price_target,
             sell_time_minutes=request.sell_time_minutes,
-            metadata_style=request.style,
             use_jito_bundle=True,
             priority=10
         )
@@ -1048,21 +1217,45 @@ async def quick_launch(
         # Create launch request
         launch_request = LaunchCreate(
             config=launch_config,
-            priority=10  # High priority for quick launches
+            priority=10
         )
         
         # Call regular launch endpoint
         return await create_token_launch(launch_request, background_tasks, current_user, db)
         
-    except HTTPException:
-        raise
     except Exception as e:
         logger.error(f"Quick launch failed: {e}", exc_info=True)
         raise HTTPException(
             status_code=500, 
             detail=f"Quick launch failed: {str(e)}"
         )
-        
+   
+   
+def ensure_metadata_has_uri(metadata: Dict[str, Any]) -> Dict[str, Any]:
+    """Ensure metadata has a valid 'uri' — but NEVER overwrite if it already exists"""
+    if not metadata:
+        return metadata
+
+    # Remove attributes (good)
+    if 'attributes' in metadata:
+        logger.info("Removing attributes for pump.fun compatibility")
+        del metadata['attributes']
+
+    # Only set uri if it's truly missing or invalid
+    current_uri = metadata.get('uri', '').strip()
+    if not current_uri or not current_uri.startswith(('http://', 'https://', 'ipfs://')):
+        if 'image' in metadata and metadata['image'].startswith(('http://', 'https://', 'ipfs://')):
+            metadata['uri'] = metadata['image']
+            logger.warning(f"uri was missing/invalid → fallback to image: {metadata['uri']}")
+        else:
+            metadata['uri'] = "https://placehold.co/600x400"
+            logger.warning(f"No valid uri or image → using placeholder")
+    else:
+        logger.info(f"uri already valid, keeping: {current_uri[:80]}...")
+
+    return metadata
+   
+   
 @router.get("/launch/{launch_id}/status", response_model=LaunchStatusResponse)
 async def get_launch_status(
     launch_id: str,
@@ -1618,8 +1811,44 @@ class AtomicLaunchCordinator(LaunchCoordinator):
                 "error": str(e)
             }
             
+    # async def _ensure_metadata(self):
+    #     """Ensure metadata exists, generate if not"""
+    #     if not self.metadata_for_token:
+    #         logger.info(f"No metadata found for launch {self.launch_id}, generating...")
+            
+    #         if self.launch_config:
+    #             # Try to get from custom_metadata
+    #             custom_metadata = self.launch_config.get("custom_metadata")
+    #             if custom_metadata:
+    #                 self.metadata_for_token = custom_metadata
+    #                 logger.info(f"Using custom metadata from config")
+    #             else:
+    #                 # Try to generate metadata if not exists
+    #                 try:
+    #                     # Create a config object for metadata generation
+    #                     config_for_metadata = LaunchConfigCreate(**self.launch_config) if isinstance(self.launch_config, dict) else self.launch_config
+    #                     await self._get_metadata(config_for_metadata)
+    #                     logger.info(f"Generated metadata via _get_metadata")
+    #                 except Exception as e:
+    #                     logger.error(f"Failed to generate metadata: {e}")
+                        
+    #         # Fallback if still None
+    #         if not self.metadata_for_token:
+    #             timestamp = int(datetime.utcnow().timestamp())
+    #             self.metadata_for_token = {
+    #                 "name": f"Token_{timestamp}",
+    #                 "symbol": f"TKN{timestamp % 10000:04d}",
+    #                 "image": "https://placehold.co/600x400",
+    #                 "description": "Token created via Flash Sniper",
+    #                 "attributes": [
+    #                     {"trait_type": "Platform", "value": "Flash Sniper"},
+    #                     {"trait_type": "Created", "value": datetime.utcnow().strftime("%Y-%m-%d")},
+    #                 ]
+    #             }
+    #             logger.info(f"Created fallback metadata: {self.metadata_for_token['name']}")
+          
     async def _ensure_metadata(self):
-        """Ensure metadata exists, generate if not"""
+        """Ensure metadata exists with proper URI"""
         if not self.metadata_for_token:
             logger.info(f"No metadata found for launch {self.launch_id}, generating...")
             
@@ -1629,31 +1858,36 @@ class AtomicLaunchCordinator(LaunchCoordinator):
                 if custom_metadata:
                     self.metadata_for_token = custom_metadata
                     logger.info(f"Using custom metadata from config")
-                else:
-                    # Try to generate metadata if not exists
-                    try:
-                        # Create a config object for metadata generation
-                        config_for_metadata = LaunchConfigCreate(**self.launch_config) if isinstance(self.launch_config, dict) else self.launch_config
-                        await self._get_metadata(config_for_metadata)
-                        logger.info(f"Generated metadata via _get_metadata")
-                    except Exception as e:
-                        logger.error(f"Failed to generate metadata: {e}")
+                    
+                    # ✅ Check for both 'uri' and 'metadata_uri' fields
+                    if "uri" not in self.metadata_for_token and "metadata_uri" in self.metadata_for_token:
+                        self.metadata_for_token["uri"] = self.metadata_for_token["metadata_uri"]
+                        logger.info(f"Mapped metadata_uri to uri: {self.metadata_for_token['uri']}")
                         
-            # Fallback if still None
-            if not self.metadata_for_token:
-                timestamp = int(datetime.utcnow().timestamp())
-                self.metadata_for_token = {
-                    "name": f"Token_{timestamp}",
-                    "symbol": f"TKN{timestamp % 10000:04d}",
-                    "image": "https://placehold.co/600x400",
-                    "description": "Token created via Flash Sniper",
-                    "attributes": [
-                        {"trait_type": "Platform", "value": "Flash Sniper"},
-                        {"trait_type": "Created", "value": datetime.utcnow().strftime("%Y-%m-%d")},
-                    ]
-                }
-                logger.info(f"Created fallback metadata: {self.metadata_for_token['name']}")
-                
+                    if "uri" not in self.metadata_for_token:
+                        # Try other fallbacks
+                        if "image_url" in self.metadata_for_token:
+                            self.metadata_for_token["uri"] = self.metadata_for_token["image_url"]
+                        elif "image" in self.metadata_for_token:
+                            self.metadata_for_token["uri"] = self.metadata_for_token["image"]
+                        else:
+                            self.metadata_for_token["uri"] = "https://placehold.co/600x400"
+                        logger.info(f"Added fallback URI: {self.metadata_for_token['uri']}")
+            
+        # ✅ Log what we have
+        logger.info(f"Final metadata keys: {list(self.metadata_for_token.keys())}")
+        logger.info(f"Metadata URI: {self.metadata_for_token.get('uri', 'No URI found')}")
+        
+        # ✅ Ensure we have required fields
+        required_fields = ['name', 'symbol', 'uri']
+        missing = [field for field in required_fields if not self.metadata_for_token.get(field)]
+        
+        if missing:
+            logger.error(f"❌ Missing required metadata fields: {missing}")
+            logger.error(f"Available fields: {self.metadata_for_token}")
+            raise Exception(f"Missing required metadata fields: {missing}")
+        
+            
                  
     # async def _execute_atomic_create_and_buy(self, payload: Dict[str, Any]) -> Dict[str, Any]:
     #     """Execute atomic create + buy bundle"""

@@ -774,9 +774,9 @@ export class PumpFunInstructionBuilder {
         // MINIMAL strings to save space
         name = name.slice(0, 8);    // Shorter name
         symbol = symbol.slice(0, 4); // Shorter symbol
-        uri = uri.slice(0, 50);     // Shorter URI
+        // uri = uri.slice(0, 50);     // Shorter URI
         
-        if (!uri) uri = "a"; // Minimal URI
+        // if (!uri) uri = "a"; // Minimal URI
 
         
         // 4. Encode instruction data exactly as in IDL

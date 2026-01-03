@@ -105,6 +105,20 @@ class LaunchConfigBase(BaseModel):
             raise ValueError('Maximum 50 bots allowed for performance reasons')
         return v
     
+    # @model_validator(mode='after')
+    # def validate_sell_strategy(self):
+    #     """Validate sell strategy parameters based on type"""
+    #     if self.sell_strategy_type == SellStrategyType.VOLUME_BASED:
+    #         if not self.sell_volume_target:
+    #             raise ValueError('sell_volume_target is required for volume_based strategy')
+    #     elif self.sell_strategy_type == SellStrategyType.TIME_BASED:
+    #         if not self.sell_time_minutes:
+    #             raise ValueError('sell_time_minutes is required for time_based strategy')
+    #     elif self.sell_strategy_type == SellStrategyType.PRICE_TARGET:
+    #         if not self.sell_price_target:
+    #             raise ValueError('sell_price_target is required for price_target strategy')
+    #     return self
+    
     @model_validator(mode='after')
     def validate_sell_strategy(self):
         """Validate sell strategy parameters based on type"""
@@ -119,12 +133,44 @@ class LaunchConfigBase(BaseModel):
                 raise ValueError('sell_price_target is required for price_target strategy')
         return self
 
+# class LaunchConfigCreate(LaunchConfigBase):
+#     """Launch config for creation"""
+#     custom_metadata: Optional[Dict[str, Any]] = Field(
+#         default=None,
+#         description="Custom metadata (overrides AI generation if provided)"
+#     )
+
 class LaunchConfigCreate(LaunchConfigBase):
     """Launch config for creation"""
     custom_metadata: Optional[Dict[str, Any]] = Field(
         default=None,
         description="Custom metadata (overrides AI generation if provided)"
     )
+    
+    @model_validator(mode='after')
+    def validate_custom_metadata_fields(self) -> 'LaunchConfigCreate':
+        """Validate custom_metadata has required fields when not using AI"""
+        if self.custom_metadata and not self.use_ai_metadata:
+            # Check for required fields
+            required_fields = ['name', 'symbol']
+            missing_fields = []
+            
+            for field in required_fields:
+                if field not in self.custom_metadata:
+                    missing_fields.append(field)
+            
+            if missing_fields:
+                raise ValueError(f"custom_metadata missing required fields: {', '.join(missing_fields)}")
+            
+            # Ensure we have either 'uri' or 'image' field
+            if 'uri' not in self.custom_metadata:
+                if 'image' in self.custom_metadata:
+                    # Use image as URI if uri is not provided
+                    self.custom_metadata['uri'] = self.custom_metadata['image']
+                else:
+                    raise ValueError("custom_metadata must include either 'uri' or 'image' field")
+        
+        return self
 
 class LaunchConfigResponse(LaunchConfigBase):
     """Launch config response with calculated fields"""
