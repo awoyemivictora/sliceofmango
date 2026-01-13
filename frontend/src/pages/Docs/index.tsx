@@ -770,6 +770,12 @@ const DocumentationPage: React.FC = () => {
                   <button className="bg-white/10 hover:bg-white/20 border border-white/20 text-white px-8 py-3 rounded-lg font-semibold transition-all duration-300 backdrop-blur-sm">
                     Join Community
                   </button>
+                  <button
+                    onClick={() => navigate('/token-creator')}
+                    className="bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white px-8 py-3 rounded-lg font-semibold transition-all duration-300 hover:shadow-lg hover:shadow-emerald-500/25"
+                  >
+                    Launch Your First Token
+                  </button>
                 </div>
               </div>
             </div>

@@ -126,7 +126,7 @@ class ApiService {
   constructor() {
     this.baseUrl = config.api.baseUrl;
     this.wsUrl = config.api.wsUrl;
-    console.log('ApiService initialized:', { baseUrl: this.baseUrl, wsUrl: this.wsUrl });
+    // console.log('ApiService initialized:', { baseUrl: this.baseUrl, wsUrl: this.wsUrl });
     if (!this.baseUrl) {
       throw new Error('baseUrl is empty. Ensure VITE_API_URL is set in .env');
     }
@@ -187,7 +187,7 @@ class ApiService {
     const ws = new WebSocket(`${this.wsUrl}/ws/logs/${walletAddress}`);
 
     ws.onopen = () => {
-      console.log('WebSocket connected');
+      // console.log('WebSocket connected');
       const token = localStorage.getItem('authToken');
       if (token) {
         ws.send(JSON.stringify({ type: 'auth', token }));
@@ -195,7 +195,7 @@ class ApiService {
     };
 
     ws.onclose = (event) => {
-      console.log('WebSocket disconnected:', event.code, event.reason);
+      // console.log('WebSocket disconnected:', event.code, event.reason);
       if (event.code !== 1000) {
         setTimeout(() => this.createWebSocket(walletAddress), 5000);
       }

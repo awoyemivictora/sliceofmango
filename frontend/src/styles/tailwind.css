@@ -15,7 +15,7 @@
     --bg-warning-light: #e7a13a19;
     --bg-error-light: #ffe5e5;
     --bg-white: #ffffff;
-
+    
     /* Text Colors */
     --text-success: #10b981;
     --text-primary: #3773ec;
@@ -25,6 +25,22 @@
     --text-light: #ebebef;
     --text-white: #ffffff;
     --text-white-transparent: #ffffff7f;
+  }
+  
+  /* Dark mode styles */
+  .dark {
+    --bg-primary: #0c1322;
+    --bg-secondary: #0f172a;
+    --text-primary: #f1f5f9;
+    --text-muted: #94a3b8;
+  }
+  
+  /* Light mode styles (if needed) */
+  .light {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8fafc;
+    --text-primary: #0f172a;
+    --text-muted: #64748b;
   }
 }
 
@@ -85,5 +101,74 @@
   }
   .text-white-transparent {
     color: var(--text-white-transparent);
+  }
+  
+  /* New utility classes */
+  .glass {
+    background: rgba(30, 41, 59, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+  }
+  
+  .glass-dark {
+    background: rgba(15, 23, 42, 0.8);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(148, 163, 184, 0.1);
+  }
+  
+  /* Gradient backgrounds */
+  .bg-gradient-solana {
+    @apply bg-gradient-to-br from-blue-900 via-purple-900 to-black;
+  }
+  
+  .bg-gradient-card {
+    @apply bg-gradient-to-br from-gray-800/50 to-gray-900/50;
+  }
+  
+  /* Animations */
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+  
+  .animate-float-slow {
+    animation: float 8s ease-in-out infinite;
+  }
+  
+  .animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  .animate-scaleIn {
+    animation: scaleIn 0.3s ease-out;
+  }
+  
+  .animate-shine {
+    animation: shine 2s infinite;
+  }
+  
+  /* Custom scrollbar */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+    border-radius: 4px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: var(--text-muted);
+    border-radius: 4px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
   }
 }

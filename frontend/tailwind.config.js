@@ -52,7 +52,10 @@
 
 // tailwind.config.js
 module.exports = {
-  content: ["./src/**/*.{js,ts,jsx,tsx,html,mdx}"],
+  content: [
+    "./src/**/*.{js,ts,jsx,tsx,html,mdx}", 
+    "./node_modules/@solana/wallet-adapter-react-ui/**/*.{js,ts,jsx,tsx}"
+  ],
   darkMode: "class",
   theme: {
     extend: {

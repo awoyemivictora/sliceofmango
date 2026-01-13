@@ -113,6 +113,13 @@ const LandingPage = (): JSX.Element => {
               </span>
             </Button>
           </Link>
+
+          {/* <Link 
+  to="/sol-reclaimer" 
+  className="px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-medium rounded-lg transition-all duration-200"
+>
+  SOL Reclaimer
+</Link> */}
         </div>
       </nav>
 

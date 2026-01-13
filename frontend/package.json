@@ -15,7 +15,39 @@
   "dependencies": {
     "@dhiwise/component-tagger": "^1.0.9",
     "@radix-ui/react-accordion": "^1.2.11",
+
     "@solana/web3.js": "^1.98.2",
+    "@solana/spl-token": "^0.4.14",
+
+    "@solana/wallet-adapter-base": "^0.9.27",
+    "@solana/wallet-adapter-react": "^0.15.39",
+    "@solana/wallet-adapter-react-ui": "^0.9.39",
+    "@solana/wallet-adapter-wallets": "^0.19.37",
+
+    "@solana/wallet-adapter-phantom": "^0.9.28",
+    "@solana/wallet-adapter-solflare": "^0.6.15",
+    "@solana/wallet-adapter-trust": "^0.4.8",
+    "@solana/wallet-adapter-coinbase": "^0.1.14",
+    "@solana/wallet-adapter-ledger": "^0.9.15",
+    "@solana/wallet-adapter-safepal": "^0.3.9",
+    "@solana/wallet-adapter-coin98": "^0.1.5",
+    "@solana/wallet-adapter-exodus": "^0.1.6",
+    "@solana/wallet-adapter-glow": "^0.3.9",
+    "@solana/wallet-adapter-backpack": "^0.2.7",
+    "@solana/wallet-adapter-nightly": "^0.1.4",
+    "@solana/wallet-adapter-solong": "^0.1.5",
+    "@solana/wallet-adapter-tokenpocket": "^0.1.5",
+    "@solana/wallet-adapter-xdefi": "^0.3.14",
+    "@solana/wallet-adapter-mathwallet": "^0.3.5",
+    "@solana/wallet-adapter-clover": "^0.5.15",
+    "@solana/wallet-adapter-torus": "^0.13.15",
+    "@solana/wallet-adapter-walletconnect": "^0.2.15",
+    "@solana/wallet-adapter-trezor": "^0.4.8",
+    "@solana/wallet-adapter-neko": "^0.1.4",
+    "@solana/wallet-adapter-alpha": "^0.2.13",
+    "@solana-mobile/wallet-adapter-mobile": "^0.4.2",
+    "@solana/wallet-standard-wallet-adapter-react": "^0.1.0",
+
     "@tailwindcss/typography": "^0.5.16",
     "bs58": "^6.0.0",
     "buffer": "^6.0.3",
@@ -50,3 +82,6 @@
     "vite": "5.0.0"
   }
 }
+
+
+

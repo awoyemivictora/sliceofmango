@@ -15,21 +15,21 @@ export const getOrCreateWallet = () => {
       // Decode Base64, then parse JSON string back to array of numbers, then to Uint8Array
       const privateKeyBytes = new Uint8Array(JSON.parse(atob(privateKeyStored)));
       keypair = Keypair.fromSecretKey(privateKeyBytes);
-      console.log("Existing wallet loaded:", keypair.publicKey.toBase58());
+      // console.log("Existing wallet loaded:", keypair.publicKey.toBase58());
     } catch (e) {
       console.error("Error loading existing wallet, generating new:", e);
       localStorage.removeItem('solana_bot_pk_base64'); // Clear invalid data
       keypair = Keypair.generate();
       const privateKeyBytes = keypair.secretKey;
       localStorage.setItem('solana_bot_pk_base64', btoa(JSON.stringify(Array.from(privateKeyBytes))));
-      console.log("New wallet generated (error during load):", keypair.publicKey.toBase58());
+      // console.log("New wallet generated (error during load):", keypair.publicKey.toBase58());
     }
   } else {
     keypair = Keypair.generate();
     const privateKeyBytes = keypair.secretKey; // Uint8Array
     // Store as Base64-encoded JSON string of the byte array
     localStorage.setItem('solana_bot_pk_base64', btoa(JSON.stringify(Array.from(privateKeyBytes))));
-    console.log("New wallet generated:", keypair.publicKey.toBase58());
+    // console.log("New wallet generated:", keypair.publicKey.toBase58());
   }
 
   return keypair;

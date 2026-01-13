@@ -17,15 +17,31 @@
 //     "strict": true,
 //     "noFallthroughCasesInSwitch": true,
 //     "esModuleInterop": true,
-//     "baseUrl": "./src",
+//     // Add this line to allow TypeScript to import JavaScript files
+//     "allowJs": true,
+//     // You might want to consider "checkJs": true if you want TypeScript
+//     // to also perform some basic type checking on your JS files.
+//     // However, it can sometimes introduce new errors initially.
+//     // For now, leaving it out (or false) is fine if you just want to get imports working.
+//     // "checkJs": false,
+
+//     "baseUrl": "./src", // This is good for resolving paths relative to src
 //     "paths": {
+//       // This alias is for importing modules starting with @/, e.g., @/utils/wallet
 //       "@/*": [
-//         "src/*"
+//         "*" // This means "@/module" resolves to "src/module" because baseUrl is "src"
 //       ]
+//       // You can add more specific aliases if needed, like:
+//       // "@components/*": ["components/*"],
+//       // "@pages/*": ["pages/*"]
 //     }
 //   },
 //   "include": [
-//     "src"
+//     "src/**/*.ts",
+//     "src/**/*.tsx",
+//     // <--- **Crucial: Include JavaScript files in your project scope**
+//     "src/**/*.js",
+//     "src/**/*.jsx"
 //   ],
 //   "references": [
 //     {
@@ -33,11 +49,6 @@
 //     }
 //   ]
 // }
-
-
-
-
-
 
 {
   "compilerOptions": {
@@ -58,31 +69,31 @@
     "strict": true,
     "noFallthroughCasesInSwitch": true,
     "esModuleInterop": true,
-    // Add this line to allow TypeScript to import JavaScript files
     "allowJs": true,
-    // You might want to consider "checkJs": true if you want TypeScript
-    // to also perform some basic type checking on your JS files.
-    // However, it can sometimes introduce new errors initially.
-    // For now, leaving it out (or false) is fine if you just want to get imports working.
-    // "checkJs": false,
-
-    "baseUrl": "./src", // This is good for resolving paths relative to src
+    
+    "baseUrl": "./src",
     "paths": {
-      // This alias is for importing modules starting with @/, e.g., @/utils/wallet
-      "@/*": [
-        "*" // This means "@/module" resolves to "src/module" because baseUrl is "src"
-      ]
-      // You can add more specific aliases if needed, like:
-      // "@components/*": ["components/*"],
-      // "@pages/*": ["pages/*"]
-    }
+      "@/*": ["*"]
+    },
+    
+    // Add these for better compatibility with Solana ecosystem
+    "allowSyntheticDefaultImports": true,
+    "isolatedModules": true,
+    "forceConsistentCasingInFileNames": true,
+    "downlevelIteration": true
   },
   "include": [
     "src/**/*.ts",
     "src/**/*.tsx",
-    // <--- **Crucial: Include JavaScript files in your project scope**
     "src/**/*.js",
-    "src/**/*.jsx"
+    "src/**/*.jsx",
+    // Include type declarations
+    "src/**/*.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "build"
   ],
   "references": [
     {

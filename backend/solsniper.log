@@ -8906,3 +8906,14 @@ sqlalchemy.exc.CompileError: Unconsumed column names: sell_timeout_seconds, buy_
 2026-01-09 15:25:54,424 - app.security - INFO - Decrypting private key with backend master key
 2026-01-09 15:25:58,369 - app.security - INFO - Decrypting private key with backend master key
 2026-01-09 15:26:02,483 - app.security - INFO - Decrypting private key with backend master key
+2026-01-12 14:57:50,031 - app.security - INFO - Decrypting private key with backend master key
+2026-01-12 14:59:18,716 - app.security - INFO - Decrypting private key with backend master key
+2026-01-12 15:01:28,236 - app.security - INFO - Decrypting private key with backend master key
+2026-01-12 15:03:03,710 - app.security - INFO - Decrypting private key with backend master key
+2026-01-12 15:04:18,783 - app.security - INFO - Decrypting private key with backend master key
+2026-01-12 15:05:46,180 - app.security - INFO - Decrypting private key with backend master key
+2026-01-12 15:06:59,460 - app.security - INFO - Decrypting private key with backend master key
+2026-01-12 15:07:34,611 - app.security - INFO - Decrypting private key with backend master key
+2026-01-12 15:54:04,149 - app.security - INFO - Decrypting private key with backend master key
+2026-01-12 15:54:16,010 - app.security - INFO - Decrypting private key with backend master key
+2026-01-12 15:54:21,570 - app.security - INFO - Decrypting private key with backend master key
