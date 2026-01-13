@@ -315,134 +315,6 @@ const CustomWalletModal: FC = () => {
 
 
 // Main Wallet Provider Component
-// export const WalletProvider: FC<{ 
-//   children: ReactNode;
-//   autoConnect?: boolean;
-//   network?: WalletAdapterNetwork;
-//   endpoint?: string;
-// }> = ({ 
-//   children, 
-//   autoConnect = true,
-//   network = WalletAdapterNetwork.Mainnet,
-//   endpoint: customEndpoint
-// }) => {
-//   const [currentNetwork, setCurrentNetwork] = useState<WalletAdapterNetwork>(network);
-//   const [balance, setBalance] = useState<number | null>(null);
-//   const [balanceLoading, setBalanceLoading] = useState(false);
-//   const [error, setError] = useState<string | null>(null);
-//   const isMobile = useIsMobile();
-  
-//   // Clear error helper
-//   const clearError = useCallback(() => setError(null), []);
-  
-//   // Initialize ONLY the wallets we need
-//   const wallets = useMemo(() => {
-//     try {
-//       const walletAdaptersList: BaseWalletAdapter[] = [];
-      
-//       // ALWAYS add all wallet adapters - let them handle their own detection
-//       walletAdaptersList.push(new PhantomWalletAdapter());
-//       walletAdaptersList.push(new SolflareWalletAdapter({ network: currentNetwork }));
-//       walletAdaptersList.push(new TrustWalletAdapter());
-      
-//       // Add mobile wallet adapter if on mobile
-//       // if (isMobile) {
-//       //   const mobileAdapter = new SolanaMobileWalletAdapter({
-//       //     addressSelector: createDefaultAddressSelector(),
-//       //     appIdentity: {
-//       //       name: 'SLICEOF MANGO',
-//       //       uri: 'https://sliceofmango.com',
-//       //       icon: '/logo.png'
-//       //     },
-//       //     authorizationResultCache: createDefaultAuthorizationResultCache(),
-//       //     cluster: currentNetwork,
-//       //     onWalletNotFound: async () => {
-//       //       console.log('Mobile wallet not found');
-//       //     },
-//       //   });
-//       //   walletAdaptersList.push(mobileAdapter);
-//       // }
-      
-//       // console.log(`✅ Initialized ${walletAdaptersList.length} wallet adapters`);
-//       return walletAdaptersList;
-      
-//     } catch (error) {
-//       console.error('❌ Error initializing wallet adapters:', error);
-//       setError('Failed to initialize wallet adapters. Please refresh the page.');
-//       return [];
-//     }
-//   }, [currentNetwork]);
-
-//   const CustomModalProvider: FC<{ children: ReactNode }> = useCallback(({ children }) => {
-//     const [visible, setVisible] = useState(false);
-    
-//     return (
-//       <WalletModalContext.Provider value={{ visible, setVisible }}>
-//         {children}
-//         <CustomWalletModal />
-//       </WalletModalContext.Provider>
-//     );
-//   }, []);
-
-  
-//   // Endpoint configuration with intelligent fallback
-//   const endpoint = useMemo(() => {
-//     if (customEndpoint) return customEndpoint;
-    
-//     const rpcUrls: Record<WalletAdapterNetwork, string> = {
-//       [WalletAdapterNetwork.Mainnet]: 
-//         import.meta.env.VITE_SHFYT_RPC || "https://api.mainnet-beta.solana.com",
-//       [WalletAdapterNetwork.Testnet]: 
-//         process.env.NEXT_PUBLIC_TESTNET_RPC || 
-//         clusterApiUrl(WalletAdapterNetwork.Testnet),
-//       [WalletAdapterNetwork.Devnet]: 
-//         process.env.NEXT_PUBLIC_DEVNET_RPC || 
-//         clusterApiUrl(WalletAdapterNetwork.Devnet),
-//     };
-    
-//     const selectedUrl = rpcUrls[currentNetwork] || rpcUrls[WalletAdapterNetwork.Mainnet];
-//     return selectedUrl;
-//   }, [currentNetwork, customEndpoint]);
-  
-//   // Network switch handler
-//   const switchNetwork = useCallback((newNetwork: WalletAdapterNetwork) => {
-//     // console.log(`🔄 Switching to ${newNetwork} network`);
-//     setCurrentNetwork(newNetwork);
-//   }, []);
-
-//   return (
-//    <ConnectionProvider endpoint={endpoint}>
-//     <SolanaWalletProvider 
-//       wallets={wallets} 
-//       autoConnect={autoConnect}
-//       onError={(error: WalletError) => {
-//         console.error('🔴 Wallet provider error:', error);
-//         setError(error.message || 'An unknown wallet error occurred');
-//       }}
-//     >
-//       <CustomModalProvider>
-//         <WalletContextInner 
-//           balance={balance}
-//           setBalance={setBalance}
-//           balanceLoading={balanceLoading}
-//           setBalanceLoading={setBalanceLoading}
-//           network={currentNetwork}
-//           switchNetwork={switchNetwork}
-//           error={error}
-//           setError={setError}
-//           clearError={clearError}
-//           isMobile={isMobile}
-//         >
-//           {children}
-//         </WalletContextInner>
-//       </CustomModalProvider>
-//     </SolanaWalletProvider>
-//   </ConnectionProvider>
-// );
-
-// };
-
-// Main Wallet Provider Component
 export const WalletProvider: FC<{ 
   children: ReactNode;
   autoConnect?: boolean;
@@ -463,16 +335,35 @@ export const WalletProvider: FC<{
   // Clear error helper
   const clearError = useCallback(() => setError(null), []);
   
-  // Initialize wallets
+  // Initialize ONLY the wallets we need
   const wallets = useMemo(() => {
     try {
       const walletAdaptersList: BaseWalletAdapter[] = [];
       
-      // Add wallet adapters
+      // ALWAYS add all wallet adapters - let them handle their own detection
       walletAdaptersList.push(new PhantomWalletAdapter());
       walletAdaptersList.push(new SolflareWalletAdapter({ network: currentNetwork }));
       walletAdaptersList.push(new TrustWalletAdapter());
       
+      // Add mobile wallet adapter if on mobile
+      // if (isMobile) {
+      //   const mobileAdapter = new SolanaMobileWalletAdapter({
+      //     addressSelector: createDefaultAddressSelector(),
+      //     appIdentity: {
+      //       name: 'SLICEOF MANGO',
+      //       uri: 'https://sliceofmango.com',
+      //       icon: '/logo.png'
+      //     },
+      //     authorizationResultCache: createDefaultAuthorizationResultCache(),
+      //     cluster: currentNetwork,
+      //     onWalletNotFound: async () => {
+      //       console.log('Mobile wallet not found');
+      //     },
+      //   });
+      //   walletAdaptersList.push(mobileAdapter);
+      // }
+      
+      // console.log(`✅ Initialized ${walletAdaptersList.length} wallet adapters`);
       return walletAdaptersList;
       
     } catch (error) {
@@ -482,7 +373,19 @@ export const WalletProvider: FC<{
     }
   }, [currentNetwork]);
 
-  // Endpoint configuration
+  const CustomModalProvider: FC<{ children: ReactNode }> = useCallback(({ children }) => {
+    const [visible, setVisible] = useState(false);
+    
+    return (
+      <WalletModalContext.Provider value={{ visible, setVisible }}>
+        {children}
+        <CustomWalletModal />
+      </WalletModalContext.Provider>
+    );
+  }, []);
+
+  
+  // Endpoint configuration with intelligent fallback
   const endpoint = useMemo(() => {
     if (customEndpoint) return customEndpoint;
     
@@ -501,7 +404,9 @@ export const WalletProvider: FC<{
     return selectedUrl;
   }, [currentNetwork, customEndpoint]);
   
+  // Network switch handler
   const switchNetwork = useCallback((newNetwork: WalletAdapterNetwork) => {
+    // console.log(`🔄 Switching to ${newNetwork} network`);
     setCurrentNetwork(newNetwork);
   }, []);
 
@@ -515,8 +420,7 @@ export const WalletProvider: FC<{
         setError(error.message || 'An unknown wallet error occurred');
       }}
     >
-      {/* Use the default WalletModalProvider instead of custom modal */}
-      <WalletModalProvider>
+      <CustomModalProvider>
         <WalletContextInner 
           balance={balance}
           setBalance={setBalance}
@@ -531,10 +435,11 @@ export const WalletProvider: FC<{
         >
           {children}
         </WalletContextInner>
-      </WalletModalProvider>
+      </CustomModalProvider>
     </SolanaWalletProvider>
   </ConnectionProvider>
 );
+
 };
 
 // Add this custom provider component
@@ -561,8 +466,39 @@ const DuplicateSafeWalletModalProvider: FC<{ children: ReactNode }> = ({ childre
     if (!visible) return null;
     
     const handleClose = () => setVisible(false);
-    const handleWalletClick = (walletName: string) => {
-      // Cast to WalletName type
+    // const handleWalletClick = (walletName: string) => {
+    //   // Cast to WalletName type
+    //   select(walletName as any);
+    //   handleClose();
+    // };
+
+    const handleWalletClick = async (walletName: string, readyState: WalletReadyState) => {
+      const walletLower = walletName.toLowerCase();
+      
+      // SPECIAL HANDLING FOR MOBILE PHANTOM
+      // On mobile, Phantom might be available even if it shows as NotDetected
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const isPhantomOnMobile = isMobile && walletLower.includes('phantom');
+      
+      if (readyState === WalletReadyState.NotDetected && !isPhantomOnMobile) {
+        // Show installation instructions for non-mobile wallets
+        let installUrl = '';
+        
+        if (walletLower.includes('phantom')) {
+          installUrl = 'https://phantom.app/download';
+        } else if (walletLower.includes('solflare')) {
+          installUrl = 'https://solflare.com/download';
+        } else if (walletLower.includes('trust')) {
+          installUrl = 'https://trustwallet.com/solana-wallet';
+        }
+        
+        if (installUrl && window.confirm(`${walletName} is not installed. Would you like to visit the download page?`)) {
+          window.open(installUrl, '_blank');
+        }
+        return;
+      }
+      
+      // For mobile Phantom or other detected wallets
       select(walletName as any);
       handleClose();
     };
@@ -583,8 +519,8 @@ const DuplicateSafeWalletModalProvider: FC<{ children: ReactNode }> = ({ childre
           <div className="space-y-2">
             {uniqueWallets.map((wallet) => (
               <button
-                key={wallet.adapter.name as string} // Cast to string for key
-                onClick={() => handleWalletClick(wallet.adapter.name as string)}
+                key={wallet.adapter.name as string}
+                onClick={() => handleWalletClick(wallet.adapter.name as string, wallet.readyState)}
                 className="flex items-center gap-3 p-3 w-full hover:bg-gray-800 rounded-lg transition-colors"
               >
                 {wallet.adapter.icon && (
