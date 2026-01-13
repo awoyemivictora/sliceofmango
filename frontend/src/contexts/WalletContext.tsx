@@ -2445,6 +2445,160 @@ const isMobileWalletInstalled = (walletName: string): boolean => {
 };
 
 // Simple, clean Custom Wallet Modal
+// const CustomWalletModal: FC = () => {
+//   const { wallets, select } = useSolanaWallet();
+//   const { visible, setVisible } = useWalletModal();
+//   const isMobile = useIsMobile();
+  
+//   const handleClose = () => setVisible(false);
+  
+//   const handleWalletClick = async (walletName: string, readyState: WalletReadyState) => {
+//     try {
+//       // Check if this is a mobile-specific scenario
+//       const walletLower = walletName.toLowerCase();
+      
+//       if (isMobile) {
+//         // On mobile, handle wallet-specific behaviors
+//         if (readyState === WalletReadyState.NotDetected) {
+//           // For mobile, check if it's a mobile wallet that can be opened via deep link
+//           const mobileWalletKey = Object.keys(MOBILE_WALLET_CONFIGS).find(key => 
+//             walletLower.includes(key)
+//           );
+          
+//           if (mobileWalletKey) {
+//             const config = MOBILE_WALLET_CONFIGS[mobileWalletKey as keyof typeof MOBILE_WALLET_CONFIGS];
+            
+//             // Try to open via deep link first
+//             const currentUrl = encodeURIComponent(window.location.href);
+//             const deepLinkUrl = config.deepLinkUrl.replace('{encodedUrl}', currentUrl);
+            
+//             // Open deep link (will open app if installed)
+//             window.location.href = deepLinkUrl;
+            
+//             // Fallback to app store after a delay
+//             setTimeout(() => {
+//               if (!document.hidden) {
+//                 // App didn't open, redirect to app store
+//                 window.open(config.appStoreUrl, '_blank');
+//               }
+//             }, 1000);
+            
+//             handleClose();
+//             return;
+//           }
+//         }
+//       }
+      
+//       // For desktop or already detected wallets, use normal selection
+//       if (readyState !== WalletReadyState.NotDetected || isMobile) {
+//         select(walletName as any);
+//         handleClose();
+//       } else {
+//         // Show installation prompt for desktop
+//         let installUrl = '';
+//         if (walletLower.includes('phantom')) {
+//           installUrl = 'https://phantom.app/download';
+//         } else if (walletLower.includes('solflare')) {
+//           installUrl = 'https://solflare.com/download';
+//         } else if (walletLower.includes('trust')) {
+//           installUrl = 'https://trustwallet.com/solana-wallet';
+//         }
+        
+//         if (installUrl && window.confirm(`${walletName} is not installed. Would you like to visit the download page?`)) {
+//           window.open(installUrl, '_blank');
+//         }
+//       }
+//     } catch (error) {
+//       console.error(`Error handling wallet ${walletName}:`, error);
+//     }
+//   };
+  
+//   if (!visible) return null;
+  
+//   return (
+//     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+//       <div className="bg-gray-900 rounded-xl p-6 max-w-md w-full border border-gray-700 shadow-2xl">
+//         <div className="flex justify-between items-center mb-6">
+//           <h2 className="text-xl font-semibold text-white">Connect Wallet</h2>
+//           <button 
+//             onClick={handleClose}
+//             className="text-gray-400 hover:text-white transition-colors"
+//           >
+//             <X className="w-5 h-5" />
+//           </button>
+//         </div>
+        
+//         <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+//           {wallets.map((wallet) => {
+//             const isInstalled = wallet.readyState === WalletReadyState.Installed;
+//             const isLoadable = wallet.readyState === WalletReadyState.Loadable;
+//             const isNotDetected = wallet.readyState === WalletReadyState.NotDetected;
+//             const walletName = wallet.adapter.name as string;
+            
+//             return (
+//               <button
+//                 key={wallet.adapter.name as string}
+//                 onClick={() => handleWalletClick(walletName, wallet.readyState)}
+//                 className={`
+//                   flex items-center gap-3 p-3 w-full rounded-lg transition-all duration-200
+//                   ${isNotDetected && !isMobile
+//                     ? 'opacity-60 cursor-not-allowed bg-gray-800/30' 
+//                     : 'hover:bg-gray-800/50 bg-gray-800/30'
+//                   }
+//                 `}
+//                 disabled={isNotDetected && !isMobile}
+//               >
+//                 {wallet.adapter.icon && (
+//                   <img 
+//                     src={wallet.adapter.icon} 
+//                     alt={walletName}
+//                     className="w-8 h-8 rounded"
+//                   />
+//                 )}
+//                 <div className="flex-1 text-left">
+//                   <div className="flex items-center gap-2">
+//                     <span className="text-white font-medium">
+//                       {walletName}
+//                     </span>
+//                     {isInstalled && (
+//                       <span className="text-xs px-2 py-0.5 rounded bg-green-900/30 text-green-400 border border-green-700/50">
+//                         Installed
+//                       </span>
+//                     )}
+//                     {isLoadable && (
+//                       <span className="text-xs px-2 py-0.5 rounded bg-blue-900/30 text-blue-400 border border-blue-700/50">
+//                         Available
+//                       </span>
+//                     )}
+//                     {isNotDetected && (
+//                       <span className="text-xs px-2 py-0.5 rounded bg-gray-800 text-gray-400 border border-gray-700/50">
+//                         {isMobile ? 'Mobile App' : 'Not Installed'}
+//                       </span>
+//                     )}
+//                   </div>
+//                   {isNotDetected && (
+//                     <p className="text-xs text-gray-400 mt-1">
+//                       {isMobile ? 'Tap to open in app or install' : 'Click for installation instructions'}
+//                     </p>
+//                   )}
+//                 </div>
+//                 <ChevronDown className="w-4 h-4 text-gray-400 transform -rotate-90" />
+//               </button>
+//             );
+//           })}
+//         </div>
+        
+//         <div className="mt-6 pt-4 border-t border-gray-800/50">
+//           <p className="text-xs text-gray-500 text-center">
+//             Don't have a wallet? Try <a href="https://phantom.app/download" target="_blank" className="text-cyan-400 hover:text-cyan-300">Phantom</a> or <a href="https://solflare.com/download" target="_blank" className="text-cyan-400 hover:text-cyan-300">Solflare</a>
+//           </p>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+
+// Custom Wallet Modal with mobile-specific handling
 const CustomWalletModal: FC = () => {
   const { wallets, select } = useSolanaWallet();
   const { visible, setVisible } = useWalletModal();
@@ -2452,50 +2606,145 @@ const CustomWalletModal: FC = () => {
   
   const handleClose = () => setVisible(false);
   
+  // Check if Phantom mobile app is installed
+  const isPhantomMobileInstalled = useCallback(() => {
+    if (!isMobile) return false;
+    
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isIOS = /iphone|ipad|ipod/.test(userAgent);
+    const isAndroid = /android/.test(userAgent);
+    
+    // For iOS, check if Phantom is installed by trying to open it
+    if (isIOS) {
+      // Phantom uses Universal Links on iOS
+      // Try to detect by creating an iframe with the universal link
+      const phantomUniversalLink = 'https://phantom.app/ul/browse/';
+      const iframe = document.createElement('iframe');
+      iframe.src = phantomUniversalLink;
+      iframe.style.display = 'none';
+      document.body.appendChild(iframe);
+      setTimeout(() => {
+        document.body.removeChild(iframe);
+      }, 100);
+    }
+    
+    // We'll assume Phantom is available on mobile since it uses universal links
+    return true;
+  }, [isMobile]);
+  
+  // Get the correct Phantom mobile deep link
+  const getPhantomMobileDeepLink = useCallback((currentUrl: string) => {
+    const encodedUrl = encodeURIComponent(currentUrl);
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isIOS = /iphone|ipad|ipod/.test(userAgent);
+    const isAndroid = /android/.test(userAgent);
+    
+    // IMPORTANT: Phantom's official mobile deep link pattern
+    if (isIOS) {
+      // iOS uses Universal Links
+      return `https://phantom.app/ul/browse/${encodedUrl}`;
+    } else if (isAndroid) {
+      // Android uses Intent URLs
+      return `intent://${encodedUrl}#Intent;package=app.phantom;scheme=https;end;`;
+    } else {
+      // Fallback
+      return `https://phantom.app/ul/browse/${encodedUrl}`;
+    }
+  }, []);
+  
   const handleWalletClick = async (walletName: string, readyState: WalletReadyState) => {
     try {
-      // Check if this is a mobile-specific scenario
       const walletLower = walletName.toLowerCase();
+      const currentUrl = window.location.href;
       
-      if (isMobile) {
-        // On mobile, handle wallet-specific behaviors
-        if (readyState === WalletReadyState.NotDetected) {
-          // For mobile, check if it's a mobile wallet that can be opened via deep link
-          const mobileWalletKey = Object.keys(MOBILE_WALLET_CONFIGS).find(key => 
-            walletLower.includes(key)
-          );
+      // SPECIAL HANDLING FOR PHANTOM ON MOBILE
+      if (isMobile && walletLower.includes('phantom')) {
+        console.log('🔍 Handling Phantom on mobile...');
+        
+        // Method 1: Try to use the wallet adapter's connect method first
+        // This should work if Phantom app is installed and supports deep linking
+        try {
+          console.log('🔄 Attempting to connect via wallet adapter...');
+          select(walletName as any);
+          handleClose();
           
-          if (mobileWalletKey) {
-            const config = MOBILE_WALLET_CONFIGS[mobileWalletKey as keyof typeof MOBILE_WALLET_CONFIGS];
+          // After selecting, also try to open the deep link
+          setTimeout(() => {
+            const phantomDeepLink = getPhantomMobileDeepLink(currentUrl);
+            console.log('🔗 Opening Phantom deep link:', phantomDeepLink);
             
-            // Try to open via deep link first
-            const currentUrl = encodeURIComponent(window.location.href);
-            const deepLinkUrl = config.deepLinkUrl.replace('{encodedUrl}', currentUrl);
+            // Create a hidden iframe to open the deep link
+            const iframe = document.createElement('iframe');
+            iframe.src = phantomDeepLink;
+            iframe.style.display = 'none';
+            document.body.appendChild(iframe);
             
-            // Open deep link (will open app if installed)
-            window.location.href = deepLinkUrl;
-            
-            // Fallback to app store after a delay
             setTimeout(() => {
-              if (!document.hidden) {
-                // App didn't open, redirect to app store
-                window.open(config.appStoreUrl, '_blank');
-              }
-            }, 1000);
-            
-            handleClose();
-            return;
+              document.body.removeChild(iframe);
+              
+              // Fallback: If app didn't open, redirect to download page
+              setTimeout(() => {
+                if (!document.hidden) {
+                  console.log('📱 Phantom app not opened, redirecting to download...');
+                  window.open('https://phantom.app/download', '_blank');
+                }
+              }, 1000);
+            }, 100);
+          }, 100);
+          
+          return;
+        } catch (error) {
+          console.error('❌ Wallet adapter connection failed:', error);
+        }
+        
+        // Method 2: Direct deep link approach
+        console.log('🔗 Using direct deep link approach...');
+        const phantomDeepLink = getPhantomMobileDeepLink(currentUrl);
+        
+        // First, try to open via window.location
+        window.location.href = phantomDeepLink;
+        
+        // Fallback to app store after delay
+        setTimeout(() => {
+          if (!document.hidden) {
+            console.log('📱 Opening Phantom download page...');
+            window.open('https://phantom.app/download', '_blank');
           }
+          handleClose();
+        }, 1500);
+        
+        return;
+      }
+      
+      // Handle other mobile wallets
+      if (isMobile && walletLower.includes('solflare')) {
+        if (readyState === WalletReadyState.NotDetected) {
+          const userAgent = navigator.userAgent.toLowerCase();
+          const isIOS = /iphone|ipad|ipod/.test(userAgent);
+          
+          if (isIOS) {
+            window.open('https://apps.apple.com/app/solflare-solana-wallet/id1580902717', '_blank');
+          } else {
+            window.open('https://play.google.com/store/apps/details?id=com.solflare.mobile', '_blank');
+          }
+          handleClose();
+          return;
         }
       }
       
-      // For desktop or already detected wallets, use normal selection
-      if (readyState !== WalletReadyState.NotDetected || isMobile) {
+      // Handle Trust Wallet on mobile
+      if (isMobile && walletLower.includes('trust')) {
+        // Trust Wallet uses WalletConnect - let the adapter handle it
         select(walletName as any);
         handleClose();
-      } else {
-        // Show installation prompt for desktop
+        return;
+      }
+      
+      // DESKTOP LOGIC or mobile wallets that are detected
+      if (readyState === WalletReadyState.NotDetected) {
+        // Show installation instructions for desktop
         let installUrl = '';
+        
         if (walletLower.includes('phantom')) {
           installUrl = 'https://phantom.app/download';
         } else if (walletLower.includes('solflare')) {
@@ -2507,9 +2756,17 @@ const CustomWalletModal: FC = () => {
         if (installUrl && window.confirm(`${walletName} is not installed. Would you like to visit the download page?`)) {
           window.open(installUrl, '_blank');
         }
+        handleClose();
+        return;
       }
+      
+      // For Loadable or Installed wallets (desktop or mobile detected)
+      console.log(`✅ Selecting wallet: ${walletName}`);
+      select(walletName as any);
+      handleClose();
+      
     } catch (error) {
-      console.error(`Error handling wallet ${walletName}:`, error);
+      console.error(`❌ Error handling wallet ${walletName}:`, error);
     }
   };
   
@@ -2519,7 +2776,9 @@ const CustomWalletModal: FC = () => {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
       <div className="bg-gray-900 rounded-xl p-6 max-w-md w-full border border-gray-700 shadow-2xl">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold text-white">Connect Wallet</h2>
+          <h2 className="text-xl font-semibold text-white">
+            {isMobile ? 'Connect Wallet (Mobile)' : 'Connect Wallet'}
+          </h2>
           <button 
             onClick={handleClose}
             className="text-gray-400 hover:text-white transition-colors"
@@ -2528,12 +2787,25 @@ const CustomWalletModal: FC = () => {
           </button>
         </div>
         
+        {isMobile && (
+          <div className="mb-4 p-3 bg-blue-900/20 border border-blue-700/50 rounded-lg">
+            <p className="text-sm text-blue-300">
+              💡 On mobile, wallets will open in their respective apps. 
+              {isMobile && " Make sure you have the wallet app installed."}
+            </p>
+          </div>
+        )}
+        
         <div className="space-y-2 max-h-[60vh] overflow-y-auto">
           {wallets.map((wallet) => {
             const isInstalled = wallet.readyState === WalletReadyState.Installed;
             const isLoadable = wallet.readyState === WalletReadyState.Loadable;
             const isNotDetected = wallet.readyState === WalletReadyState.NotDetected;
             const walletName = wallet.adapter.name as string;
+            const walletLower = walletName.toLowerCase();
+            
+            // Special handling for Phantom on mobile
+            const isPhantomOnMobile = isMobile && walletLower.includes('phantom');
             
             return (
               <button
@@ -2545,6 +2817,7 @@ const CustomWalletModal: FC = () => {
                     ? 'opacity-60 cursor-not-allowed bg-gray-800/30' 
                     : 'hover:bg-gray-800/50 bg-gray-800/30'
                   }
+                  ${isPhantomOnMobile ? 'border border-purple-500/30' : ''}
                 `}
                 disabled={isNotDetected && !isMobile}
               >
@@ -2559,6 +2832,7 @@ const CustomWalletModal: FC = () => {
                   <div className="flex items-center gap-2">
                     <span className="text-white font-medium">
                       {walletName}
+                      {isPhantomOnMobile && " 📱"}
                     </span>
                     {isInstalled && (
                       <span className="text-xs px-2 py-0.5 rounded bg-green-900/30 text-green-400 border border-green-700/50">
@@ -2570,15 +2844,25 @@ const CustomWalletModal: FC = () => {
                         Available
                       </span>
                     )}
-                    {isNotDetected && (
+                    {isNotDetected && isMobile && (
+                      <span className="text-xs px-2 py-0.5 rounded bg-purple-900/30 text-purple-400 border border-purple-700/50">
+                        Mobile App
+                      </span>
+                    )}
+                    {isNotDetected && !isMobile && (
                       <span className="text-xs px-2 py-0.5 rounded bg-gray-800 text-gray-400 border border-gray-700/50">
-                        {isMobile ? 'Mobile App' : 'Not Installed'}
+                        Not Installed
                       </span>
                     )}
                   </div>
                   {isNotDetected && (
                     <p className="text-xs text-gray-400 mt-1">
                       {isMobile ? 'Tap to open in app or install' : 'Click for installation instructions'}
+                    </p>
+                  )}
+                  {isPhantomOnMobile && (
+                    <p className="text-xs text-purple-400 mt-1">
+                      Opens Phantom mobile app
                     </p>
                   )}
                 </div>
@@ -2590,13 +2874,29 @@ const CustomWalletModal: FC = () => {
         
         <div className="mt-6 pt-4 border-t border-gray-800/50">
           <p className="text-xs text-gray-500 text-center">
-            Don't have a wallet? Try <a href="https://phantom.app/download" target="_blank" className="text-cyan-400 hover:text-cyan-300">Phantom</a> or <a href="https://solflare.com/download" target="_blank" className="text-cyan-400 hover:text-cyan-300">Solflare</a>
+            Don't have a wallet? Try{' '}
+            <a 
+              href="https://phantom.app/download" 
+              target="_blank" 
+              className="text-cyan-400 hover:text-cyan-300"
+            >
+              Phantom
+            </a>
+            {' or '}
+            <a 
+              href="https://solflare.com/download" 
+              target="_blank" 
+              className="text-cyan-400 hover:text-cyan-300"
+            >
+              Solflare
+            </a>
           </p>
         </div>
       </div>
     </div>
   );
 };
+
 
 // Main Wallet Provider Component
 export const WalletProvider: FC<{ 
