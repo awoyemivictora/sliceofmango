@@ -2606,143 +2606,155 @@ const CustomWalletModal: FC = () => {
   
   const handleClose = () => setVisible(false);
   
-  // Check if Phantom mobile app is installed
-  const isPhantomMobileInstalled = useCallback(() => {
-    if (!isMobile) return false;
-    
+  // Get platform-specific app store URL
+  const getAppStoreUrl = (walletName: string) => {
+    const walletLower = walletName.toLowerCase();
     const userAgent = navigator.userAgent.toLowerCase();
     const isIOS = /iphone|ipad|ipod/.test(userAgent);
     const isAndroid = /android/.test(userAgent);
     
-    // For iOS, check if Phantom is installed by trying to open it
-    if (isIOS) {
-      // Phantom uses Universal Links on iOS
-      // Try to detect by creating an iframe with the universal link
-      const phantomUniversalLink = 'https://phantom.app/ul/browse/';
-      const iframe = document.createElement('iframe');
-      iframe.src = phantomUniversalLink;
-      iframe.style.display = 'none';
-      document.body.appendChild(iframe);
-      setTimeout(() => {
-        document.body.removeChild(iframe);
-      }, 100);
+    if (walletLower.includes('phantom')) {
+      if (isIOS) return 'https://apps.apple.com/app/phantom-solana-wallet/id1598432977';
+      if (isAndroid) return 'https://play.google.com/store/apps/details?id=app.phantom';
+      return 'https://phantom.app/download';
     }
     
-    // We'll assume Phantom is available on mobile since it uses universal links
-    return true;
-  }, [isMobile]);
+    if (walletLower.includes('solflare')) {
+      if (isIOS) return 'https://apps.apple.com/app/solflare-solana-wallet/id1580902717';
+      if (isAndroid) return 'https://play.google.com/store/apps/details?id=com.solflare.mobile';
+      return 'https://solflare.com/download';
+    }
+    
+    if (walletLower.includes('trust')) {
+      return 'https://trustwallet.com/solana-wallet';
+    }
+    
+    return '';
+  };
   
-  // Get the correct Phantom mobile deep link
-  const getPhantomMobileDeepLink = useCallback((currentUrl: string) => {
+  // Get correct Phantom deep link (FIXED VERSION)
+  const getPhantomDeepLink = (currentUrl: string) => {
     const encodedUrl = encodeURIComponent(currentUrl);
     const userAgent = navigator.userAgent.toLowerCase();
     const isIOS = /iphone|ipad|ipod/.test(userAgent);
     const isAndroid = /android/.test(userAgent);
     
-    // IMPORTANT: Phantom's official mobile deep link pattern
+    // CORRECT Phantom mobile deep links from official documentation
     if (isIOS) {
-      // iOS uses Universal Links
-      return `https://phantom.app/ul/browse/${encodedUrl}`;
+      // iOS Universal Link
+      return `https://phantom.app/ul/browse/${encodedUrl}?ref=your-app-id`;
     } else if (isAndroid) {
-      // Android uses Intent URLs
-      return `intent://${encodedUrl}#Intent;package=app.phantom;scheme=https;end;`;
-    } else {
-      // Fallback
-      return `https://phantom.app/ul/browse/${encodedUrl}`;
+      // Android App Link
+      return `https://phantom.app/ul/browse/${encodedUrl}?ref=your-app-id`;
     }
-  }, []);
+    
+    // Fallback
+    return `https://phantom.app/ul/browse/${encodedUrl}`;
+  };
+  
+  // Try to open app via deep link with fallback
+  const tryOpenAppWithFallback = async (deepLink: string, appStoreUrl: string, walletName: string) => {
+    return new Promise<void>((resolve) => {
+      // Save current timestamp
+      const startTime = Date.now();
+      
+      // Try to open the deep link
+      window.location.href = deepLink;
+      
+      // Check if app opened after delay
+      setTimeout(() => {
+        const elapsed = Date.now() - startTime;
+        
+        // If page is still visible after timeout, app probably didn't open
+        if (!document.hidden && elapsed > 500) {
+          console.log(`📱 ${walletName} app not detected, opening app store...`);
+          window.open(appStoreUrl, '_blank');
+        }
+        
+        resolve();
+      }, 500);
+    });
+  };
   
   const handleWalletClick = async (walletName: string, readyState: WalletReadyState) => {
     try {
       const walletLower = walletName.toLowerCase();
       const currentUrl = window.location.href;
+      const appStoreUrl = getAppStoreUrl(walletName);
       
-      // SPECIAL HANDLING FOR PHANTOM ON MOBILE
-      if (isMobile && walletLower.includes('phantom')) {
-        console.log('🔍 Handling Phantom on mobile...');
-        
-        // Method 1: Try to use the wallet adapter's connect method first
-        // This should work if Phantom app is installed and supports deep linking
-        try {
-          console.log('🔄 Attempting to connect via wallet adapter...');
-          select(walletName as any);
-          handleClose();
-          
-          // After selecting, also try to open the deep link
-          setTimeout(() => {
-            const phantomDeepLink = getPhantomMobileDeepLink(currentUrl);
-            console.log('🔗 Opening Phantom deep link:', phantomDeepLink);
-            
-            // Create a hidden iframe to open the deep link
-            const iframe = document.createElement('iframe');
-            iframe.src = phantomDeepLink;
-            iframe.style.display = 'none';
-            document.body.appendChild(iframe);
-            
-            setTimeout(() => {
-              document.body.removeChild(iframe);
-              
-              // Fallback: If app didn't open, redirect to download page
-              setTimeout(() => {
-                if (!document.hidden) {
-                  console.log('📱 Phantom app not opened, redirecting to download...');
-                  window.open('https://phantom.app/download', '_blank');
-                }
-              }, 1000);
-            }, 100);
-          }, 100);
-          
-          return;
-        } catch (error) {
-          console.error('❌ Wallet adapter connection failed:', error);
-        }
-        
-        // Method 2: Direct deep link approach
-        console.log('🔗 Using direct deep link approach...');
-        const phantomDeepLink = getPhantomMobileDeepLink(currentUrl);
-        
-        // First, try to open via window.location
-        window.location.href = phantomDeepLink;
-        
-        // Fallback to app store after delay
-        setTimeout(() => {
-          if (!document.hidden) {
-            console.log('📱 Opening Phantom download page...');
-            window.open('https://phantom.app/download', '_blank');
-          }
-          handleClose();
-        }, 1500);
-        
-        return;
-      }
+      console.log(`🔄 Handling ${walletName} (readyState: ${readyState}, isMobile: ${isMobile})`);
       
-      // Handle other mobile wallets
-      if (isMobile && walletLower.includes('solflare')) {
-        if (readyState === WalletReadyState.NotDetected) {
-          const userAgent = navigator.userAgent.toLowerCase();
-          const isIOS = /iphone|ipad|ipod/.test(userAgent);
-          
-          if (isIOS) {
-            window.open('https://apps.apple.com/app/solflare-solana-wallet/id1580902717', '_blank');
-          } else {
-            window.open('https://play.google.com/store/apps/details?id=com.solflare.mobile', '_blank');
-          }
-          handleClose();
-          return;
-        }
-      }
-      
-      // Handle Trust Wallet on mobile
-      if (isMobile && walletLower.includes('trust')) {
-        // Trust Wallet uses WalletConnect - let the adapter handle it
+      // CRITICAL FIX: Always try to select the wallet first
+      // This initializes the adapter which might be needed for Phantom
+      try {
         select(walletName as any);
-        handleClose();
-        return;
+      } catch (selectError) {
+        console.log(`⚠️ Wallet selection error (might be normal for mobile):`, selectError);
       }
       
-      // DESKTOP LOGIC or mobile wallets that are detected
+      // MOBILE HANDLING
+      if (isMobile) {
+        // Handle Phantom separately with correct deep link
+        if (walletLower.includes('phantom')) {
+          console.log('📱 Handling Phantom on mobile...');
+          
+          // Get correct Phantom deep link
+          const phantomDeepLink = getPhantomDeepLink(currentUrl);
+          console.log(`🔗 Phantom deep link: ${phantomDeepLink}`);
+          
+          // Open Phantom via deep link with app store fallback
+          await tryOpenAppWithFallback(phantomDeepLink, appStoreUrl, walletName);
+          handleClose();
+          return;
+        }
+        
+        // Handle Solflare on mobile
+        if (walletLower.includes('solflare')) {
+          console.log('📱 Handling Solflare on mobile...');
+          
+          // Solflare uses a different pattern
+          const solflareDeepLink = `https://solflare.com/ul/browse/${encodeURIComponent(currentUrl)}`;
+          
+          // Open Solflare via deep link with app store fallback
+          await tryOpenAppWithFallback(solflareDeepLink, appStoreUrl, walletName);
+          handleClose();
+          return;
+        }
+        
+        // Handle Trust Wallet on mobile
+        if (walletLower.includes('trust')) {
+          console.log('📱 Handling Trust Wallet on mobile...');
+          
+          // Trust Wallet uses WalletConnect - the adapter should handle it
+          // But we'll also try to open the app
+          const trustDeepLink = `https://link.trustwallet.com/open_url?url=${encodeURIComponent(currentUrl)}`;
+          
+          // Try to open Trust Wallet app
+          window.location.href = trustDeepLink;
+          
+          // Fallback to app store after delay
+          setTimeout(() => {
+            if (!document.hidden) {
+              window.open(appStoreUrl, '_blank');
+            }
+          }, 1000);
+          
+          handleClose();
+          return;
+        }
+        
+        // For other mobile wallets that show as NotDetected
+        if (readyState === WalletReadyState.NotDetected) {
+          console.log(`📱 ${walletName} not detected on mobile, opening app store...`);
+          window.open(appStoreUrl, '_blank');
+          handleClose();
+          return;
+        }
+      }
+      
+      // DESKTOP HANDLING or mobile wallets that are detected
       if (readyState === WalletReadyState.NotDetected) {
-        // Show installation instructions for desktop
+        // Show installation prompt for desktop
         let installUrl = '';
         
         if (walletLower.includes('phantom')) {
@@ -2791,7 +2803,7 @@ const CustomWalletModal: FC = () => {
           <div className="mb-4 p-3 bg-blue-900/20 border border-blue-700/50 rounded-lg">
             <p className="text-sm text-blue-300">
               💡 On mobile, wallets will open in their respective apps. 
-              {isMobile && " Make sure you have the wallet app installed."}
+              Make sure you have the wallet app installed.
             </p>
           </div>
         )}
@@ -2802,10 +2814,6 @@ const CustomWalletModal: FC = () => {
             const isLoadable = wallet.readyState === WalletReadyState.Loadable;
             const isNotDetected = wallet.readyState === WalletReadyState.NotDetected;
             const walletName = wallet.adapter.name as string;
-            const walletLower = walletName.toLowerCase();
-            
-            // Special handling for Phantom on mobile
-            const isPhantomOnMobile = isMobile && walletLower.includes('phantom');
             
             return (
               <button
@@ -2817,7 +2825,6 @@ const CustomWalletModal: FC = () => {
                     ? 'opacity-60 cursor-not-allowed bg-gray-800/30' 
                     : 'hover:bg-gray-800/50 bg-gray-800/30'
                   }
-                  ${isPhantomOnMobile ? 'border border-purple-500/30' : ''}
                 `}
                 disabled={isNotDetected && !isMobile}
               >
@@ -2832,7 +2839,7 @@ const CustomWalletModal: FC = () => {
                   <div className="flex items-center gap-2">
                     <span className="text-white font-medium">
                       {walletName}
-                      {isPhantomOnMobile && " 📱"}
+                      {isMobile && isNotDetected && " 📱"}
                     </span>
                     {isInstalled && (
                       <span className="text-xs px-2 py-0.5 rounded bg-green-900/30 text-green-400 border border-green-700/50">
@@ -2844,25 +2851,15 @@ const CustomWalletModal: FC = () => {
                         Available
                       </span>
                     )}
-                    {isNotDetected && isMobile && (
-                      <span className="text-xs px-2 py-0.5 rounded bg-purple-900/30 text-purple-400 border border-purple-700/50">
-                        Mobile App
-                      </span>
-                    )}
-                    {isNotDetected && !isMobile && (
+                    {isNotDetected && (
                       <span className="text-xs px-2 py-0.5 rounded bg-gray-800 text-gray-400 border border-gray-700/50">
-                        Not Installed
+                        {isMobile ? 'Mobile App' : 'Not Installed'}
                       </span>
                     )}
                   </div>
                   {isNotDetected && (
                     <p className="text-xs text-gray-400 mt-1">
                       {isMobile ? 'Tap to open in app or install' : 'Click for installation instructions'}
-                    </p>
-                  )}
-                  {isPhantomOnMobile && (
-                    <p className="text-xs text-purple-400 mt-1">
-                      Opens Phantom mobile app
                     </p>
                   )}
                 </div>
