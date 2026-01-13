@@ -98,11 +98,11 @@ import {
 import '@solana/wallet-adapter-react-ui/styles.css';
 
 // Mobile Wallet Support
-import { 
-  SolanaMobileWalletAdapter,
-  createDefaultAddressSelector,
-  createDefaultAuthorizationResultCache,
-} from '@solana-mobile/wallet-adapter-mobile';
+// import { 
+//   SolanaMobileWalletAdapter,
+//   createDefaultAddressSelector,
+//   createDefaultAuthorizationResultCache,
+// } from '@solana-mobile/wallet-adapter-mobile';
 
 // Types
 interface WalletContextType {
@@ -344,22 +344,22 @@ export const WalletProvider: FC<{
       walletAdaptersList.push(new TrustWalletAdapter());
       
       // Add mobile wallet adapter if on mobile
-      if (isMobile) {
-        const mobileAdapter = new SolanaMobileWalletAdapter({
-          addressSelector: createDefaultAddressSelector(),
-          appIdentity: {
-            name: 'SLICEOF MANGO',
-            uri: 'https://sliceofmango.com',
-            icon: '/logo.png'
-          },
-          authorizationResultCache: createDefaultAuthorizationResultCache(),
-          cluster: currentNetwork,
-          onWalletNotFound: async () => {
-            console.log('Mobile wallet not found');
-          },
-        });
-        walletAdaptersList.push(mobileAdapter);
-      }
+      // if (isMobile) {
+      //   const mobileAdapter = new SolanaMobileWalletAdapter({
+      //     addressSelector: createDefaultAddressSelector(),
+      //     appIdentity: {
+      //       name: 'SLICEOF MANGO',
+      //       uri: 'https://sliceofmango.com',
+      //       icon: '/logo.png'
+      //     },
+      //     authorizationResultCache: createDefaultAuthorizationResultCache(),
+      //     cluster: currentNetwork,
+      //     onWalletNotFound: async () => {
+      //       console.log('Mobile wallet not found');
+      //     },
+      //   });
+      //   walletAdaptersList.push(mobileAdapter);
+      // }
       
       console.log(`✅ Initialized ${walletAdaptersList.length} wallet adapters`);
       return walletAdaptersList;
@@ -369,7 +369,7 @@ export const WalletProvider: FC<{
       setError('Failed to initialize wallet adapters. Please refresh the page.');
       return [];
     }
-  }, [currentNetwork, isMobile]);
+  }, [currentNetwork]);
 
   const CustomModalProvider: FC<{ children: ReactNode }> = useCallback(({ children }) => {
     const [visible, setVisible] = useState(false);
