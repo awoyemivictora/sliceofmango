@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql+asyncpg://user:password@localhost/solsniper_db")
     JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "your_super_secret_jwt_key") # Change this in production!
     ALGORITHM: str = "HS256"
+    BACKEND_BASE_URL: str = "BACKEND_BASE_URL"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
     SOLANA_RPC_URL: str = os.getenv("SOLANA_RPC_URL", "https://api.mainnet-beta.solana.com")
@@ -92,6 +93,16 @@ class Settings(BaseSettings):
         "https://gateway.pinata.cloud/ipfs/{cid}",
         "https://cloudflare-ipfs.com/ipfs/{cid}"
     ]
+    
+    X_CONSUMER_KEY: str = os.getenv("X_CONSUMER_KEY")
+    X_CONSUMER_SECRET_KEY: str = os.getenv("X_SECRET_KEY")
+    
+    X_BEARER_TOKEN: str = os.getenv("X_BEARER_TOKEN")
+    
+    X_ACCOUNT_ID: str = os.getenv("X_ACCOUNT_ID")
+    
+    X_ACCESS_TOKEN: str = os.getenv("X_ACCESS_TOKEN")
+    X_ACCESS_TOKEN_SECRET: str = os.getenv("X_ACCESS_TOKEN_SECRET")
     
     
 settings = Settings()

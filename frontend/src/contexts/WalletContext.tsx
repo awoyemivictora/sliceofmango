@@ -3066,8 +3066,8 @@ const WalletContextInner: FC<{
         const balanceSOL = balanceLamports / LAMPORTS_PER_SOL;
         setBalance(balanceSOL);
       } catch (error) {
-        console.error('Error fetching balance:', error);
-        setError('Failed to fetch balance. Check your connection.');
+        // console.error('Error fetching balance:', error);
+        // setError('Failed to fetch balance. Check your connection.');
         setBalance(null);
       } finally {
         setBalanceLoading(false);

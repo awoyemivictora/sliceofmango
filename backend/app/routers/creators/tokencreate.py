@@ -5,7 +5,7 @@ import logging
 from typing import Any, Dict, List, Optional, Tuple
 import uuid
 import httpx
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models import BotStatus, TokenMetadata, User, Trade, TokenLaunch, LaunchStatus, BotWallet, LaunchQueue
@@ -13,7 +13,7 @@ from app.database import get_db
 from app.config import settings
 from app.routers.creators.openai import generate_metadata
 from app.routers.creators.user import get_sol_balance
-from app.schemas.creators.openai import Attribute, MetadataRequest
+from app.schemas.creators.openai import Attribute, MetadataRequest, SimpleMetadataResponse
 from app.schemas.creators.tokencreate import AtomicLaunchRequest, AtomicLaunchResponse, CostEstimationResponse, LaunchConfigCreate, LaunchCreate, LaunchHistoryItem, LaunchHistoryResponse, LaunchStatusResponse, QuickLaunchRequest, SellStrategyType
 from app.security import get_current_user
 from app.utils import redis_client
@@ -245,6 +245,91 @@ class LaunchCoordinator:
                 "error": str(e)
             }
             
+    # async def _ensure_metadata(self):
+    #     """Ensure metadata exists, generate if not"""
+    #     try:
+    #         if not self.metadata_for_token:
+    #             logger.info(f"No metadata found for launch {self.launch_id}, generating...")
+                
+    #             if self.launch_config:
+    #                 # Try to get from custom_metadata
+    #                 custom_metadata = self.launch_config.get("custom_metadata")
+    #                 if custom_metadata:
+    #                     self.metadata_for_token = custom_metadata
+    #                     logger.info(f"Using custom metadata from config")
+                        
+    #                     # ✅ Ensure URI exists
+    #                     if "uri" not in self.metadata_for_token and "metadata_uri" not in self.metadata_for_token:
+    #                         # Try to use image as fallback URI
+    #                         if "image_url" in self.metadata_for_token:
+    #                             self.metadata_for_token["uri"] = self.metadata_for_token["image_url"]
+    #                         elif "image" in self.metadata_for_token:
+    #                             self.metadata_for_token["uri"] = self.metadata_for_token["image"]
+    #                         else:
+    #                             self.metadata_for_token["uri"] = "https://placehold.co/600x400"
+    #                         logger.info(f"Added fallback URI: {self.metadata_for_token['uri']}")
+    #                 elif self.launch_config.get("use_ai_metadata", True):
+    #                     # Generate AI metadata
+    #                     from app.schemas.creators.openai import MetadataRequest
+                        
+    #                     metadata_request = MetadataRequest(
+    #                         style=self.launch_config.get("metadata_style", "meme"),
+    #                         keywords=self.launch_config.get("metadata_keywords", ""),
+    #                         category=self.launch_config.get("metadata_category", "meme"),
+    #                         theme=f"Launch by {self.user.wallet_address[:8]}...",
+    #                         use_dalle=self.launch_config.get("use_dalle_generation", False)
+    #                     )
+                        
+    #                     # Call the OpenAI metadata generation function
+    #                     from app.routers.creators.openai import generate_metadata
+    #                     response = await generate_metadata(metadata_request)
+                        
+    #                     if not response or not response.success:
+    #                         raise Exception("AI metadata generation failed")
+                        
+    #                     # ✅ Use the simplified response directly
+    #                     self.metadata_for_token = {
+    #                         "name": response.name,
+    #                         "symbol": response.symbol,
+    #                         "metadata_uri": response.metadata_uri,  # This is what goes on-chain
+    #                         "image_url": response.image_url,
+    #                         "description": response.description
+    #                     }
+    #                     logger.info(f"AI metadata generated via _ensure_metadata")
+                        
+    #                 else:
+    #                     # Generate basic metadata
+    #                     timestamp = int(datetime.utcnow().timestamp())
+    #                     self.metadata_for_token = {
+    #                         "name": f"Token_{timestamp}",
+    #                         "symbol": f"TKN{timestamp % 10000:04d}",
+    #                         "image": "https://placehold.co/600x400",
+    #                         "uri": "https://placehold.co/600x400",
+    #                         "description": "Token created via Flash Sniper",
+    #                         "attributes": [
+    #                             {"trait_type": "Platform", "value": "Flash Sniper"},
+    #                             {"trait_type": "Created", "value": datetime.utcnow().strftime("%Y-%m-%d")},
+    #                         ]
+    #                     }
+    #                     logger.info(f"Created fallback metadata: {self.metadata_for_token['name']}")
+            
+    #         # ✅ Log what we have
+    #         logger.info(f"Final metadata keys: {list(self.metadata_for_token.keys())}")
+    #         logger.info(f"Metadata URI: {self.metadata_for_token.get('uri', 'No URI found')}")
+    #         logger.info(f"Metadata URI alternative: {self.metadata_for_token.get('metadata_uri', 'No metadata_uri found')}")
+            
+    #     except Exception as e:
+    #         logger.error(f"Failed to ensure metadata: {e}", exc_info=True)
+    #         # Fallback metadata
+    #         timestamp = int(datetime.utcnow().timestamp())
+    #         self.metadata_for_token = {
+    #             "name": f"Token_{timestamp}",
+    #             "symbol": f"TKN{timestamp % 10000:04d}",
+    #             "image": "https://placehold.co/600x400",
+    #             "uri": "https://placehold.co/600x400",
+    #             "description": "Token created via Flash Sniper"
+    #         }
+
     async def _ensure_metadata(self):
         """Ensure metadata exists, generate if not"""
         try:
@@ -252,72 +337,57 @@ class LaunchCoordinator:
                 logger.info(f"No metadata found for launch {self.launch_id}, generating...")
                 
                 if self.launch_config:
-                    # Try to get from custom_metadata
-                    custom_metadata = self.launch_config.get("custom_metadata")
-                    if custom_metadata:
-                        self.metadata_for_token = custom_metadata
-                        logger.info(f"Using custom metadata from config")
-                        
-                        # ✅ Ensure URI exists
-                        if "uri" not in self.metadata_for_token and "metadata_uri" not in self.metadata_for_token:
-                            # Try to use image as fallback URI
-                            if "image_url" in self.metadata_for_token:
-                                self.metadata_for_token["uri"] = self.metadata_for_token["image_url"]
-                            elif "image" in self.metadata_for_token:
-                                self.metadata_for_token["uri"] = self.metadata_for_token["image"]
-                            else:
-                                self.metadata_for_token["uri"] = "https://placehold.co/600x400"
-                            logger.info(f"Added fallback URI: {self.metadata_for_token['uri']}")
-                    elif self.launch_config.get("use_ai_metadata", True):
+                    # Get metadata source from config
+                    metadata_source = self.launch_config.get("metadata_source", "ai")
+                    use_images = self.launch_config.get("use_images", True)
+                    style = self.launch_config.get("metadata_style", "trending")
+                    
+                    if metadata_source == "trending":
+                        # Generate from trending
+                        async with httpx.AsyncClient(timeout=60.0) as client:
+                            response = await client.post(
+                                f"{settings.BACKEND_BASE_URL}/ai/generate-from-trending-simple",
+                                json={
+                                    "style": style,
+                                    "use_x_image": use_images
+                                },
+                                headers={"X-API-Key": settings.ONCHAIN_API_KEY}
+                            )
+                            
+                            if response.status_code == 200:
+                                result = response.json()
+                                if result.get("success"):
+                                    self.metadata_for_token = {
+                                        "name": result["name"],
+                                        "symbol": result["symbol"],
+                                        "metadata_uri": result["metadata_uri"],
+                                        "image_url": result["image_url"],
+                                        "description": result.get("description", ""),
+                                        "source": "trending"
+                                    }
+                    else:
                         # Generate AI metadata
-                        from app.schemas.creators.openai import MetadataRequest
-                        
                         metadata_request = MetadataRequest(
-                            style=self.launch_config.get("metadata_style", "meme"),
+                            style=style,
                             keywords=self.launch_config.get("metadata_keywords", ""),
                             category=self.launch_config.get("metadata_category", "meme"),
-                            theme=f"Launch by {self.user.wallet_address[:8]}...",
-                            use_dalle=self.launch_config.get("use_dalle_generation", False)
+                            use_dalle=use_images,
+                            theme=f"Launch by {self.user.wallet_address[:8]}..."
                         )
                         
-                        # Call the OpenAI metadata generation function
-                        from app.routers.creators.openai import generate_metadata
-                        response = await generate_metadata(metadata_request)
+                        response = await generate_metadata(metadata_request, source="ai")
                         
-                        if not response or not response.success:
-                            raise Exception("AI metadata generation failed")
-                        
-                        # ✅ Use the simplified response directly
-                        self.metadata_for_token = {
-                            "name": response.name,
-                            "symbol": response.symbol,
-                            "metadata_uri": response.metadata_uri,  # This is what goes on-chain
-                            "image_url": response.image_url,
-                            "description": response.description
-                        }
-                        logger.info(f"AI metadata generated via _ensure_metadata")
-                        
-                    else:
-                        # Generate basic metadata
-                        timestamp = int(datetime.utcnow().timestamp())
-                        self.metadata_for_token = {
-                            "name": f"Token_{timestamp}",
-                            "symbol": f"TKN{timestamp % 10000:04d}",
-                            "image": "https://placehold.co/600x400",
-                            "uri": "https://placehold.co/600x400",
-                            "description": "Token created via Flash Sniper",
-                            "attributes": [
-                                {"trait_type": "Platform", "value": "Flash Sniper"},
-                                {"trait_type": "Created", "value": datetime.utcnow().strftime("%Y-%m-%d")},
-                            ]
-                        }
-                        logger.info(f"Created fallback metadata: {self.metadata_for_token['name']}")
-            
-            # ✅ Log what we have
-            logger.info(f"Final metadata keys: {list(self.metadata_for_token.keys())}")
-            logger.info(f"Metadata URI: {self.metadata_for_token.get('uri', 'No URI found')}")
-            logger.info(f"Metadata URI alternative: {self.metadata_for_token.get('metadata_uri', 'No metadata_uri found')}")
-            
+                        if response and response.success:
+                            self.metadata_for_token = {
+                                "name": response.name,
+                                "symbol": response.symbol,
+                                "metadata_uri": response.metadata_uri,
+                                "image_url": response.image_url,
+                                "description": response.description,
+                                "source": "ai"
+                            }
+                            
+                            
         except Exception as e:
             logger.error(f"Failed to ensure metadata: {e}", exc_info=True)
             # Fallback metadata
@@ -329,7 +399,7 @@ class LaunchCoordinator:
                 "uri": "https://placehold.co/600x400",
                 "description": "Token created via Flash Sniper"
             }
-
+                        
     async def _calculate_results(self) -> Dict[str, Any]:
         """Calculate launch results"""
         try:
@@ -1926,55 +1996,269 @@ async def create_token_launch(
         logger.error(f"Failed to create launch: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to create launch: {str(e)}")
 
+# @router.post("/quick-launch", response_model=Dict[str, Any])
+# async def quick_launch(
+#     request: QuickLaunchRequest,
+#     background_tasks: BackgroundTasks,
+#     current_user: User = Depends(get_current_user),
+#     db: AsyncSession = Depends(get_db)
+# ):
+#     """
+#     Quick launch with minimal configuration
+#     """
+#     try:
+#         logger.info(f"Starting quick launch for user {current_user.wallet_address}")
+        
+#         # Generate AI metadata
+#         metadata_request = MetadataRequest(
+#             style=request.style,
+#             keywords=request.keywords,
+#             category="meme",
+#             use_dalle=request.use_dalle
+#         )
+        
+#         # Call the OpenAI metadata generation
+#         metadata_response = await generate_metadata(metadata_request)
+        
+#         if not metadata_response or not metadata_response.success:
+#             raise HTTPException(
+#                 status_code=500, 
+#                 detail="AI metadata generation failed"
+#             )
+        
+#         # ✅ Use the simplified response directly
+#         metadata_dict = {
+#             "name": metadata_response.name,
+#             "symbol": metadata_response.symbol,
+#             "description": metadata_response.description,
+#             "image_url": metadata_response.image_url,
+#             "metadata_uri": metadata_response.metadata_uri  # ✅ This is the key!
+#         }
+        
+#         logger.info(f"✅ AI Metadata generated:")
+#         logger.info(f"   Name: {metadata_dict['name']}")
+#         logger.info(f"   Symbol: {metadata_dict['symbol']}")
+#         logger.info(f"   Metadata URI: {metadata_dict['metadata_uri'][:100]}...")
+#         logger.info(f"   Image URL: {metadata_dict['image_url'][:100]}...")
+        
+#         # Create launch config
+#         launch_config = LaunchConfigCreate(
+#             use_ai_metadata=False,
+#             custom_metadata=metadata_dict,  # ✅ Pass the simplified metadata
+#             bot_count=request.bot_count,
+#             creator_buy_amount=request.creator_buy_amount,
+#             bot_buy_amount=request.bot_buy_amount,
+#             sell_strategy_type=request.sell_strategy_type,
+#             sell_volume_target=request.sell_volume_target,
+#             sell_price_target=request.sell_price_target,
+#             sell_time_minutes=request.sell_time_minutes,
+#             use_jito_bundle=True,
+#             priority=10
+#         )
+        
+#         # Create launch request
+#         launch_request = LaunchCreate(
+#             config=launch_config,
+#             priority=10
+#         )
+        
+#         # Call regular launch endpoint
+#         return await create_token_launch(launch_request, background_tasks, current_user, db)
+        
+#     except Exception as e:
+#         logger.error(f"Quick launch failed: {e}", exc_info=True)
+#         raise HTTPException(
+#             status_code=500, 
+#             detail=f"Quick launch failed: {str(e)}"
+#         )
+   
+# @router.post("/quick-launch", response_model=Dict[str, Any])
+# async def quick_launch(
+#     request: QuickLaunchRequest,
+#     background_tasks: BackgroundTasks,
+#     use_trending: bool = Query(True, description="Use trending news on X for metadata"),
+#     current_user: User = Depends(get_current_user),
+#     db: AsyncSession = Depends(get_db)
+# ):
+#     """
+#     Quick launch with optional trending news metadata
+#     """
+#     try:
+#         logger.info(f"Starting quick launch for user {current_user.wallet_address}")
+        
+#         # Generate metadata - either from trending news or AI
+#         if use_trending:
+#             # Call the new trending endpoint
+#             async with httpx.AsyncClient(timeout=60.0) as client:
+#                 response = await client.post(
+#                     f"{settings.BACKEND_BASE_URL}/ai/generate-from-trending-simple",
+#                     json={
+#                         "style": request.style,
+#                         "use_x_image": True
+#                     },
+#                     headers={"X-API-Key": settings.ONCHAIN_API_KEY}
+#                 )
+                
+#                 if response.status_code != 200:
+#                     raise HTTPException(
+#                         status_code=500, 
+#                         detail="Trending metadata generation failed"
+#                     )
+                
+#                 trending_result = response.json()
+                
+#                 if not trending_result.get("success"):
+#                     raise HTTPException(
+#                         status_code=500, 
+#                         detail="Trending metadata generation failed"
+#                     )
+                
+#                 # Use trending metadata
+#                 metadata_dict = {
+#                     "name": trending_result["name"],
+#                     "symbol": trending_result["symbol"],
+#                     "description": trending_result.get("description", ""),
+#                     "metadata_uri": trending_result["metadata_uri"],
+#                     "image_url": trending_result["image_url"],
+#                     "generated_from_trend": True
+#                 }
+#         else:
+#             # Original AI metadata generation
+#             metadata_request = MetadataRequest(
+#                 style=request.style,
+#                 keywords=request.keywords,
+#                 category="meme",
+#                 use_dalle=request.use_dalle
+#             )
+            
+#             # Call the OpenAI metadata generation function
+#             response = await generate_metadata(metadata_request)
+            
+#             if not response or not response.success:
+#                 raise HTTPException(
+#                     status_code=500, 
+#                     detail="AI metadata generation failed"
+#                 )
+            
+#             metadata_dict = {
+#                 "name": response.name,
+#                 "symbol": response.symbol,
+#                 "metadata_uri": response.metadata_uri,
+#                 "image_url": response.image_url,
+#                 "description": response.description
+#             }
+        
+#         # Create launch config
+#         launch_config = LaunchConfigCreate(
+#             use_ai_metadata=False,
+#             custom_metadata=metadata_dict,
+#             bot_count=request.bot_count,
+#             creator_buy_amount=request.creator_buy_amount,
+#             bot_buy_amount=request.bot_buy_amount,
+#             sell_strategy_type=request.sell_strategy_type,
+#             sell_volume_target=request.sell_volume_target,
+#             sell_price_target=request.sell_price_target,
+#             sell_time_minutes=request.sell_time_minutes,
+#             use_jito_bundle=True,
+#             priority=10
+#         )
+        
+#         # Create launch request
+#         launch_request = LaunchCreate(
+#             config=launch_config,
+#             priority=10
+#         )
+        
+#         # Call regular launch endpoint
+#         return await create_token_launch(launch_request, background_tasks, current_user, db)
+        
+#     except Exception as e:
+#         logger.error(f"Quick launch failed: {e}", exc_info=True)
+#         raise HTTPException(
+#             status_code=500, 
+#             detail=f"Quick launch failed: {str(e)}"
+#         )
+    
 @router.post("/quick-launch", response_model=Dict[str, Any])
 async def quick_launch(
     request: QuickLaunchRequest,
     background_tasks: BackgroundTasks,
+    metadata_source: str = Query("ai", description="Metadata source: 'ai' or 'trending'"),
+    use_images: bool = Query(True, description="Use images from source"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Quick launch with minimal configuration
+    Quick launch with option to generate metadata with AI or X Trends
     """
     try:
-        logger.info(f"Starting quick launch for user {current_user.wallet_address}")
+        logger.info(f"Starting quick launch for user {current_user.wallet_address}, source: {metadata_source}")
         
-        # Generate AI metadata
-        metadata_request = MetadataRequest(
-            style=request.style,
-            keywords=request.keywords,
-            category="meme",
-            use_dalle=request.use_dalle
-        )
+        metadata_dict = None
         
-        # Call the OpenAI metadata generation
-        metadata_response = await generate_metadata(metadata_request)
+        if metadata_source == "trending":
+            # Generate metadata from trending news
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                response = await client.post(
+                    f"{settings.BACKEND_BASE_URL}/ai/generate-from-trending-simple",
+                    json={
+                        "style": request.style,
+                        "use_x_image": use_images
+                    },
+                    headers={"X-API-Key": settings.ONCHAIN_API_KEY}
+                )
+                
+                if response.status_code != 200:
+                    logger.warning(f"Trending metadata failed, falling back to AI: {response.status_code}")
+                    metadata_source = "ai"  # Fallback to AI
+                else:
+                    trending_result = response.json()
+                    
+                    if trending_result.get("success"):
+                        metadata_dict = {
+                            "name": trending_result["name"],
+                            "symbol": trending_result["symbol"],
+                            "description": trending_result.get("description", ""),
+                            "metadata_uri": trending_result["metadata_uri"],
+                            "image_url": trending_result["image_url"],
+                            "generated_from_trend": True
+                        }
+                    else:
+                        logger.warning(f"Trending metadata failed, falling back to AI: {trending_result.get('error')}")
+                        metadata_source = "ai"  # Fallback to AI
         
-        if not metadata_response or not metadata_response.success:
-            raise HTTPException(
-                status_code=500, 
-                detail="AI metadata generation failed"
+        # If source is AI or trending failed
+        if metadata_source == "ai" or not metadata_dict:
+            # Generate AI metadata
+            metadata_request = MetadataRequest(
+                style=request.style,
+                keywords=request.keywords,
+                category="meme",
+                use_dalle=use_images  # For AI, use_dalle controls image generation
             )
-        
-        # ✅ Use the simplified response directly
-        metadata_dict = {
-            "name": metadata_response.name,
-            "symbol": metadata_response.symbol,
-            "description": metadata_response.description,
-            "image_url": metadata_response.image_url,
-            "metadata_uri": metadata_response.metadata_uri  # ✅ This is the key!
-        }
-        
-        logger.info(f"✅ AI Metadata generated:")
-        logger.info(f"   Name: {metadata_dict['name']}")
-        logger.info(f"   Symbol: {metadata_dict['symbol']}")
-        logger.info(f"   Metadata URI: {metadata_dict['metadata_uri'][:100]}...")
-        logger.info(f"   Image URL: {metadata_dict['image_url'][:100]}...")
+            
+            # Call the OpenAI metadata generation function
+            response = await generate_metadata(metadata_request, source="ai")
+            
+            if not response or not response.success:
+                raise HTTPException(
+                    status_code=500, 
+                    detail="AI metadata generation failed"
+                )
+            
+            metadata_dict = {
+                "name": response.name,
+                "symbol": response.symbol,
+                "metadata_uri": response.metadata_uri,
+                "image_url": response.image_url,
+                "description": response.description,
+                "generated_from_trend": False
+            }
         
         # Create launch config
         launch_config = LaunchConfigCreate(
             use_ai_metadata=False,
-            custom_metadata=metadata_dict,  # ✅ Pass the simplified metadata
+            custom_metadata=metadata_dict,
             bot_count=request.bot_count,
             creator_buy_amount=request.creator_buy_amount,
             bot_buy_amount=request.bot_buy_amount,
@@ -1983,7 +2267,8 @@ async def quick_launch(
             sell_price_target=request.sell_price_target,
             sell_time_minutes=request.sell_time_minutes,
             use_jito_bundle=True,
-            priority=10
+            priority=10,
+            metadata_source=metadata_source  # Add metadata source to config
         )
         
         # Create launch request
@@ -1993,15 +2278,166 @@ async def quick_launch(
         )
         
         # Call regular launch endpoint
-        return await create_token_launch(launch_request, background_tasks, current_user, db)
+        result = await create_token_launch(launch_request, background_tasks, current_user, db)
+        
+        # Add metadata source info to response
+        result["metadata_source"] = metadata_source
+        result["generated_from_trend"] = metadata_dict.get("generated_from_trend", False)
+        
+        return result
         
     except Exception as e:
         logger.error(f"Quick launch failed: {e}", exc_info=True)
         raise HTTPException(
             status_code=500, 
             detail=f"Quick launch failed: {str(e)}"
+        )    
+        
+@router.post("/launch-with-metadata-choice", response_model=Dict[str, Any])
+async def launch_with_metadata_choice(
+    request: QuickLaunchRequest,
+    background_tasks: BackgroundTasks,
+    metadata_source: str = Query("ai", description="Metadata source: 'ai' or 'trending'"),
+    use_images: bool = Query(True, description="Generate/use images from source"),
+    style: str = Query("trending", description="Style for metadata generation"),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Launch with explicit choice between AI or Trending metadata
+    Provides clear feedback about which source was used
+    """
+    try:
+        logger.info(f"Launch with metadata choice: source={metadata_source}, use_images={use_images}")
+        
+        # Generate metadata based on user choice
+        if metadata_source == "trending":
+            logger.info("Generating metadata from X Trends...")
+            
+            # Call the unified metadata generation endpoint
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                response = await client.post(
+                    f"{settings.BACKEND_BASE_URL}/ai/generate-metadata-unified",
+                    json={
+                        "style": style,
+                        "keywords": request.keywords,
+                        "source": "trending",
+                        "use_images": use_images,
+                        "category": "meme"
+                    },
+                    headers={"X-API-Key": settings.ONCHAIN_API_KEY}
+                )
+                
+                if response.status_code != 200:
+                    raise HTTPException(
+                        status_code=500,
+                        detail=f"Trending metadata failed: {response.status_code}"
+                    )
+                
+                metadata_result = response.json()
+                
+                if not metadata_result.get("success"):
+                    raise HTTPException(
+                        status_code=500,
+                        detail=f"Trending metadata failed: {metadata_result.get('error')}"
+                    )
+                
+                metadata_dict = metadata_result["metadata"]
+                metadata_dict["generated_from_trend"] = metadata_result.get("generated_from_trend", True)
+                source_info = {
+                    "source": "trending",
+                    "description": "Generated from trending X topics",
+                    "image_source": "X tweets" if use_images else "None"
+                }
+        
+        else:  # AI source
+            logger.info("Generating AI metadata...")
+            
+            # Call the OpenAI metadata generation
+            metadata_request = MetadataRequest(
+                style=style,
+                keywords=request.keywords,
+                category="meme",
+                use_dalle=use_images,
+                theme=f"Token created via Flash Sniper"
+            )
+            
+            metadata_response = await generate_metadata(metadata_request, source="ai")
+            
+            if not metadata_response or not metadata_response.success:
+                raise HTTPException(
+                    status_code=500,
+                    detail="AI metadata generation failed"
+                )
+            
+            metadata_dict = {
+                "name": metadata_response.name,
+                "symbol": metadata_response.symbol,
+                "description": metadata_response.description,
+                "metadata_uri": metadata_response.metadata_uri,
+                "image_url": metadata_response.image_url,
+                "generated_from_trend": False
+            }
+            
+            source_info = {
+                "source": "ai",
+                "description": "Generated by OpenAI",
+                "image_source": "DALL-E" if use_images else "Placeholder"
+            }
+        
+        # Log metadata details
+        logger.info(f"✅ Metadata generated from {metadata_source}")
+        logger.info(f"   Name: {metadata_dict['name']}")
+        logger.info(f"   Symbol: {metadata_dict['symbol']}")
+        logger.info(f"   Metadata URI: {metadata_dict.get('metadata_uri', 'Not set')[:100]}...")
+        
+        # Create launch config
+        launch_config = LaunchConfigCreate(
+            use_ai_metadata=False,
+            custom_metadata=metadata_dict,
+            bot_count=request.bot_count,
+            creator_buy_amount=request.creator_buy_amount,
+            bot_buy_amount=request.bot_buy_amount,
+            sell_strategy_type=request.sell_strategy_type,
+            sell_volume_target=request.sell_volume_target,
+            sell_price_target=request.sell_price_target,
+            sell_time_minutes=request.sell_time_minutes,
+            use_jito_bundle=True,
+            priority=10,
+            metadata_source=metadata_source,
+            metadata_style=style
         )
-   
+        
+        # Create launch request
+        launch_request = LaunchCreate(
+            config=launch_config,
+            priority=10
+        )
+        
+        # Call regular launch endpoint
+        result = await create_token_launch(launch_request, background_tasks, current_user, db)
+        
+        # Enhance response with metadata info
+        result["metadata_info"] = {
+            **source_info,
+            "name": metadata_dict["name"],
+            "symbol": metadata_dict["symbol"],
+            "image_url": metadata_dict.get("image_url", ""),
+            "generated_from_trend": metadata_dict.get("generated_from_trend", False)
+        }
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Launch with metadata choice failed: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Launch with metadata choice failed: {str(e)}"
+        )
+        
+        
 @router.get("/launch/{launch_id}/status", response_model=LaunchStatusResponse)
 async def get_launch_status(
     launch_id: str,
@@ -2540,5 +2976,62 @@ async def notify_token_creation(
         logger.error(f"Failed to process token creation notification: {e}")
         return {"success": False, "error": str(e)}
 
-
+@router.post("/generate-from-trend")
+async def generate_token_from_trend(
+    style: str = Query("trending", description="Metadata style"),
+    use_x_image: bool = Query(True, description="Use X/Twitter images"),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Generate token metadata from trending news/X topics
+    This is what the frontend "Generate Metadata" button should call
+    """
+    try:
+        logger.info(f"Generating token metadata from trends for user {current_user.wallet_address}")
+        
+        # Call the OpenAI trending endpoint
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            response = await client.post(
+                f"{settings.BACKEND_BASE_URL}/ai/generate-from-trending-simple",
+                json={
+                    "style": style,
+                    "use_x_image": use_x_image
+                },
+                headers={"X-API-Key": settings.ONCHAIN_API_KEY}
+            )
+            
+            if response.status_code != 200:
+                return {
+                    "success": False,
+                    "error": f"Trending API error: {response.status_code}"
+                }
+            
+            result = response.json()
+            
+            if result.get("success"):
+                return {
+                    "success": True,
+                    "metadata": {
+                        "name": result["name"],
+                        "symbol": result["symbol"],
+                        "description": result.get("description", ""),
+                        "metadata_uri": result["metadata_uri"],
+                        "image_url": result["image_url"],
+                        "generated_from_trend": True
+                    }
+                }
+            else:
+                return {
+                    "success": False,
+                    "error": result.get("error", "Trending generation failed")
+                }
+    
+    except Exception as e:
+        logger.error(f"Failed to generate from trend: {e}", exc_info=True)
+        return {
+            "success": False,
+            "error": str(e)
+        }
+        
+        
 

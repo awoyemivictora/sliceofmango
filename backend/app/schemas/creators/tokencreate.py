@@ -162,6 +162,10 @@ class LaunchConfigCreate(LaunchConfigBase):
     stagger_buys: Optional[bool] = Field(False)
     buy_delay_ms: Optional[int] = Field(1000, ge=0)
     
+    metadata_source: str = "ai"  # "ai" or "trending"
+    metadata_style: str = "trending"  # Style for metadata generation
+    use_images: bool = True  # Whether to use/generate images
+    
     model_config = ConfigDict(
         use_enum_values=True,  # Use the enum values (strings) when dumping to dict
         extra="allow"  # Allow extra fields

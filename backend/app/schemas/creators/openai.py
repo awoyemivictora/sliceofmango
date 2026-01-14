@@ -29,6 +29,10 @@ class MetadataRequest(BaseModel):
         default=None,
         description="Existing image URL to use instead of generating new"
     )
+    trend_context: Optional[str] = Field(
+        default=None,
+        description="Trending context for the token generation"
+    )
     
 class Attribute(BaseModel):
     """Single attribute for token metadata"""

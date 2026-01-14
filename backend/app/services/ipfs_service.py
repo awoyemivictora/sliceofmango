@@ -17,6 +17,60 @@ class IPFSService:
         self.public_gateway_url = "https://ipfs.io/ipfs/{cid}"  # Public gateway
         self.api_url = "https://api.pinata.cloud/pinning"
         
+    # async def upload_raw_data(self, file_data: bytes, filename: str, content_type: str = "image/jpeg") -> Optional[str]:
+    #     """
+    #     Upload raw file data to IPFS via Pinata
+    #     Returns the IPFS CID if successful
+        
+    #     Args:
+    #         file_data: Raw bytes of the file
+    #         filename: Name for the file
+    #         content_type: MIME type of the file
+    #     """
+    #     try:
+    #         # Get file extension from content type
+    #         extension = self._get_extension_from_content_type(content_type)
+            
+    #         # Ensure filename has proper extension
+    #         if not filename.endswith(extension):
+    #             filename = f"{filename}{extension}"
+            
+    #         # Prepare multipart form data
+    #         form_data = aiohttp.FormData()
+    #         form_data.add_field('file',
+    #                         file_data,
+    #                         filename=filename,
+    #                         content_type=content_type)
+            
+    #         form_data.add_field('pinataMetadata',
+    #                         json.dumps({"name": filename}))
+            
+    #         headers = {
+    #             "Authorization": f"Bearer {self.pinata_jwt}"
+    #         }
+            
+    #         async with aiohttp.ClientSession() as session:
+    #             async with session.post(
+    #                 f"{self.api_url}/pinFileToIPFS",
+    #                 headers=headers,
+    #                 data=form_data
+    #             ) as response:
+                    
+    #                 if response.status == 200:
+    #                     result = await response.json()
+    #                     cid = result.get("IpfsHash")
+    #                     if cid:
+    #                         logger.info(f"✅ Uploaded raw data to IPFS with CID: {cid}")
+    #                         return cid
+    #                 else:
+    #                     error_text = await response.text()
+    #                     logger.error(f"Pinata raw data upload error: {response.status} - {error_text}")
+    #                     return None
+                        
+    #     except Exception as e:
+    #         logger.error(f"Failed to upload raw data to IPFS: {e}", exc_info=True)
+    #         return None
+        
     async def pin_json(self, json_data: Dict[str, Any], name: str) -> Optional[str]:
         """
         Pin JSON metadata to IPFS via Pinata

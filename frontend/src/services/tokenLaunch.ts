@@ -26,8 +26,9 @@ export interface LaunchConfig {
   
   // AI Metadata
   useAIForMetadata: boolean;
-  metadataStyle: 'professional' | 'meme' | 'community' | 'ai-generated' | 'gaming';
+  metadataStyle: 'professional' | 'meme' | 'community' | 'ai' | 'gaming';
   metadataKeywords: string;
+  metadataSource: string;
   useDalle: boolean;
   
   // Advanced settings

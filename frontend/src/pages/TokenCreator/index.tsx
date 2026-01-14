@@ -43,9 +43,9 @@ const TokenCreator: React.FC = () => {
     sellTimeTrigger: 1,
     sellPriceTarget: 1.1,
     useAIForMetadata: true,
-    metadataStyle: 'ai-generated',
+    metadataStyle: 'ai',
     metadataKeywords: 'crypto, meme, solana, ai, token',
-    useDalle: true,
+    useDalle: false,
     useJitoBundle: true,
     priority: 10,
     botSpread: 'random',
@@ -53,6 +53,7 @@ const TokenCreator: React.FC = () => {
     botDistribution: 'normal',
     staggerBuys: false,                // Don't stagger by default
     buyDelayMs: 1000,                  // 1 second delay if staggering
+    metadataSource: 'ai',
   });
   
   const [botArmy, setBotArmy] = useState<BotArmyWallet[]>([]);
@@ -69,7 +70,7 @@ const TokenCreator: React.FC = () => {
   const [aiGenerating, setAiGenerating] = useState<boolean>(false);
   const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
   const [totalRequiredSol, setTotalRequiredSol] = useState<number>(0);
-  const [activeTab, setActiveTab] = useState<'quick' | 'custom' | 'ai'>('quick');
+  const [activeTab, setActiveTab] = useState<'quick' | 'custom' | 'ai' | 'trending'>('quick');
   const [showPreview, setShowPreview] = useState<boolean>(false);
   const [activeLaunchId, setActiveLaunchId] = useState<string | null>(null);
   const [creatorStats, setCreatorStats] = useState<any>(null);
@@ -678,7 +679,7 @@ const TokenCreator: React.FC = () => {
 
   
   // ============================================
-  // AI METADATA GENERATION
+  // AI & Trens METADATA GENERATION
   // ============================================
 
   const generateAIMetadata = useCallback(async () => {
@@ -692,15 +693,20 @@ const TokenCreator: React.FC = () => {
     }));
     
     try {
+      // Make sure use_dalle is true when you want DALL-E images
+      const useDalle = launchConfig.useDalle === true;
+      
+      console.log('🔍 Sending request with use_dalle:', useDalle);
+      
       const response = await apiService.request('/ai/generate-metadata', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          style: launchConfig.metadataStyle,
-          keywords: launchConfig.metadataKeywords,
-          category: 'meme',
-          use_dalle: launchConfig.useDalle
-        })
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+              style: launchConfig.metadataStyle,
+              keywords: launchConfig.metadataKeywords,
+              category: 'meme',
+              use_dalle: useDalle  // Ensure this is true
+          })
       });
 
       console.log('🔍 Backend response:', response);
@@ -780,6 +786,92 @@ const TokenCreator: React.FC = () => {
     }
   }, [launchConfig]);
 
+  const generateFromTrending = async () => {
+    setAiGenerating(true);
+    setLaunchStatus(prev => ({
+      ...prev,
+      message: 'Searching X trends for token ideas...',
+      currentStep: 'Trending Analysis'
+    }));
+    
+    try {
+      // Update to use unified endpoint
+      const response = await apiService.request('/ai/generate-metadata-unified', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          style: 'trending',
+          keywords: '',
+          source: 'trending',
+          use_images: true, // Use X images
+          category: 'meme'
+        })
+      });
+
+      if (response.success && response.metadata) {
+        const metadata = response.metadata;
+        
+        // Create display metadata
+        const tokenMetadata: TokenMetadata = {
+          name: metadata.name,
+          symbol: metadata.symbol,
+          description: metadata.description || 'Token created from trending news',
+          image: metadata.image_url,
+          external_url: "https://pump.fun",
+          attributes: [
+            { trait_type: "Created On", value: new Date().toLocaleDateString() },
+            { trait_type: "Trending News", value: "Yes" },
+            { trait_type: "Launch Strategy", value: "Trend-Based Launch" }
+          ],
+          created_at: new Date().toISOString(),
+          metadata_uri: metadata.metadata_uri,
+          ipfs_uri: metadata.metadata_uri,
+          ipfs_cid: metadata.metadata_uri ? extractIpfsCid(metadata.metadata_uri) : undefined
+        };
+        
+        setGeneratedMetadata(tokenMetadata);
+        
+        // Update launch config
+        setLaunchConfig(prev => ({
+          ...prev,
+          tokenName: metadata.name,
+          tokenSymbol: metadata.symbol,
+          tokenDescription: metadata.description || 'Token created from trending news',
+          imageUrl: convertIpfsToHttpUrl(metadata.image_url),
+          customMetadata: {
+            name: metadata.name,
+            symbol: metadata.symbol,
+            metadata_uri: metadata.metadata_uri,
+            image_url: metadata.image_url,
+            description: metadata.description
+          }
+        }));
+
+        setMetadataGenerated(true);
+        setShowPreview(true);
+        
+        setLaunchStatus(prev => ({
+          ...prev,
+          phase: 'metadata',
+          message: '✅ Token metadata generated from trending news!',
+          progress: 20
+        }));
+      } else {
+        throw new Error('Failed to generate from trending news');
+      }
+    } catch (error) {
+      console.error('Trending generation failed:', error);
+      setLaunchStatus(prev => ({
+        ...prev,
+        message: '❌ Trending generation failed, using defaults',
+        progress: 10
+      }));
+      generateDefaultMetadata();
+    } finally {
+      setAiGenerating(false);
+    }
+  };
+
   // Add helper function to extract IPFS CID
   const extractIpfsCid = (ipfsUrl: string): string | undefined => {
     try {
@@ -846,7 +938,7 @@ const TokenCreator: React.FC = () => {
         botCount: 5,
         creatorBuyAmount: 0.2,
         botWalletBuyAmount: 0.05,
-        metadataStyle: 'ai-generated' as const,
+        metadataStyle: 'ai' as const,
         metadataKeywords: 'micro, test, solana, experimental',
         sellTiming: 'price_target' as const,  // CHANGED: lowercase with underscore
         sellPriceTarget: 50,
@@ -868,7 +960,6 @@ const TokenCreator: React.FC = () => {
     }));
   }, []);
   
-
   const handleQuickLaunch = async (preset: 'meme' | 'professional' | 'micro') => {
     if (!userWallet) {
       alert('Please connect wallet first');
@@ -896,10 +987,13 @@ const TokenCreator: React.FC = () => {
         style: 'meme',
         keywords: 'meme, viral, community, solana, crypto',
         useDalle: false,
-        sellStrategyType: 'volume_based' as const,  // CHANGED: UPPERCASE
+        sellStrategyType: 'volume_based' as const,
         sellVolumeTarget: 5.0,
-        sellTimeMinutes: 1,  // ADDED: required field
-        sellPriceTarget: 1.1   // ADDED: required field
+        sellTimeMinutes: 1,
+        sellPriceTarget: 1.1,
+        // Add metadata source and use_images based on UI selection
+        metadata_source: launchConfig.metadataSource || 'ai', // Use from state
+        use_images: true // Use images by default
       },
       professional: {
         botCount: 20,
@@ -907,23 +1001,27 @@ const TokenCreator: React.FC = () => {
         botBuyAmount: 0.001,
         style: 'professional',
         keywords: 'utility, defi, solana, blockchain, technology',
-        useDalle: true,
-        sellStrategyType: 'time_based' as const,  // CHANGED: UPPERCASE
-        sellTimeMinutes: 5,   // ADDED: must be >= 1
-        sellVolumeTarget: 0,  // ADDED: required field
-        sellPriceTarget: 1.1    // ADDED: required field
+        useDalle: false,
+        sellStrategyType: 'time_based' as const,
+        sellTimeMinutes: 5,
+        sellVolumeTarget: 0,
+        sellPriceTarget: 1.1,
+        metadata_source: launchConfig.metadataSource || 'ai',
+        use_images: true
       },
       micro: {
         botCount: 5,
         creatorBuyAmount: 0.01,
         botBuyAmount: 0.005,
-        style: 'ai-generated',
+        style: 'ai',
         keywords: 'micro, test, solana, experimental',
         useDalle: false,
-        sellStrategyType: 'price_target' as const,  // CHANGED: UPPERCASE
-        sellPriceTarget: 50,   // ADDED: must be >= 1.1
-        sellTimeMinutes: 1,    // ADDED: required field
-        sellVolumeTarget: 0    // ADDED: required field
+        sellStrategyType: 'price_target' as const,
+        sellPriceTarget: 50,
+        sellTimeMinutes: 1,
+        sellVolumeTarget: 0,
+        metadata_source: launchConfig.metadataSource || 'ai',
+        use_images: true
       }
     };
     
@@ -1046,6 +1144,14 @@ const TokenCreator: React.FC = () => {
             }
           }));
         }
+
+        // Also store metadata source info
+        if (response.metadata_source) {
+          setLaunchConfig(prev => ({
+            ...prev,
+            metadataSource: response.metadata_source
+          }));
+        }
       } else {
         throw new Error(response.error || 'Failed to start launch');
       }
@@ -1062,7 +1168,7 @@ const TokenCreator: React.FC = () => {
       setIsLoading(false);
     }
   };
-  
+
   const startOrchestratedLaunch = async () => {
     console.log('=== DEBUG LAUNCH START ===');
     console.log('UI Display Values:');
@@ -1239,9 +1345,9 @@ const TokenCreator: React.FC = () => {
         botSpread: launchConfig.botSpread || 'random',
       };
       
-      // ✅ If we have AI-generated metadata, use the metadata_uri
+      // ✅ If we have ai metadata, use the metadata_uri
       if (metadata && metadata.metadata_uri) {
-        console.log('✅ Using AI-generated metadata URI:', metadata.metadata_uri);
+        console.log('✅ Using ai metadata URI:', metadata.metadata_uri);
         backendConfig.customMetadata = {
           name: metadata.name,
           symbol: metadata.symbol,
@@ -1422,7 +1528,7 @@ const TokenCreator: React.FC = () => {
         metadata = generatedMetadata;
       }
       
-      // CRITICAL FIX: Use the AI-generated metadata or fallback
+      // CRITICAL FIX: Use the ai metadata or fallback
       let tokenMetadata: {
         name: string;
         symbol: string;
@@ -2479,6 +2585,132 @@ const TokenCreator: React.FC = () => {
     );
   };
 
+  // const QuickStartPresets = () => {
+  //   const presets = [
+  //     {
+  //       id: 'meme',
+  //       name: 'Meme Launch',
+  //       description: 'Viral meme token with community focus',
+  //       bots: 10,
+  //       sol: 2.5,
+  //       time: '2-3 min',
+  //       color: 'from-pink-500 to-purple-500',
+  //       icon: '😂',
+  //       action: 'apply'
+  //     },
+  //     {
+  //       id: 'professional',
+  //       name: 'Professional Pump',
+  //       description: 'Serious token with utility focus',
+  //       bots: 20,
+  //       sol: 8.0,
+  //       time: '5-7 min',
+  //       color: 'from-blue-500 to-cyan-500',
+  //       icon: '💼',
+  //       action: 'apply'
+  //     },
+  //     {
+  //       id: 'micro',
+  //       name: 'Quick Micro Launch',
+  //       description: 'One-click micro strategy launch',
+  //       bots: 5,
+  //       sol: 1.2,
+  //       time: '1-2 min',
+  //       color: 'from-emerald-500 to-teal-500',
+  //       icon: '⚡',
+  //       action: 'launch'
+  //     }
+  //   ];
+    
+  //   return (
+  //     <div className="bg-gradient-to-br from-gray-900/50 to-dark-2/50 backdrop-blur-sm rounded-2xl p-5 border border-gray-800/50 mb-6 shadow-lg">
+  //       <div className="flex items-center gap-3 mb-6">
+  //         <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg">
+  //           <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  //             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+  //           </svg>
+  //         </div>
+  //         <div>
+  //           <h3 className="text-white font-bold">Quick Start Presets</h3>
+  //           <p className="text-sm text-gray-400">One-click launch configurations</p>
+  //         </div>
+  //       </div>
+        
+  //       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+  //         {presets.map((preset) => (
+  //           <button
+  //             key={preset.id}
+  //             onClick={() => preset.action === 'apply' 
+  //               ? applyQuickLaunch(preset.id as any) 
+  //               : handleQuickLaunch(preset.id as any)
+  //             }
+  //             className={`bg-gradient-to-br ${preset.color} rounded-xl p-5 text-left hover:scale-[1.02] transition-all duration-200 border border-white/10 shadow-lg`}
+  //           >
+  //             <div className="flex justify-between items-start mb-3">
+  //               <div className="text-2xl">{preset.icon}</div>
+  //               <div className="text-xs bg-black/30 px-2 py-1 rounded-full text-white/80">
+  //                 {preset.bots} bots
+  //               </div>
+  //             </div>
+              
+  //             <h4 className="text-white font-bold text-lg mb-2">{preset.name}</h4>
+  //             <p className="text-white/80 text-sm mb-4">{preset.description}</p>
+              
+  //             <div className="flex justify-between text-xs">
+  //               <div>
+  //                 <div className="text-white/60">SOL Needed</div>
+  //                 <div className="text-white font-medium">{preset.sol} SOL</div>
+  //               </div>
+  //               <div>
+  //                 <div className="text-white/60">Time</div>
+  //                 <div className="text-white font-medium">{preset.time}</div>
+  //               </div>
+  //               <div>
+  //                 <div className="text-white/60">Action</div>
+  //                 <div className={`font-medium ${
+  //                   preset.action === 'launch' ? 'text-yellow-400' : 'text-blue-400'
+  //                 }`}>
+  //                   {preset.action === 'launch' ? 'Quick Launch' : 'Apply'}
+  //                 </div>
+  //               </div>
+  //             </div>
+  //           </button>
+  //         ))}
+  //       </div>
+  //     </div>
+  //   );
+  // };
+  
+  // const ConfigurationTabs = () => {
+  //   return (
+  //     <div className="bg-gradient-to-br from-gray-900/50 to-dark-2/50 backdrop-blur-sm rounded-2xl p-1 border border-gray-800/50 mb-6 shadow-lg">
+  //       <div className="flex flex-wrap gap-1">
+  //         {[
+  //           { id: 'quick', label: '🚀 Quick Launch', icon: '⚡' },
+  //           { id: 'custom', label: '⚙️ Custom Config', icon: '🔧' },
+  //           { id: 'ai', label: '🤖 AI Assistant', icon: '🧠' },
+  //            { id: 'trending', label: '📰 Trending News', icon: '🔥' }
+  //         ].map((tab) => (
+  //           <button
+  //             key={tab.id}
+  //             onClick={() => setActiveTab(tab.id as any)}
+  //             className={`flex-1 min-w-[120px] py-3 px-4 rounded-xl text-sm font-medium transition-all ${
+  //               activeTab === tab.id
+  //                 ? 'bg-gradient-to-r from-blue-500/20 to-cyan-500/20 text-white border border-blue-500/30'
+  //                 : 'text-gray-400 hover:text-white hover:bg-gray-800/30'
+  //             }`}
+  //           >
+  //             <div className="flex items-center justify-center gap-2">
+  //               <span className="text-lg">{tab.icon}</span>
+  //               <span className="hidden sm:inline">{tab.label}</span>
+  //             </div>
+  //           </button>
+  //         ))}
+  //       </div>
+  //     </div>
+  //   );
+  // };
+
   const QuickStartPresets = () => {
     const presets = [
       {
@@ -2516,17 +2748,32 @@ const TokenCreator: React.FC = () => {
       }
     ];
     
+    // Get current metadata source for display
+    const currentSource = launchConfig.metadataSource === 'trending' ? 'X Trends' : 'AI';
+    
     return (
       <div className="bg-gradient-to-br from-gray-900/50 to-dark-2/50 backdrop-blur-sm rounded-2xl p-5 border border-gray-800/50 mb-6 shadow-lg">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg">
-            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg">
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-white font-bold">Quick Start Presets</h3>
+              <p className="text-sm text-gray-400">One-click launch configurations</p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-white font-bold">Quick Start Presets</h3>
-            <p className="text-sm text-gray-400">One-click launch configurations</p>
+          
+          {/* Metadata source indicator */}
+          <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm ${
+            launchConfig.metadataSource === 'ai'
+              ? 'bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border-blue-500/30 text-blue-400'
+              : 'bg-gradient-to-r from-red-500/20 to-orange-500/20 border-red-500/30 text-orange-400'
+          }`}>
+            {launchConfig.metadataSource === 'ai' ? '🤖 AI' : '📰 X Trends'}
+            <span className="text-xs opacity-80">metadata</span>
           </div>
         </div>
         
@@ -2568,13 +2815,21 @@ const TokenCreator: React.FC = () => {
                   </div>
                 </div>
               </div>
+              
+              {/* Show which metadata source will be used */}
+              <div className="mt-3 pt-3 border-t border-white/10">
+                <div className="text-xs text-white/60">Metadata:</div>
+                <div className="text-xs text-white font-medium">
+                  {currentSource}
+                </div>
+              </div>
             </button>
           ))}
         </div>
       </div>
     );
   };
-  
+
   const ConfigurationTabs = () => {
     return (
       <div className="bg-gradient-to-br from-gray-900/50 to-dark-2/50 backdrop-blur-sm rounded-2xl p-1 border border-gray-800/50 mb-6 shadow-lg">
@@ -2582,11 +2837,28 @@ const TokenCreator: React.FC = () => {
           {[
             { id: 'quick', label: '🚀 Quick Launch', icon: '⚡' },
             { id: 'custom', label: '⚙️ Custom Config', icon: '🔧' },
-            { id: 'ai', label: '🤖 AI Assistant', icon: '🧠' }
+            { id: 'ai', label: '🤖 AI Assistant', icon: '🧠' },
+            { id: 'trending', label: '📰 X Trends', icon: '🔥' } // Changed from 'trending news'
           ].map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => {
+                setActiveTab(tab.id as any);
+                // If switching to AI tab, set useAIForMetadata to true
+                if (tab.id === 'ai') {
+                  setLaunchConfig(prev => ({
+                    ...prev,
+                    useAIForMetadata: true
+                  }));
+                }
+                // If switching to trending tab, set useAIForMetadata to false (we'll use X trends)
+                if (tab.id === 'trending') {
+                  setLaunchConfig(prev => ({
+                    ...prev,
+                    useAIForMetadata: false
+                  }));
+                }
+              }}
               className={`flex-1 min-w-[120px] py-3 px-4 rounded-xl text-sm font-medium transition-all ${
                 activeTab === tab.id
                   ? 'bg-gradient-to-r from-blue-500/20 to-cyan-500/20 text-white border border-blue-500/30'
@@ -2603,7 +2875,7 @@ const TokenCreator: React.FC = () => {
       </div>
     );
   };
-
+  
   const refreshBotWallets = async () => {
     try {
       const bots = await tokenLaunchService.getBotWallets();
@@ -3377,6 +3649,189 @@ const TokenCreator: React.FC = () => {
     );
   };
 
+  // Custom Logo Component — Mango Half with Leaf
+  const SliceOfMangoLogo = () => {
+    return (
+      <div className="flex items-center gap-3">
+        {/* Mango Icon */}
+        <div className="relative w-9 h-9">
+          <div className="absolute -top-1 -left-0.5 w-4 h-3 bg-gradient-to-br from-green-500 to-emerald-600 
+            rounded-l-full rounded-tr-full transform -rotate-12">
+            <div className="absolute top-1 left-1 w-0.5 h-1.5 bg-green-700/30 rounded-full transform rotate-45"></div>
+          </div>
+          {/* Leaf */}
+          <div className="absolute -top-2 -right-2 rotate-12">
+          
+
+            {/* Stem */}
+            {/* <div className="absolute bottom-0 left-1/2 w-0.5 h-2 bg-green-700 -translate-x-1/2 rounded-b-full"></div> */}
+          </div>
+
+          {/* Mango skin */}
+          <div className="absolute inset-0 bg-gradient-to-br from-green-500 via-yellow-500 to-orange-500 rounded-[60%_40%_55%_45%] shadow-md"></div>
+
+          {/* Mango flesh */}
+          <div className="absolute inset-[2px] bg-gradient-to-br from-yellow-300 via-yellow-400 to-orange-400 rounded-[60%_40%_55%_45%] overflow-hidden">
+            {/* Seed cavity */}
+            <div className="absolute top-1/2 left-1/2 w-4 h-5 -translate-x-1/2 -translate-y-1/2 bg-gradient-to-br from-orange-500 to-orange-700 rounded-[50%] opacity-60"></div>
+
+            {/* Flesh fibers */}
+            <div className="absolute left-1 top-2 w-0.5 h-5 bg-white/20 rotate-12"></div>
+            <div className="absolute left-2 top-3 w-0.5 h-4 bg-white/15 rotate-6"></div>
+
+            {/* Juicy highlight */}
+            <div className="absolute top-1 left-2 w-3 h-3 bg-gradient-to-br from-white/40 to-transparent rounded-full"></div>
+          </div>
+
+          {/* Cut edge */}
+          {/* <div className="absolute right-0 top-0 h-full w-1 bg-gradient-to-l from-white/30 to-transparent rounded-r-full"></div> */}
+        </div>
+
+        {/* Text Logo */}
+        <div className="flex flex-col">
+          <div className="text-white text-sm font-black tracking-tight">
+            <span className="text-white">SLICEOF</span>
+            <span className="text-success">MANGO.COM</span>
+          </div>
+          <div className="text-[9px] text-gray-400 font-medium tracking-widest uppercase mt-0.5">
+            Launch Token
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const getCategoryColor = (category: string) => {
+    switch (category) {
+      case 'crypto':
+        return 'bg-emerald-900/30 text-emerald-400 border-emerald-500/30';
+      case 'politics':
+        return 'bg-blue-900/30 text-blue-400 border-blue-500/30';
+      case 'influencer':
+        return 'bg-purple-900/30 text-purple-400 border-purple-500/30';
+      case 'meme':
+        return 'bg-yellow-900/30 text-yellow-400 border-yellow-500/30';
+      default:
+        return 'bg-gray-800/30 text-gray-400 border-gray-600/30';
+    }
+  };
+
+  const TrendingNewsPanel = () => {
+    const [trends, setTrends] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
+    
+    const fetchTrends = async () => {
+      setLoading(true);
+      try {
+        const response = await apiService.request('/ai/trending-for-tokens', {
+          method: 'GET'
+        });
+        
+        if (response.success) {
+          setTrends(response.trends || []);
+        }
+      } catch (error) {
+        console.error('Failed to fetch trends:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    useEffect(() => {
+      if (activeTab === 'trending') {
+        fetchTrends();
+      }
+    }, [activeTab]);
+    
+    const useTrendForLaunch = async (trend: any) => {
+      // Call the trending generation endpoint with specific trend context
+      await generateFromTrending();
+    };
+    
+    if (activeTab !== 'trending') return null;
+    
+    return (
+      <div className="bg-gradient-to-br from-gray-900/50 to-dark-2/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-800/50 mb-6 shadow-lg">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg">
+            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+            </svg>
+          </div>
+          <div>
+            <h3 className="text-white font-bold">Trending News for Token Ideas</h3>
+            <p className="text-sm text-gray-400">Generate tokens based on what's trending now</p>
+          </div>
+        </div>
+        
+        {loading ? (
+          <div className="text-center py-8">
+            <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-400">Searching trending news...</p>
+          </div>
+        ) : trends.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-gray-400">No trending topics found. Try again later.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {trends.map((trend, index) => (
+              <div key={index} className="bg-gray-900/30 rounded-xl p-4 border border-gray-800/50 hover:border-orange-500/30 transition-colors">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1">
+                    <h4 className="text-white font-medium mb-2 line-clamp-2">
+                      {trend.trend_text}
+                    </h4>
+                    <div className="flex items-center gap-2 text-xs text-gray-400">
+                      <span>@{trend.user}</span>
+                      <span>•</span>
+                      <span>Engagement: {trend.engagement}</span>
+                      <span>•</span>
+                      <span className={`px-2 py-1 rounded-full ${getCategoryColor(trend.category)}`}>
+                        {trend.category}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                
+                {trend.token_ideas && (
+                  <div className="mt-4">
+                    <div className="text-xs text-gray-400 mb-2">Token Ideas:</div>
+                    <div className="flex flex-wrap gap-2">
+                      {trend.token_ideas.names.slice(0, 3).map((name: string, i: number) => (
+                        <span key={i} className="px-2 py-1 bg-blue-900/30 text-blue-400 text-xs rounded border border-blue-500/30">
+                          {name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                <button
+                  onClick={() => useTrendForLaunch(trend)}
+                  className="mt-4 w-full py-2 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-lg text-sm font-medium transition-all"
+                >
+                  Use This Trend for Token
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        
+        <div className="mt-6 pt-6 border-t border-gray-800/50">
+          <button
+            onClick={fetchTrends}
+            className="w-full py-3 bg-gray-800/50 hover:bg-gray-700/50 text-gray-300 hover:text-white rounded-lg border border-gray-700/50 transition-colors flex items-center justify-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Refresh Trends
+          </button>
+        </div>
+      </div>
+    );
+  };
 
 
   // ============================================
@@ -3394,7 +3849,7 @@ const TokenCreator: React.FC = () => {
         <header className="sticky top-0 z-50 bg-gray-900/80 backdrop-blur-lg border-b border-gray-800 h-16 flex items-center justify-between px-4 md:px-8">
           <div className="flex items-center gap-4">
             {/* Make the entire logo area clickable */}
-            <button 
+            {/* <button 
               onClick={() => navigate('/')}
               className="flex items-center gap-4 hover:opacity-80 transition-opacity"
             >
@@ -3403,7 +3858,8 @@ const TokenCreator: React.FC = () => {
                 <span className="text-white">FLASH </span>
                 <span className="text-success">CREATOR</span>
               </div>
-            </button>
+            </button> */}
+            <SliceOfMangoLogo />
           </div>
           
           <div className="flex items-center gap-4">
@@ -3431,7 +3887,7 @@ const TokenCreator: React.FC = () => {
                 AI-Powered Token <span className="bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">Launch Platform</span>
               </h1>
               <p className="text-gray-300 max-w-3xl mx-auto text-lg">
-                Create, launch, and profit from Solana tokens with AI-generated metadata and orchestrated bot armies.
+                Create, launch, and profit from Solana tokens with ai metadata and orchestrated bot armies.
                 All in one automated platform.
               </p>
             </div>
@@ -3521,6 +3977,31 @@ const TokenCreator: React.FC = () => {
               <>
                 {/* Configuration Tabs */}
                 <ConfigurationTabs />
+
+                {/* Add this after the ConfigurationTabs */}
+                <div className="mb-6">
+                  <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border ${
+                    launchConfig.metadataSource === 'ai'
+                      ? 'bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border-blue-500/30 text-blue-400'
+                      : 'bg-gradient-to-r from-red-500/20 to-orange-500/20 border-red-500/30 text-orange-400'
+                  }`}>
+                    {launchConfig.metadataSource === 'ai' ? (
+                      <>
+                        <span>🤖</span>
+                        <span className="text-sm font-medium">Using AI for metadata</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>📰</span>
+                        <span className="text-sm font-medium">Using X Trends for metadata</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Trending News Panel (only shows when trending tab is active) */}
+                <TrendingNewsPanel />
+
 
                 {/* Add pre-funding section after ConfigurationTabs */}
                 {activeTab === 'custom' && (
@@ -3686,7 +4167,7 @@ const TokenCreator: React.FC = () => {
                             />
                           </div>
                           
-                          <div className="grid grid-cols-2 gap-4">
+                          {/* <div className="grid grid-cols-2 gap-4">
                             <div>
                               <label className="block text-gray-400 text-sm mb-2">AI Style</label>
                               <select
@@ -3694,7 +4175,7 @@ const TokenCreator: React.FC = () => {
                                 onChange={(e) => setLaunchConfig(prev => ({ ...prev, metadataStyle: e.target.value as any }))}
                                 className="w-full bg-gray-900/50 border border-gray-700/50 rounded-xl p-3 text-white focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all"
                               >
-                                <option value="ai-generated">🤖 AI Generated</option>
+                                <option value="ai">🤖 AI Generated</option>
                                 <option value="professional">💼 Professional</option>
                                 <option value="meme">😂 Meme Style</option>
                                 <option value="community">👥 Community</option>
@@ -3717,9 +4198,76 @@ const TokenCreator: React.FC = () => {
                                 <span className="ml-3 text-sm text-gray-400">Generate AI image</span>
                               </div>
                             </div>
-                          </div>
-                          
+                          </div> */}
+
                           <div>
+                            <label className="block text-gray-400 text-sm mb-2">Metadata Source</label>
+                            <div className="grid grid-cols-2 gap-2">
+                              <button
+                                onClick={() => setLaunchConfig(prev => ({ ...prev, metadataSource: 'ai' }))}
+                                className={`py-3 rounded-lg border transition-all ${
+                                  launchConfig.metadataSource === 'ai'
+                                    ? 'bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border-blue-500/30 text-white'
+                                    : 'bg-gray-900/50 border-gray-700/50 text-gray-400 hover:text-white hover:border-gray-600/50'
+                                }`}
+                              >
+                                <div className="flex flex-col items-center gap-1">
+                                  <span className="text-lg">🤖</span>
+                                  <span className="text-xs font-medium">AI</span>
+                                </div>
+                              </button>
+                              <button
+                                onClick={() => setLaunchConfig(prev => ({ ...prev, metadataSource: 'trending' }))}
+                                className={`py-3 rounded-lg border transition-all ${
+                                  launchConfig.metadataSource === 'trending'
+                                    ? 'bg-gradient-to-r from-red-500/20 to-orange-500/20 border-red-500/30 text-white'
+                                    : 'bg-gray-900/50 border-gray-700/50 text-gray-400 hover:text-white hover:border-gray-600/50'
+                                }`}
+                              >
+                                <div className="flex flex-col items-center gap-1">
+                                  <span className="text-lg">📰</span>
+                                  <span className="text-xs font-medium">X Trends</span>
+                                </div>
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* DALL-E Toggle - Only show when using AI source */}
+{launchConfig.metadataSource === 'ai' && (
+  <div className="mt-4">
+    <div className="flex items-center justify-between p-3 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-xl border border-purple-500/30">
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+        </div>
+        <div>
+          <div className="text-white font-medium">Generate AI Image</div>
+          <div className="text-xs text-gray-400">Use DALL-E to create custom token image</div>
+        </div>
+      </div>
+      <label className="relative inline-flex items-center cursor-pointer">
+        <input
+          type="checkbox"
+          checked={launchConfig.useDalle}
+          onChange={(e) => setLaunchConfig(prev => ({ ...prev, useDalle: e.target.checked }))}
+          className="sr-only peer"
+        />
+        <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+      </label>
+    </div>
+    
+    {/* Status indicator */}
+    {launchConfig.useDalle && (
+      <div className="mt-2 p-2 bg-emerald-900/20 text-emerald-400 text-xs rounded-lg border border-emerald-500/30">
+        ✅ DALL-E will generate a custom AI image for your token
+      </div>
+    )}
+  </div>
+)}
+                          
+                          {/* <div>
                             <label className="block text-gray-400 text-sm mb-2">Keywords</label>
                             <input
                               type="text"
@@ -3728,7 +4276,7 @@ const TokenCreator: React.FC = () => {
                               className="w-full bg-gray-900/50 border border-gray-700/50 rounded-xl p-3 text-white placeholder-gray-500 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all"
                               placeholder="meme, solana, crypto, ai, etc."
                             />
-                          </div>
+                          </div> */}
                         </div>
                       </div>
                       
@@ -4091,110 +4639,153 @@ const TokenCreator: React.FC = () => {
                   </div>
                 
                   {/* Action Buttons */}
-                  <div className="flex flex-col sm:flex-row gap-4 mt-8">
-                    {/* <button
-                      onClick={startOrchestratedLaunch}
-                      disabled={isLoading || userBalance < totalRequiredSol}
-                      className={`flex-1 py-4 px-6 rounded-xl font-bold text-white transition-all duration-200 flex items-center justify-center gap-3 ${
-                        isLoading
-                          ? 'bg-gray-700 cursor-not-allowed'
-                          : userBalance < totalRequiredSol
-                          ? 'bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 cursor-not-allowed'
-                          : 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 shadow-lg hover:shadow-emerald-500/25'
-                      }`}
-                    >
-                      {isLoading ? (
-                        <>
-                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                          <span>Launching...</span>
-                        </>
-                      ) : (
-                        <>
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                          </svg>
-                          <span>Start Orchestrated Launch</span>
-                        </>
-                      )}
-                    </button> */}
+                  {/* Action Buttons Section - Update this part */}
+<div className="flex flex-col sm:flex-row gap-4 mt-8">
+  {/* Launch button - only show when metadata is ready */}
+  {metadataGenerated ? (
+    <button
+      onClick={startOrchestratedLaunch}
+      disabled={isLoading || userBalance < totalRequiredSol}
+      className={`flex-1 py-4 px-6 rounded-xl font-bold text-white transition-all duration-200 flex items-center justify-center gap-3 ${
+        isLoading
+          ? 'bg-gray-700 cursor-not-allowed'
+          : userBalance < totalRequiredSol
+          ? 'bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 cursor-not-allowed'
+          : atomicLaunchMode
+          ? 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 shadow-lg hover:shadow-emerald-500/25'
+          : 'bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 shadow-lg hover:shadow-blue-500/25'
+      }`}
+    >
+      {isLoading ? (
+        <>
+          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+          <span>Launching...</span>
+        </>
+      ) : atomicLaunchMode ? (
+        <>
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+          <span>Start Atomic Launch</span>
+        </>
+      ) : (
+        <>
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+          <span>Start Orchestrated Launch</span>
+        </>
+      )}
+    </button>
+  ) : (
+    <div className="flex-1 py-4 px-6 rounded-xl border-2 border-dashed border-amber-500/30 bg-amber-900/10 flex flex-col items-center justify-center">
+      <div className="flex items-center gap-2 text-amber-400 mb-2">
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        </svg>
+        <span className="font-bold">Metadata Required</span>
+      </div>
+      <p className="text-amber-300/80 text-sm text-center">
+        Generate metadata first using AI or X Trends
+      </p>
+    </div>
+  )}
 
-                    {/* Show launch button only when metadata is generated OR user has manually filled fields */}
-                    {metadataGenerated ? (
-                      <button
-                        onClick={startOrchestratedLaunch}
-                        disabled={isLoading || userBalance < totalRequiredSol}
-                        className={`flex-1 py-4 px-6 rounded-xl font-bold text-white transition-all duration-200 flex items-center justify-center gap-3 ${
-                          isLoading
-                            ? 'bg-gray-700 cursor-not-allowed'
-                            : userBalance < totalRequiredSol
-                            ? 'bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 cursor-not-allowed'
-                            : atomicLaunchMode
-                            ? 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 shadow-lg hover:shadow-emerald-500/25'
-                            : 'bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 shadow-lg hover:shadow-blue-500/25'
-                        }`}
-                      >
-                        {isLoading ? (
-                          <>
-                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                            <span>Launching...</span>
-                          </>
-                        ) : atomicLaunchMode ? (
-                          <>
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                            </svg>
-                            <span>Start Atomic Launch</span>
-                          </>
-                        ) : (
-                          <>
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                            </svg>
-                            <span>Start Orchestrated Launch</span>
-                          </>
-                        )}
-                      </button>
-                    ) : (
-                      <div className="flex-1 py-4 px-6 rounded-xl border-2 border-dashed border-amber-500/30 bg-amber-900/10 flex flex-col items-center justify-center">
-                        <div className="flex items-center gap-2 text-amber-400 mb-2">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                          </svg>
-                          <span className="font-bold">Metadata Required</span>
-                        </div>
-                        <p className="text-amber-300/80 text-sm text-center">
-                          Generate AI Metadata or manually fill Token Name & Symbol first
-                        </p>
-                      </div>
-                    )}
+  {/* Dynamic Generate Metadata Button */}
+  {/* <button
+    onClick={() => {
+      if (launchConfig.metadataSource === 'trending') {
+        generateFromTrending();
+      } else {
+        generateAIMetadata();
+      }
+    }}
+    disabled={aiGenerating}
+    className={`py-4 px-6 rounded-xl font-bold transition-all duration-200 shadow-lg hover:shadow-purple-500/25 ${
+      launchConfig.metadataSource === 'trending'
+        ? 'bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white'
+        : 'bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white'
+    }`}
+  >
+    {aiGenerating ? (
+      <div className="flex items-center gap-2">
+        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+        <span>Generating...</span>
+      </div>
+    ) : (
+      <div className="flex items-center gap-2">
+        {launchConfig.metadataSource === 'trending' ? (
+          <>
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+            </svg>
+            <span>Generate with X Trends</span>
+          </>
+        ) : (
+          <>
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+            </svg>
+            <span>Generate with AI</span>
+          </>
+        )}
+      </div>
+    )}
+  </button> */}
 
-                    <button
-                      onClick={generateAIMetadata}
-                      disabled={aiGenerating || !launchConfig.useAIForMetadata}
-                      className="py-4 px-6 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-xl font-bold transition-all duration-200 shadow-lg hover:shadow-blue-500/25"
-                    >
-                      {aiGenerating ? (
-                        <div className="flex items-center gap-2">
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                          <span>Generating AI Metadata...</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                          </svg>
-                          <span>Generate AI Metadata</span>
-                        </div>
-                      )}
-                    </button>
-                    
-                    <button
-                      onClick={() => setShowAdvanced(!showAdvanced)}
-                      className="py-4 px-6 bg-gray-800/50 hover:bg-gray-700/50 text-gray-300 hover:text-white rounded-xl font-medium border border-gray-700/50 transition-all duration-200"
-                    >
-                      {showAdvanced ? 'Hide Advanced' : 'Show Advanced'}
-                    </button>
-                  </div>
+  {/* In your Generate button section */}
+  <button
+  onClick={() => {
+    if (launchConfig.metadataSource === 'trending') {
+      console.log('📡 Generating from X Trends...');
+      generateFromTrending();
+    } else {
+      console.log('🤖 Generating from AI...');
+      console.log('🔍 DALL-E enabled:', launchConfig.useDalle);
+      generateAIMetadata();
+    }
+  }}
+  disabled={aiGenerating}
+  className={`py-4 px-6 rounded-xl font-bold transition-all duration-200 shadow-lg hover:shadow-purple-500/25 ${
+    launchConfig.metadataSource === 'trending'
+      ? 'bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white'
+      : 'bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white'
+  }`}
+>
+  {aiGenerating ? (
+    <div className="flex items-center gap-2">
+      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+      <span>Generating...</span>
+    </div>
+  ) : (
+    <div className="flex items-center gap-2">
+      {launchConfig.metadataSource === 'trending' ? (
+        <>
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+          </svg>
+          <span>Generate with X Trends</span>
+        </>
+      ) : (
+        <>
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+          </svg>
+          <span>Generate with AI {launchConfig.useDalle && ' + DALL-E'}</span>
+        </>
+      )}
+    </div>
+  )}
+</button>
+
+  {/* Keep advanced toggle button */}
+  <button
+    onClick={() => setShowAdvanced(!showAdvanced)}
+    className="py-4 px-6 bg-gray-800/50 hover:bg-gray-700/50 text-gray-300 hover:text-white rounded-xl font-medium border border-gray-700/50 transition-all duration-200"
+  >
+    {showAdvanced ? 'Hide Advanced' : 'Show Advanced'}
+  </button>
+</div>
 
                   {/* Advanced Options */}
                   {showAdvanced && (
