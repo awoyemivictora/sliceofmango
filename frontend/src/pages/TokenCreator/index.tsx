@@ -45,7 +45,7 @@ const TokenCreator: React.FC = () => {
     useAIForMetadata: true,
     metadataStyle: 'ai',
     metadataKeywords: 'crypto, meme, solana, ai, token',
-    useDalle: false,
+    useDalle: true,
     useJitoBundle: true,
     priority: 10,
     botSpread: 'random',
@@ -2835,10 +2835,9 @@ const TokenCreator: React.FC = () => {
       <div className="bg-gradient-to-br from-gray-900/50 to-dark-2/50 backdrop-blur-sm rounded-2xl p-1 border border-gray-800/50 mb-6 shadow-lg">
         <div className="flex flex-wrap gap-1">
           {[
-            { id: 'quick', label: '🚀 Quick Launch', icon: '⚡' },
-            { id: 'custom', label: '⚙️ Custom Config', icon: '🔧' },
-            { id: 'ai', label: '🤖 AI Assistant', icon: '🧠' },
-            { id: 'trending', label: '📰 X Trends', icon: '🔥' } // Changed from 'trending news'
+            { id: 'quick', label: 'Quick Launch', icon: '⚡' },
+            { id: 'custom', label: 'Custom Configurations', icon: '⚙️' },
+            // { id: 'trending', label: '📰 X Trends', icon: '🔥' } // Changed from 'trending news'
           ].map((tab) => (
             <button
               key={tab.id}
@@ -2851,13 +2850,13 @@ const TokenCreator: React.FC = () => {
                     useAIForMetadata: true
                   }));
                 }
-                // If switching to trending tab, set useAIForMetadata to false (we'll use X trends)
-                if (tab.id === 'trending') {
-                  setLaunchConfig(prev => ({
-                    ...prev,
-                    useAIForMetadata: false
-                  }));
-                }
+                // // If switching to trending tab, set useAIForMetadata to false (we'll use X trends)
+                // if (tab.id === 'trending') {
+                //   setLaunchConfig(prev => ({
+                //     ...prev,
+                //     useAIForMetadata: false
+                //   }));
+                // }
               }}
               className={`flex-1 min-w-[120px] py-3 px-4 rounded-xl text-sm font-medium transition-all ${
                 activeTab === tab.id
@@ -2903,7 +2902,7 @@ const TokenCreator: React.FC = () => {
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
     const [isMobile, setIsMobile] = useState(false);
     const [isTablet, setIsTablet] = useState(false);
-    const [isCollapsed, setIsCollapsed] = useState(false); // New state for collapse
+    const [isCollapsed, setIsCollapsed] = useState(true); // New state for collapse
     
     const itemsPerPage = 10;
     
@@ -2994,40 +2993,6 @@ const TokenCreator: React.FC = () => {
       active: botWallets.filter(w => w.status === 'active').length,
       pre_funded: preFundedCount,
     };
-    
-    // const copyPrivateKey = async (walletId: string | number, token: string, publicKey: string) => {
-    //   try {
-    //     setCopyingKeys(prev => ({ ...prev, [walletId]: true }));
-        
-    //     // Convert walletId to number if it's a string
-    //     const walletIdNum = typeof walletId === 'string' ? parseInt(walletId, 10) : walletId;
-        
-    //     // Simulating API call - replace with your actual service
-    //     const response = await tokenLaunchService.getBotPrivateKey(walletIdNum, token);
-        
-    //     if (response.success) {
-    //       // Copy to clipboard
-    //       await navigator.clipboard.writeText(response.private_key_base58);
-          
-    //       // Show modal instead of alert
-    //       const wallet = botWallets.find(w => w.id === walletId);
-    //       setSelectedWallet(wallet || null);
-    //       setShowCopyModal(true);
-          
-    //       // Auto-hide modal after 3 seconds
-    //       setTimeout(() => {
-    //         setShowCopyModal(false);
-    //       }, 3000);
-    //     }
-    //   } catch (error: any) {
-    //     console.error('Failed to copy private key:', error);
-    //     alert(`Failed to copy private key: ${error.message || 'Token may have expired. Refresh the page to get a new token.'}`);
-    //   } finally {
-    //     setCopyingKeys(prev => ({ ...prev, [walletId]: false }));
-    //   }
-    // };
-    
-    // In BotWalletsTable component, update the copyPrivateKey function:
 
     const copyPrivateKey = async (botWalletAddress: string, userWalletAddress: string) => {
       try {
@@ -3407,7 +3372,7 @@ const TokenCreator: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <h3 className="text-white font-bold text-lg">Bot Armies</h3>
                   <svg 
-                    className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`}
+                    className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${isCollapsed ? 'rotate-360' : 'rotate-180'}`}
                     fill="none" 
                     stroke="currentColor" 
                     viewBox="0 0 24 24"
@@ -3892,8 +3857,7 @@ const TokenCreator: React.FC = () => {
               </p>
             </div>
             
-            {/* Status Display */}
-            <StatusCard />
+            
 
             {/* {activeLaunchId && (
               <div className="mb-6">
@@ -3925,7 +3889,7 @@ const TokenCreator: React.FC = () => {
               </div>
             )} */}
 
-            {activeLaunchId && !showLaunchDashboard && (
+            {/* {activeLaunchId && !showLaunchDashboard && (
               <div className="mb-6">
                 <button
                   onClick={() => setShowLaunchDashboard(true)}
@@ -3953,21 +3917,21 @@ const TokenCreator: React.FC = () => {
                   </div>
                 </button>
               </div>
-            )}
-
+            )} */}
+{/* 
             {showLaunchDashboard && activeLaunchId && (
               <RealTimeLaunchDashboard
                 launchId={activeLaunchId}
                 onClose={() => setShowLaunchDashboard(false)}
               />
-)}
+            )} */}
 
-            {showLaunchDashboard && activeLaunchId && (
+            {/* {showLaunchDashboard && activeLaunchId && (
               <RealTimeLaunchDashboard
                 launchId={activeLaunchId}
                 onClose={() => setShowLaunchDashboard(false)}
               />
-            )}
+            )} */}
 
             {/* Insufficient Balance Warning - Shows when user has < 0.0001 SOL */}
             <InsufficientBalanceWarning />
@@ -3979,7 +3943,7 @@ const TokenCreator: React.FC = () => {
                 <ConfigurationTabs />
 
                 {/* Add this after the ConfigurationTabs */}
-                <div className="mb-6">
+                {/* <div className="mb-6">
                   <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border ${
                     launchConfig.metadataSource === 'ai'
                       ? 'bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border-blue-500/30 text-blue-400'
@@ -3997,13 +3961,14 @@ const TokenCreator: React.FC = () => {
                       </>
                     )}
                   </div>
-                </div>
+                </div> */}
 
                 {/* Trending News Panel (only shows when trending tab is active) */}
-                <TrendingNewsPanel />
+                {/* <TrendingNewsPanel /> */}
 
 
                 {/* Add pre-funding section after ConfigurationTabs */}
+                
                 {activeTab === 'custom' && (
                   <>
                     {/* Pre-Funding Manager */}
@@ -4102,17 +4067,9 @@ const TokenCreator: React.FC = () => {
                 )}
 
                 {/* Quick Launch Presets */}
-                {activeTab === 'quick' && <QuickStartPresets />}
-                
-                {/* Bot Army Display */}
-                {/* <BotArmyDisplay /> */}
-
+                {/* {activeTab === 'quick' && <QuickStartPresets />} */}
+         
                 {/* <SecurityWarning /> */}
-
-                {/* Add this new section for detailed bot wallet management */}
-                {botWallets.length > 0 && (
-                  <BotWalletsTable botWallets={botWallets} />
-                )}
                 
                 {/* Metadata Preview */}
                 <MetadataPreview />
@@ -4123,14 +4080,6 @@ const TokenCreator: React.FC = () => {
                     {/* Left Column - Token Details */}
                     <div className="lg:w-1/2 space-y-6">
                       <div>
-                        {/* <h3 className="text-white font-bold text-xl mb-4 flex items-center gap-2">
-                          <span className="w-6 h-6 bg-gradient-to-br from-blue-500 to-cyan-500 rounded flex items-center justify-center">
-                            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
-                            </svg>
-                          </span>
-                          Token Details
-                        </h3> */}
                         <h3 className="text-white font-bold text-xl mb-4 flex items-center gap-2">
                           <span className="w-6 h-6 bg-gradient-to-br from-blue-500 to-cyan-500 rounded flex items-center justify-center">
                             <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -4145,6 +4094,7 @@ const TokenCreator: React.FC = () => {
                         </h3>
                         
                         <div className="space-y-4">
+                          {/* Token Name */}
                           <div>
                             <label className="block text-gray-400 text-sm mb-2">Token Name</label>
                             <input
@@ -4156,6 +4106,7 @@ const TokenCreator: React.FC = () => {
                             />
                           </div>
                           
+                          {/* Token Symbol */}
                           <div>
                             <label className="block text-gray-400 text-sm mb-2">Token Symbol</label>
                             <input
@@ -4166,40 +4117,8 @@ const TokenCreator: React.FC = () => {
                               placeholder="Enter token symbol (3-6 chars)"
                             />
                           </div>
-                          
-                          {/* <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <label className="block text-gray-400 text-sm mb-2">AI Style</label>
-                              <select
-                                value={launchConfig.metadataStyle}
-                                onChange={(e) => setLaunchConfig(prev => ({ ...prev, metadataStyle: e.target.value as any }))}
-                                className="w-full bg-gray-900/50 border border-gray-700/50 rounded-xl p-3 text-white focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all"
-                              >
-                                <option value="ai">🤖 AI Generated</option>
-                                <option value="professional">💼 Professional</option>
-                                <option value="meme">😂 Meme Style</option>
-                                <option value="community">👥 Community</option>
-                                <option value="gaming">🎮 Gaming</option>
-                              </select>
-                            </div>
-                            
-                            <div>
-                              <label className="block text-gray-400 text-sm mb-2">Use DALL-E</label>
-                              <div className="flex items-center h-[52px]">
-                                <label className="relative inline-flex items-center cursor-pointer">
-                                  <input
-                                    type="checkbox"
-                                    checked={launchConfig.useDalle}
-                                    onChange={(e) => setLaunchConfig(prev => ({ ...prev, useDalle: e.target.checked }))}
-                                    className="sr-only peer"
-                                  />
-                                  <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
-                                </label>
-                                <span className="ml-3 text-sm text-gray-400">Generate AI image</span>
-                              </div>
-                            </div>
-                          </div> */}
-
+  
+                          {/* Metadata Source */}
                           <div>
                             <label className="block text-gray-400 text-sm mb-2">Metadata Source</label>
                             <div className="grid grid-cols-2 gap-2">
@@ -4212,8 +4131,12 @@ const TokenCreator: React.FC = () => {
                                 }`}
                               >
                                 <div className="flex flex-col items-center gap-1">
-                                  <span className="text-lg">🤖</span>
-                                  <span className="text-xs font-medium">AI</span>
+                                  <img
+                                    src="/images/openai.png"
+                                    alt="Logo"
+                                    className="w-7 h-7"
+                                  />
+                                  <span className="text-sm font-medium">Generate using OpenAI</span>
                                 </div>
                               </button>
                               <button
@@ -4225,47 +4148,53 @@ const TokenCreator: React.FC = () => {
                                 }`}
                               >
                                 <div className="flex flex-col items-center gap-1">
-                                  <span className="text-lg">📰</span>
-                                  <span className="text-xs font-medium">X Trends</span>
+                                  <img
+                                    src="/images/x.png"
+                                    alt="Logo"
+                                    className="w-6 h-6"
+                                  />
+                                  <span className="text-sm font-medium">Generate using X Trends</span>
                                 </div>
                               </button>
                             </div>
                           </div>
 
                           {/* DALL-E Toggle - Only show when using AI source */}
-{launchConfig.metadataSource === 'ai' && (
-  <div className="mt-4">
-    <div className="flex items-center justify-between p-3 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-xl border border-purple-500/30">
-      <div className="flex items-center gap-3">
-        <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
-          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-        </div>
-        <div>
-          <div className="text-white font-medium">Generate AI Image</div>
-          <div className="text-xs text-gray-400">Use DALL-E to create custom token image</div>
-        </div>
-      </div>
-      <label className="relative inline-flex items-center cursor-pointer">
-        <input
-          type="checkbox"
-          checked={launchConfig.useDalle}
-          onChange={(e) => setLaunchConfig(prev => ({ ...prev, useDalle: e.target.checked }))}
-          className="sr-only peer"
-        />
-        <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
-      </label>
-    </div>
-    
-    {/* Status indicator */}
-    {launchConfig.useDalle && (
-      <div className="mt-2 p-2 bg-emerald-900/20 text-emerald-400 text-xs rounded-lg border border-emerald-500/30">
-        ✅ DALL-E will generate a custom AI image for your token
-      </div>
-    )}
-  </div>
-)}
+                          {launchConfig.metadataSource === 'ai' && (
+                            <div className="mt-4">
+                              <div className="flex items-center justify-between p-3 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-xl border border-purple-500/30">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+                                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                  </div>
+                                  <div>
+                                    <div className="text-white font-medium">Generate AI Image</div>
+                                    <div className="text-xs text-gray-400">Use DALL-E to create custom token image</div>
+                                  </div>
+                                </div>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={launchConfig.useDalle}
+                                    onChange={(e) => setLaunchConfig(prev => ({ ...prev, useDalle: e.target.checked }))}
+                                    className="sr-only peer"
+                                  />
+                                  <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                                </label>
+                              </div>
+                              
+                              {/* Status indicator */}
+                              {launchConfig.useDalle && (
+                                <div>
+                                  <div className="mt-2 p-2 bg-emerald-900/20 text-emerald-400 text-xs rounded-lg border border-emerald-500/30">
+                                    ✅ DALL-E will generate a custom AI image for your token
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
                           
                           {/* <div>
                             <label className="block text-gray-400 text-sm mb-2">Keywords</label>
@@ -4308,91 +4237,91 @@ const TokenCreator: React.FC = () => {
                           </div>
 
                           {/* Dynamic Bot Buy Settings Section */}
-<div className="mt-6 p-4 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-xl border border-purple-500/30">
-  <h4 className="text-white font-bold text-lg mb-3 flex items-center gap-2">
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
-    </svg>
-    Dynamic Bot Buy Settings
-  </h4>
-  
-  <p className="text-sm text-gray-400 mb-4">
-    Make buys look organic by varying amounts across bots
-  </p>
-  
-  <div className="space-y-4">
-    {/* Variability Slider */}
-    <div>
-      <div className="flex justify-between text-sm mb-2">
-        <label className="text-gray-400">Bot Amount Variability</label>
-        <span className="text-white font-medium">{launchConfig.botVariability * 100}%</span>
-      </div>
-      <input
-        type="range"
-        min="0"
-        max="1"
-        step="0.05"
-        value={launchConfig.botVariability}
-        onChange={(e) => setLaunchConfig(prev => ({ 
-          ...prev, 
-          botVariability: parseFloat(e.target.value) 
-        }))}
-        className="w-full h-2 bg-gray-800 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gradient-to-r [&::-webkit-slider-thumb]:from-purple-500 [&::-webkit-slider-thumb]:to-pink-500"
-      />
-      <div className="flex justify-between text-xs text-gray-500 mt-1">
-        <span>No Variation</span>
-        <span>High Variation</span>
-      </div>
-    </div>
-    
-    {/* Distribution Type */}
-    <div>
-      <label className="block text-gray-400 text-sm mb-2">Amount Distribution</label>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        {[
-          { id: 'normal', label: 'Normal', desc: 'Bell curve' },
-          { id: 'uniform', label: 'Uniform', desc: 'Even spread' },
-          { id: 'log_normal', label: 'Log-Normal', desc: 'Organic tail' },
-          { id: 'random', label: 'Random', desc: 'Completely random' }
-        ].map((dist) => (
-          <button
-            key={dist.id}
-            onClick={() => setLaunchConfig(prev => ({ ...prev, botDistribution: dist.id as any }))}
-            className={`p-3 rounded-lg border transition-all ${
-              launchConfig.botDistribution === dist.id
-                ? 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 border-purple-500/30 text-white'
-                : 'bg-gray-900/50 border-gray-700/50 text-gray-400 hover:text-white hover:border-gray-600/50'
-            }`}
-          >
-            <div className="flex flex-col items-center gap-1">
-              <span className="font-medium">{dist.label}</span>
-              <span className="text-xs text-gray-500">{dist.desc}</span>
-            </div>
-          </button>
-        ))}
-      </div>
-    </div>
-    
-    {/* Preview Stats */}
-    <div className="mt-4 p-3 bg-gray-900/30 rounded-lg border border-gray-700/50">
-      <div className="flex items-center justify-between text-sm">
-        <div>
-          <div className="text-gray-400">Base Amount</div>
-          <div className="text-white font-medium">{launchConfig.botWalletBuyAmount} SOL</div>
-        </div>
-        <div>
-          <div className="text-gray-400">Variation</div>
-          <div className="text-purple-400 font-medium">±{(launchConfig.botVariability * 100).toFixed(0)}%</div>
-        </div>
-        <div>
-          <div className="text-gray-400">Distribution</div>
-          <div className="text-emerald-400 font-medium capitalize">{launchConfig.botDistribution}</div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
+                          <div className="mt-6 p-4 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-xl border border-purple-500/30">
+                            <h4 className="text-white font-bold text-lg mb-3 flex items-center gap-2">
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+                              </svg>
+                              Dynamic Bot Buy Settings
+                            </h4>
+                            
+                            <p className="text-sm text-gray-400 mb-4">
+                              Make buys look organic by varying amounts across bots
+                            </p>
+                            
+                            <div className="space-y-4">
+                              {/* Variability Slider */}
+                              <div>
+                                <div className="flex justify-between text-sm mb-2">
+                                  <label className="text-gray-400">Bot Amount Variability</label>
+                                  <span className="text-white font-medium">{launchConfig.botVariability * 100}%</span>
+                                </div>
+                                <input
+                                  type="range"
+                                  min="0"
+                                  max="1"
+                                  step="0.05"
+                                  value={launchConfig.botVariability}
+                                  onChange={(e) => setLaunchConfig(prev => ({ 
+                                    ...prev, 
+                                    botVariability: parseFloat(e.target.value) 
+                                  }))}
+                                  className="w-full h-2 bg-gray-800 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gradient-to-r [&::-webkit-slider-thumb]:from-purple-500 [&::-webkit-slider-thumb]:to-pink-500"
+                                />
+                                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                                  <span>No Variation</span>
+                                  <span>High Variation</span>
+                                </div>
+                              </div>
+                              
+                              {/* Distribution Type */}
+                              <div>
+                                <label className="block text-gray-400 text-sm mb-2">Amount Distribution</label>
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                  {[
+                                    { id: 'normal', label: 'Normal', desc: 'Bell curve' },
+                                    { id: 'uniform', label: 'Uniform', desc: 'Even spread' },
+                                    { id: 'log_normal', label: 'Log-Normal', desc: 'Organic tail' },
+                                    { id: 'random', label: 'Random', desc: 'Completely random' }
+                                  ].map((dist) => (
+                                    <button
+                                      key={dist.id}
+                                      onClick={() => setLaunchConfig(prev => ({ ...prev, botDistribution: dist.id as any }))}
+                                      className={`p-3 rounded-lg border transition-all ${
+                                        launchConfig.botDistribution === dist.id
+                                          ? 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 border-purple-500/30 text-white'
+                                          : 'bg-gray-900/50 border-gray-700/50 text-gray-400 hover:text-white hover:border-gray-600/50'
+                                      }`}
+                                    >
+                                      <div className="flex flex-col items-center gap-1">
+                                        <span className="font-medium">{dist.label}</span>
+                                        <span className="text-xs text-gray-500">{dist.desc}</span>
+                                      </div>
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                              
+                              {/* Preview Stats */}
+                              <div className="mt-4 p-3 bg-gray-900/30 rounded-lg border border-gray-700/50">
+                                <div className="flex items-center justify-between text-sm">
+                                  <div>
+                                    <div className="text-gray-400">Base Amount</div>
+                                    <div className="text-white font-medium">{launchConfig.botWalletBuyAmount} SOL</div>
+                                  </div>
+                                  <div>
+                                    <div className="text-gray-400">Variation</div>
+                                    <div className="text-purple-400 font-medium">±{(launchConfig.botVariability * 100).toFixed(0)}%</div>
+                                  </div>
+                                  <div>
+                                    <div className="text-gray-400">Distribution</div>
+                                    <div className="text-emerald-400 font-medium capitalize">{launchConfig.botDistribution}</div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
                           
                           <div className="grid grid-cols-2 gap-4">
                             <div>
@@ -4522,17 +4451,6 @@ const TokenCreator: React.FC = () => {
                             </div>
                           )}
 
-                          {/* {launchConfig.sellTiming === 'immediate' && (
-                            <div className="p-3 bg-gradient-to-r from-amber-900/20 to-yellow-900/20 rounded-xl border border-amber-500/30">
-                              <div className="flex items-center gap-2 text-amber-400">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                </svg>
-                                <span className="text-sm font-medium">Bots will sell immediately after buying</span>
-                              </div>
-                            </div>
-                          )} */}
-
                           {launchConfig.sellTiming === 'immediate' && (
                             <div className="p-3 bg-gradient-to-r from-amber-900/20 to-yellow-900/20 rounded-xl border border-amber-500/30">
                               <div className="flex items-center gap-2 text-amber-400">
@@ -4544,6 +4462,7 @@ const TokenCreator: React.FC = () => {
                             </div>
                           )}
                           
+                          {/* Take Profit */}
                           <div>
                             <div className="flex justify-between text-sm mb-2">
                               <label className="text-gray-400">Target Profit</label>
@@ -4639,153 +4558,111 @@ const TokenCreator: React.FC = () => {
                   </div>
                 
                   {/* Action Buttons */}
-                  {/* Action Buttons Section - Update this part */}
-<div className="flex flex-col sm:flex-row gap-4 mt-8">
-  {/* Launch button - only show when metadata is ready */}
-  {metadataGenerated ? (
-    <button
-      onClick={startOrchestratedLaunch}
-      disabled={isLoading || userBalance < totalRequiredSol}
-      className={`flex-1 py-4 px-6 rounded-xl font-bold text-white transition-all duration-200 flex items-center justify-center gap-3 ${
-        isLoading
-          ? 'bg-gray-700 cursor-not-allowed'
-          : userBalance < totalRequiredSol
-          ? 'bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 cursor-not-allowed'
-          : atomicLaunchMode
-          ? 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 shadow-lg hover:shadow-emerald-500/25'
-          : 'bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 shadow-lg hover:shadow-blue-500/25'
-      }`}
-    >
-      {isLoading ? (
-        <>
-          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-          <span>Launching...</span>
-        </>
-      ) : atomicLaunchMode ? (
-        <>
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-          </svg>
-          <span>Start Atomic Launch</span>
-        </>
-      ) : (
-        <>
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-          </svg>
-          <span>Start Orchestrated Launch</span>
-        </>
-      )}
-    </button>
-  ) : (
-    <div className="flex-1 py-4 px-6 rounded-xl border-2 border-dashed border-amber-500/30 bg-amber-900/10 flex flex-col items-center justify-center">
-      <div className="flex items-center gap-2 text-amber-400 mb-2">
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-        </svg>
-        <span className="font-bold">Metadata Required</span>
-      </div>
-      <p className="text-amber-300/80 text-sm text-center">
-        Generate metadata first using AI or X Trends
-      </p>
-    </div>
-  )}
+                  <div className="flex flex-col sm:flex-row gap-4 mt-8">
+                    {/* Launch button - only show when metadata is ready */}
+                    {metadataGenerated ? (
+                      <button
+                        onClick={startOrchestratedLaunch}
+                        disabled={isLoading || userBalance < totalRequiredSol}
+                        className={`flex-1 py-4 px-6 rounded-xl font-bold text-white transition-all duration-200 flex items-center justify-center gap-3 ${
+                          isLoading
+                            ? 'bg-gray-700 cursor-not-allowed'
+                            : userBalance < totalRequiredSol
+                            ? 'bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 cursor-not-allowed'
+                            : atomicLaunchMode
+                            ? 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 shadow-lg hover:shadow-emerald-500/25'
+                            : 'bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 shadow-lg hover:shadow-blue-500/25'
+                        }`}
+                      >
+                        {isLoading ? (
+                          <>
+                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            <span>Launching...</span>
+                          </>
+                        ) : atomicLaunchMode ? (
+                          <>
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                            <span>Start Atomic Launch</span>
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                            <span>Start Orchestrated Launch</span>
+                          </>
+                        )}
+                      </button>
+                    ) : (
+                      <div className="flex-1 py-4 px-6 rounded-xl border-2 border-dashed border-amber-500/30 bg-amber-900/10 flex flex-col items-center justify-center">
+                        <div className="flex items-center gap-2 text-amber-400 mb-2">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                          </svg>
+                          <span className="font-bold">Metadata Required</span>
+                        </div>
+                        <p className="text-amber-300/80 text-sm text-center">
+                          Generate metadata first using AI or X Trends
+                        </p>
+                      </div>
+                    )}
 
-  {/* Dynamic Generate Metadata Button */}
-  {/* <button
-    onClick={() => {
-      if (launchConfig.metadataSource === 'trending') {
-        generateFromTrending();
-      } else {
-        generateAIMetadata();
-      }
-    }}
-    disabled={aiGenerating}
-    className={`py-4 px-6 rounded-xl font-bold transition-all duration-200 shadow-lg hover:shadow-purple-500/25 ${
-      launchConfig.metadataSource === 'trending'
-        ? 'bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white'
-        : 'bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white'
-    }`}
-  >
-    {aiGenerating ? (
-      <div className="flex items-center gap-2">
-        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-        <span>Generating...</span>
-      </div>
-    ) : (
-      <div className="flex items-center gap-2">
-        {launchConfig.metadataSource === 'trending' ? (
-          <>
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-            </svg>
-            <span>Generate with X Trends</span>
-          </>
-        ) : (
-          <>
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-            </svg>
-            <span>Generate with AI</span>
-          </>
-        )}
-      </div>
-    )}
-  </button> */}
 
-  {/* In your Generate button section */}
-  <button
-  onClick={() => {
-    if (launchConfig.metadataSource === 'trending') {
-      console.log('📡 Generating from X Trends...');
-      generateFromTrending();
-    } else {
-      console.log('🤖 Generating from AI...');
-      console.log('🔍 DALL-E enabled:', launchConfig.useDalle);
-      generateAIMetadata();
-    }
-  }}
-  disabled={aiGenerating}
-  className={`py-4 px-6 rounded-xl font-bold transition-all duration-200 shadow-lg hover:shadow-purple-500/25 ${
-    launchConfig.metadataSource === 'trending'
-      ? 'bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white'
-      : 'bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white'
-  }`}
->
-  {aiGenerating ? (
-    <div className="flex items-center gap-2">
-      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-      <span>Generating...</span>
-    </div>
-  ) : (
-    <div className="flex items-center gap-2">
-      {launchConfig.metadataSource === 'trending' ? (
-        <>
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-          </svg>
-          <span>Generate with X Trends</span>
-        </>
-      ) : (
-        <>
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-          </svg>
-          <span>Generate with AI {launchConfig.useDalle && ' + DALL-E'}</span>
-        </>
-      )}
-    </div>
-  )}
-</button>
+                    {/* In your Generate button section */}
+                    <button
+                    onClick={() => {
+                      if (launchConfig.metadataSource === 'trending') {
+                        console.log('📡 Generating from X Trends...');
+                        generateFromTrending();
+                      } else {
+                        console.log('🤖 Generating from AI...');
+                        console.log('🔍 DALL-E enabled:', launchConfig.useDalle);
+                        generateAIMetadata();
+                      }
+                    }}
+                    disabled={aiGenerating}
+                    className={`py-4 px-6 rounded-xl font-bold transition-all duration-200 shadow-lg hover:shadow-purple-500/25 ${
+                      launchConfig.metadataSource === 'trending'
+                        ? 'bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white'
+                        : 'bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white'
+                    }`}
+                  >
+                    {aiGenerating ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span>Generating...</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        {launchConfig.metadataSource === 'trending' ? (
+                          <>
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                            </svg>
+                            <span>Generate with X Trends</span>
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                            </svg>
+                            <span>Generate with AI {launchConfig.useDalle && ' + DALL-E'}</span>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </button>
 
-  {/* Keep advanced toggle button */}
-  <button
-    onClick={() => setShowAdvanced(!showAdvanced)}
-    className="py-4 px-6 bg-gray-800/50 hover:bg-gray-700/50 text-gray-300 hover:text-white rounded-xl font-medium border border-gray-700/50 transition-all duration-200"
-  >
-    {showAdvanced ? 'Hide Advanced' : 'Show Advanced'}
-  </button>
-</div>
+                      {/* Keep advanced toggle button */}
+                      <button
+                        onClick={() => setShowAdvanced(!showAdvanced)}
+                        className="py-4 px-6 bg-gray-800/50 hover:bg-gray-700/50 text-gray-300 hover:text-white rounded-xl font-medium border border-gray-700/50 transition-all duration-200"
+                      >
+                        {showAdvanced ? 'Hide Advanced' : 'Show Advanced'}
+                      </button>
+                    </div>
 
                   {/* Advanced Options */}
                   {showAdvanced && (
@@ -4902,6 +4779,13 @@ const TokenCreator: React.FC = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* Status Display */}
+                <StatusCard />
+
+                {botWallets.length > 0 && (
+                  <BotWalletsTable botWallets={botWallets} />
+                )}
               </>
             ) : (
               // Optional: Show a message that features are locked
