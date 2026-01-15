@@ -19,7 +19,7 @@ from solana.rpc.async_api import AsyncClient
 from app.dependencies import get_current_user_by_wallet
 from app.models import Subscription, TokenMetadataArchive, Trade, User, TokenMetadata, NewTokens
 from app.database import AsyncSessionLocal, get_db
-from app.routers.creators import openai_router, tokencreate_router, creator_user_router, prefund_router
+from app.routers.creators import openai_router, tokencreate_router, creator_user_router, prefund_router, image_upload_router
 from app.routers.snipers import auth_router, token_router, trade_router, sniper_user_router
 from app.schemas.snipers.bot import LogTradeRequest
 from app.schemas.snipers.subscription import SubscriptionRequest
@@ -160,6 +160,7 @@ app.include_router(openai_router)
 app.include_router(tokencreate_router)
 app.include_router(creator_user_router)
 app.include_router(prefund_router)
+app.include_router(image_upload_router)
 # Websocket router to update frontend
 app.include_router(websocket_router)
 

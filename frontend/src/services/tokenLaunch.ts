@@ -1,8 +1,8 @@
-// services/tokenLaunch.ts
 import { apiService } from './api';
 import { convertToBackendConfig, createCustomMetadataFromAI } from '@/utils/configConverter';
 
 
+// ================ INTERFACES ==============================
 export interface LaunchConfig {
   // Core token info
   tokenName: string;
@@ -66,7 +66,6 @@ export interface BotArmyWallet {
   buyAmount: number;
 }
 
-
 export interface TokenMetadata {
   name: string;
   symbol: string;
@@ -89,7 +88,6 @@ export interface TokenMetadata {
   image_url?: string;    // HTTP URL for the image (different from metadata_uri!)
 }
 
-// Add new interface for the simplified response
 export interface SimpleMetadataResponse {
   success: boolean;
   name: string;
@@ -100,8 +98,6 @@ export interface SimpleMetadataResponse {
   request_id?: string;
   generation_time_ms?: number;
 }
-
-
 
 export interface LaunchResult {
   success: boolean;
@@ -199,7 +195,6 @@ export interface CostEstimation {
   };
 }
 
-// Backend-specific interfaces for API calls
 export interface BackendLaunchConfig {
   use_ai_metadata?: boolean;
   custom_metadata?: any;
@@ -261,50 +256,34 @@ export interface AtomicLaunchResponse {
   error?: string; 
 }
 
+export interface ImageUploadResponse {
+  success: boolean;
+  cid?: string;
+  image_url?: string;
+  metadata_uri?: string;
+  name?: string;
+  symbol?: string;
+  description?: string;
+  note?: string;
+  generated_with_ai?: boolean;
+  uploaded_image?: boolean;
+  message?: string;  // Add this
+  error?: string;    // Add this
+  custom_metadata?: any;  // Use 'any' to be flexible
+}
+
+
+
+
+
+
+
+// ================ CLASS ==============================
 class TokenLaunchService {
-  // Helper method to convert frontend config to backend format
-  // private convertToBackendConfig(config: Partial<LaunchConfig>): BackendLaunchConfig {
-  //   return {
-  //     use_ai_metadata: config.useAIForMetadata ?? true,
-  //     custom_metadata: config.customMetadata,
-  //     bot_count: config.botCount ?? 10,
-  //     creator_buy_amount: config.creatorBuyAmount ?? 0.5,
-  //     bot_buy_amount: config.botWalletBuyAmount ?? 0.1,
-      
-  //     // FIXED: Keep the value as-is (already lowercase with underscores)
-  //     sell_strategy_type: config.sellTiming || 'volume_based',
-      
-  //     // Make sure these values are set properly
-  //     sell_volume_target: config.sellVolumeTrigger || (config.sellTiming === 'volume_based' ? 5.0 : 0),
-  //     sell_price_target: config.sellPriceTarget || (config.sellTiming === 'price_target' ? 2.0 : 0),
-  //     sell_time_minutes: config.sellTimeTrigger || (config.sellTiming === 'time_based' ? 5 : 0),
-      
-  //     metadata_style: config.metadataStyle ?? 'ai-generated',
-  //     use_jito_bundle: config.useJitoBundle ?? true,
-  //     priority: config.priority ?? 10,
-  //   };
-  // }
 
   private convertToBackendConfig(config: Partial<LaunchConfig>): BackendLaunchConfig {
-    // ✅ Use the external converter
     return convertToBackendConfig(config as LaunchConfig);
   }
-
-  // Create a new launch
-  // async createLaunch(config: Partial<LaunchConfig>) {
-  //   const backendConfig = this.convertToBackendConfig(config);
-    
-  //   const launchRequest = {
-  //     config: backendConfig,
-  //     schedule_for: null,
-  //     priority: config.priority ?? 10,
-  //   };
-
-  //   return await apiService.request('/creators/token/launch', {
-  //     method: 'POST',
-  //     body: JSON.stringify(launchRequest),
-  //   });
-  // }
 
   async createLaunch(config: Partial<LaunchConfig>) {
     // ✅ Prepare the config with any AI metadata
@@ -343,7 +322,6 @@ class TokenLaunchService {
     });
   }
 
-  // Quick launch with minimal config
   async quickLaunch(params: {
     botCount: number;
     creatorBuyAmount: number;
@@ -362,12 +340,10 @@ class TokenLaunchService {
     });
   }
 
-  // Get launch status
   async getLaunchStatus(launchId: string): Promise<LaunchStatus> {
     return await apiService.request(`/creators/token/launch/${launchId}/status`);
   }
 
-  // Get launch history
   async getLaunchHistory(params?: {
     limit?: number;
     offset?: number;
@@ -386,14 +362,12 @@ class TokenLaunchService {
     return await apiService.request(`/creators/token/launches?${query}`);
   }
 
-  // Cancel launch
   async cancelLaunch(launchId: string) {
     return await apiService.request(`/creators/token/cancel-launch/${launchId}`, {
       method: 'POST',
     });
   }
 
-  // Estimate cost - simplified to only use what's needed
   async estimateCost(config: { 
     botCount: number; 
     creatorBuyAmount: number; 
@@ -418,12 +392,6 @@ class TokenLaunchService {
     });
   }
 
-  // Get bot wallets
-  // async getBotWallets() {
-  //   return await apiService.request('/creators/user/bot-wallets');
-  // }
-
-  // Get bot wallets
   async getBotWallets(autoRefresh: boolean = true) {
     // Auto-refresh balances first if requested
     if (autoRefresh) {
@@ -441,26 +409,11 @@ class TokenLaunchService {
     return await apiService.request('/creators/user/bot-wallets');
   }
 
-  // Add this method to your TokenLaunchService class
   async refreshBotBalances() {
     return await apiService.request('/creators/user/refresh-bot-balances', {
       method: 'POST',
     });
   }
-
-  // Add this method to your tokenLaunch.ts TokenLaunchService class
-  // async getBotPrivateKey(walletId: string | number, token: string) {
-  //   // Ensure walletId is sent as a number (integer)
-  //   const walletIdNum = typeof walletId === 'string' ? parseInt(walletId, 10) : walletId;
-    
-  //   return await apiService.request('/creators/user/get-bot-private-key', {
-  //     method: 'POST',
-  //     body: JSON.stringify({
-  //       wallet_id: walletIdNum,  // Send as number
-  //       private_key_token: token
-  //     }),
-  //   });
-  // }
 
   async getBotPrivateKey(botWalletAddress: string, userWalletAddress: string) {
     // For Vite, use import.meta.env instead of process.env
@@ -483,8 +436,6 @@ class TokenLaunchService {
     });
   }
 
-
-  // Add to TokenLaunchService class
   async updateUserSettings(settings: {
     botCount?: number;
     botWalletBuyAmount?: number;
@@ -500,7 +451,6 @@ class TokenLaunchService {
     });
   }
 
-  // Generate bot wallets
   async generateBotWallets(count: number = 5) {
     return await apiService.request('/creators/user/generate-bot-wallets', {
       method: 'POST',
@@ -508,37 +458,31 @@ class TokenLaunchService {
     });
   }
 
-  // Enable creator mode
   async enableCreatorMode() {
     return await apiService.request('/creators/user/enable-creator', {
       method: 'POST',
     });
   }
 
-  // Disable creator mode
   async disableCreatorMode() {
     return await apiService.request('/creators/user/disable-creator', {
       method: 'POST',
     });
   }
 
-  // Get creator stats
   async getCreatorStats() {
     return await apiService.request('/creators/user/stats');
   }
 
-  // Get creator balance
   async getCreatorBalance() {
     return await apiService.request('/creators/user/balance');
   }
 
-  // Get launch results (from your index.tsx usage)
   async getLaunchResults() {
     // This endpoint might not exist yet, but you can create it
     return await apiService.request('/creators/user/launch-history');
   }
 
-  // Refresh user data
   async refreshUserData() {
     return {
       stats: await this.getCreatorStats(),
@@ -547,7 +491,6 @@ class TokenLaunchService {
     };
   }
 
-  // Pre-fund bot wallets
   async preFundBotWallets(request: PreFundRequest): Promise<PreFundResponse> {
     return await apiService.request('/creators/prefund/fund-bot-wallets', {
       method: 'POST',
@@ -555,19 +498,16 @@ class TokenLaunchService {
     });
   }
 
-  // Get pre-funded bot wallets
   async getPreFundedBots(): Promise<BotWalletStatus[]> {
     return await apiService.request('/creators/prefund/get-funded-bot-wallets');
   }
 
-  // Reset pre-funding for a bot
   async resetBotPreFunding(botId: number) {
     return await apiService.request(`/creators/prefund/reset/${botId}`, {
       method: 'POST',
     });
   }
 
-  // Execute atomic launch
   async executeAtomicLaunch(request: AtomicLaunchRequest): Promise<AtomicLaunchResponse> {
     return await apiService.request('/creators/token/atomic-launch', {
       method: 'POST',
@@ -575,7 +515,6 @@ class TokenLaunchService {
     });
   }
 
-  // Add this method to your TokenLaunchService class
   async executeAtomicCreateAndBuy(payload: {
     user_wallet: string;
     metadata: {
@@ -610,38 +549,12 @@ class TokenLaunchService {
     });
   }
 
-  // Orchestrated launch (auto pre-fund + atomic launch)
   async startOrchestratedLaunch(): Promise<AtomicLaunchResponse> {
     return await apiService.request('/creators/token/orchestrated-launch', {
       method: 'POST',
     });
   }
 
-  // Add method to check if bots are pre-funded
-  // async checkPreFundedStatus(): Promise<{
-  //   has_pre_funded: boolean;
-  //   count: number;
-  //   total_amount: number;
-  // }> {
-  //   try {
-  //     const bots = await this.getPreFundedBots();
-  //     const preFundedBots = bots.filter(bot => bot.is_pre_funded);
-
-  //     return {
-  //       has_pre_funded: preFundedBots.length > 0,
-  //       count: preFundedBots.length,
-  //       total_amount: preFundedBots.reduce((sum, bot) => sum + (bot.pre_funded_amount || 0), 0)
-  //     };
-  //   } catch (error) {
-  //     return {
-  //       has_pre_funded: false,
-  //       count: 0,
-  //       total_amount: 0
-  //     }
-  //   }
-  // }
-
-  // services/tokenLaunch.ts - Update with proper types
   async checkPreFundedStatus(): Promise<{
     has_pre_funded: boolean;
     count: number;
@@ -670,6 +583,34 @@ class TokenLaunchService {
       console.error('Failed to check pre-funded bots:', error);
       return { has_pre_funded: false, count: 0, total_amount: 0 };
     }
+  }
+
+  async uploadTokenImage(
+    formData: FormData
+  ): Promise<ImageUploadResponse> {
+    return await apiService.request('/creators/image/upload-token-image', {
+      method: 'POST',
+      body: formData,
+      headers: {}
+    });
+  }
+
+  async uploadAndGenerateMetadata(
+    formData: FormData,
+    style: string = "meme",
+    keywords: string = "crypto, meme, token"
+  ): Promise<ImageUploadResponse & {
+    attributes?: Array<{ trait_type: string; value: string }>;
+    image_prompt?: string;
+  }> {
+    formData.append('style', style);
+    formData.append('keywords', keywords);
+    
+    return await apiService.request('/creators/image/upload-and-generate-metadata', {
+      method: 'POST',
+      body: formData,
+      headers: {}
+    });
   }
   
 }

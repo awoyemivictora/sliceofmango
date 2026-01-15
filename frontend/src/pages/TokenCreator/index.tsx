@@ -87,6 +87,9 @@ const TokenCreator: React.FC = () => {
   const [metadataGenerated, setMetadataGenerated] = useState<boolean>(false);
   const currentYear = new Date().getFullYear();
   const [showLaunchDashboard, setShowLaunchDashboard] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>('');
+  const [isUploading, setIsUploading] = useState<boolean>(false);
 
   // Refs
   const progressInterval = useRef<NodeJS.Timeout | null>(null);
@@ -506,13 +509,242 @@ const TokenCreator: React.FC = () => {
   // ============================================
   // UTILITY FUNCTIONS
   // ============================================
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      alert('Please upload a valid image file (JPEG, PNG, GIF, WebP)');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image size should be less than 5MB');
+      return;
+    }
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+
+    // Store file for upload
+    setImageFile(file);
+    setIsUploading(false);
+  };
+
+
+  // const uploadImageToIpfs = async (): Promise<string | null> => {
+  //   if (!imageFile || !launchConfig.tokenName || !launchConfig.tokenSymbol) {
+  //     alert('Please enter token name and symbol before uploading image');
+  //     return null;
+  //   }
+
+  //   setIsUploading(true);
+  //   try {
+  //     // Create FormData
+  //     const formData = new FormData();
+  //     formData.append('image', imageFile);
+  //     formData.append('name', launchConfig.tokenName);
+  //     formData.append('symbol', launchConfig.tokenSymbol);
+  //     formData.append('description', launchConfig.tokenDescription || `Token ${launchConfig.tokenName} (${launchConfig.tokenSymbol})`);
+      
+  //     // Upload to your backend
+  //     const response = await tokenLaunchService.uploadTokenImage(formData) as any;
+      
+  //     console.log('📤 Image upload response:', response);
+      
+  //     if (response.success) {
+  //       // Get custom_metadata from response
+  //       const customMetadata = response.custom_metadata;
+        
+  //       // The required fields are inside custom_metadata, not at the root
+  //       if (!customMetadata || !customMetadata.image_url || !customMetadata.metadata_uri) {
+  //         console.error('❌ Upload response missing required fields in custom_metadata:', response);
+  //         throw new Error('Image upload failed - incomplete custom_metadata');
+  //       }
+        
+  //       // Use custom_metadata fields
+  //       const metadataObj = {
+  //         name: customMetadata.name || launchConfig.tokenName,
+  //         symbol: customMetadata.symbol || launchConfig.tokenSymbol,
+  //         description: customMetadata.description || launchConfig.tokenDescription,
+  //         image_url: customMetadata.image_url,
+  //         metadata_uri: customMetadata.metadata_uri,
+  //         skip_ai_generation: customMetadata.skip_ai_generation || true
+  //       };
+        
+  //       // Create metadata object for display
+  //       const metadata: TokenMetadata = {
+  //         name: metadataObj.name,
+  //         symbol: metadataObj.symbol,
+  //         description: metadataObj.description,
+  //         image: metadataObj.image_url,
+  //         external_url: "https://pump.fun",
+  //         attributes: [
+  //           { trait_type: "Image Source", value: "User Upload" },
+  //           { trait_type: "Created", value: "Flash Sniper" }
+  //         ],
+  //         created_at: new Date().toISOString(),
+  //         metadata_uri: metadataObj.metadata_uri,
+  //         ipfs_uri: metadataObj.metadata_uri,
+  //         ipfs_cid: response.image_cid || response.metadata_cid || extractIpfsCid(metadataObj.metadata_uri)
+  //       };
+        
+  //       setGeneratedMetadata(metadata);
+  //       setShowPreview(true);
+        
+  //       // Store custom_metadata in launchConfig for launch
+  //       setLaunchConfig(prev => ({
+  //         ...prev,
+  //         tokenName: metadataObj.name,
+  //         tokenSymbol: metadataObj.symbol,
+  //         tokenDescription: metadataObj.description,
+  //         imageUrl: metadataObj.image_url,
+  //         customMetadata: metadataObj
+  //       }));
+        
+  //       toast.success('✅ Image and metadata uploaded to IPFS successfully!');
+  //       console.log('✅ Custom metadata ready for launch:', metadataObj);
+        
+  //       return metadataObj.image_url;
+  //     } else {
+  //       // Use response.message or response.error if available
+  //       const errorMsg = response.message || response.error || 'Unknown error';
+  //       throw new Error(`Upload failed: ${errorMsg}`);
+  //     }
+  //   } catch (error) {
+  //     console.error('Image upload failed:', error);
+  //     toast.error('❌ Image upload failed. Please try again.');
+  //     return null;
+  //   } finally {
+  //     setIsUploading(false);
+  //   }
+  // };
+
+  const uploadImageToIpfs = async (): Promise<string | null> => {
+  if (!imageFile || !launchConfig.tokenName || !launchConfig.tokenSymbol) {
+    alert('Please enter token name and symbol before uploading image');
+    return null;
+  }
+
+  setIsUploading(true);
+  try {
+    // Create FormData
+    const formData = new FormData();
+    formData.append('image', imageFile);
+    formData.append('name', launchConfig.tokenName);
+    formData.append('symbol', launchConfig.tokenSymbol);
+    formData.append('description', launchConfig.tokenDescription || `Token ${launchConfig.tokenName} (${launchConfig.tokenSymbol})`);
+    
+    // Upload to your backend
+    const response = await tokenLaunchService.uploadTokenImage(formData) as any;
+    
+    console.log('📤 Image upload response:', response);
+    
+    if (response.success) {
+      // Get custom_metadata from response
+      const customMetadata = response.custom_metadata;
+      
+      // The required fields are inside custom_metadata, not at the root
+      if (!customMetadata || !customMetadata.image_url || !customMetadata.metadata_uri) {
+        console.error('❌ Upload response missing required fields in custom_metadata:', response);
+        throw new Error('Image upload failed - incomplete custom_metadata');
+      }
+      
+      // ✅ FIX: Ensure metadata_uri is not a string "null"
+      const metadataUri = customMetadata.metadata_uri;
+      if (metadataUri === "null" || metadataUri === null || metadataUri === undefined) {
+        console.error('❌ Invalid metadata_uri received:', metadataUri);
+        throw new Error('Image upload failed - invalid metadata URI');
+      }
+      
+      // Use custom_metadata fields
+      const metadataObj = {
+        name: customMetadata.name || launchConfig.tokenName,
+        symbol: customMetadata.symbol || launchConfig.tokenSymbol,
+        description: customMetadata.description || launchConfig.tokenDescription,
+        image_url: customMetadata.image_url,
+        metadata_uri: metadataUri, // ✅ Now it's guaranteed to be a valid string
+        skip_ai_generation: customMetadata.skip_ai_generation || true
+      };
+      
+      // Create metadata object for display
+      const metadata: TokenMetadata = {
+        name: metadataObj.name,
+        symbol: metadataObj.symbol,
+        description: metadataObj.description,
+        image: metadataObj.image_url,
+        external_url: "https://pump.fun",
+        attributes: [
+          { trait_type: "Image Source", value: "User Upload" },
+          { trait_type: "Created", value: "Flash Sniper" }
+        ],
+        created_at: new Date().toISOString(),
+        metadata_uri: metadataObj.metadata_uri,
+        ipfs_uri: metadataObj.metadata_uri,
+        ipfs_cid: response.image_cid || response.metadata_cid || extractIpfsCid(metadataObj.metadata_uri)
+      };
+      
+      setGeneratedMetadata(metadata);
+      setShowPreview(true);
+      
+      // ✅ Store custom_metadata in launchConfig for launch
+      // Make sure metadata_uri is properly set
+      setLaunchConfig(prev => ({
+        ...prev,
+        tokenName: metadataObj.name,
+        tokenSymbol: metadataObj.symbol,
+        tokenDescription: metadataObj.description,
+        imageUrl: metadataObj.image_url,
+        customMetadata: {
+          name: metadataObj.name,
+          symbol: metadataObj.symbol,
+          description: metadataObj.description,
+          image_url: metadataObj.image_url,
+          metadata_uri: metadataObj.metadata_uri, // ✅ This should now be a valid URL
+          skip_ai_generation: metadataObj.skip_ai_generation,
+          image: metadataObj.image_url, // Add image field for compatibility
+          uri: metadataObj.metadata_uri // Add uri field for compatibility
+        }
+      }));
+      
+      toast.success('✅ Image and metadata uploaded to IPFS successfully!');
+      console.log('✅ Custom metadata ready for launch:', metadataObj);
+      
+      return metadataObj.image_url;
+    } else {
+      // Use response.message or response.error if available
+      const errorMsg = response.message || response.error || 'Unknown error';
+      throw new Error(`Upload failed: ${errorMsg}`);
+    }
+  } catch (error) {
+    console.error('Image upload failed:', error);
+    toast.error('❌ Image upload failed. Please try again.');
+    return null;
+  } finally {
+    setIsUploading(false);
+  }
+};
+
   const validateMetadataForLaunch = (): boolean => {
     // Check if we have the minimum required info
     const hasName = launchConfig.tokenName.trim().length > 0;
     const hasSymbol = launchConfig.tokenSymbol.trim().length > 0;
+    const hasImage = imageFile || launchConfig.imageUrl;
     
     if (!hasName || !hasSymbol) {
       alert('Token name and symbol are required for launch');
+      return false;
+    }
+
+    if (!hasImage) {
+      alert('Please upload an image or generate one with AI before launching');
       return false;
     }
     
@@ -1360,6 +1592,132 @@ const TokenCreator: React.FC = () => {
     }
   };
 
+  // const startOrchestratedLaunch = async () => {
+  //   console.log('=== DEBUG LAUNCH START ===');
+  //   console.log('UI Display Values:');
+  //   console.log('- Bot Count:', launchConfig.botCount);
+  //   console.log('- Bot Buy Amount:', launchConfig.botWalletBuyAmount);
+  //   console.log('- Creator Buy Amount:', launchConfig.creatorBuyAmount);
+  //   console.log('- UI Total (manual):', totalRequiredSol);
+  //   console.log('- User Balance:', userBalance);
+  //   console.log('- Atomic Mode:', atomicLaunchMode);
+  //   console.log('- Use Pre-funded:', usePreFundedBots);
+
+
+  //   // Use the UI calculation that the user sees
+  //   if (userBalance < totalRequiredSol) {
+  //     alert(`Insufficient SOL. Required: ${totalRequiredSol.toFixed(2)} SOL | Available: ${userBalance.toFixed(2)} SOL`);
+  //     return;
+  //   }
+
+  //   // Optional: Also check backend for extra safety
+  //   try {
+  //     const balanceData = await tokenLaunchService.getCreatorBalance();
+  //     console.log('Backend balance data:', balanceData);
+      
+  //     // Compare backend suggestion vs UI calculation
+  //     if (balanceData.required_balance > totalRequiredSol) {
+  //       const confirmLaunch = window.confirm(
+  //         `Note: Backend recommends ${balanceData.required_balance.toFixed(2)} SOL for full reserves.\n` +
+  //         `UI calculation shows ${totalRequiredSol.toFixed(2)} SOL needed.\n\n` +
+  //         `Your balance: ${userBalance.toFixed(2)} SOL\n` +
+  //         `Continue with ${totalRequiredSol.toFixed(2)} SOL launch?`
+  //       );
+        
+  //       if (!confirmLaunch) {
+  //         return;
+  //       }
+  //     }
+  //   } catch (balanceError) {
+  //     console.warn('Backend balance check failed, proceeding with UI calculation:', balanceError);
+  //   }
+
+  //   // Validate first
+  //   const validationErrors = validateLaunchConfig();
+  //   if (validationErrors.length > 0) {
+  //     alert(`Please fix the following errors:\n\n${validationErrors.join('\n')}`);
+  //     return;
+  //   }
+
+  //   if (!userWallet) {
+  //     alert('Please connect wallet first');
+  //     return;
+  //   }
+    
+  //   // Check if creator mode is enabled (with fallback)
+  //   const isCreatorEnabled = creatorStats?.user?.creator_enabled ?? true; // Default to true for testing
+    
+  //   if (!isCreatorEnabled) {
+  //     const enable = window.confirm('Creator mode is not enabled. Enable it now?');
+  //     if (enable) {
+  //       try {
+  //         await tokenLaunchService.enableCreatorMode();
+  //         alert('Creator mode enabled! Please try again.');
+  //         return;
+  //       } catch (error) {
+  //         console.error('Failed to enable creator mode:', error);
+  //         alert('Failed to enable creator mode. Please try again later.');
+  //         return;
+  //       }
+  //     }
+  //     return;
+  //   }
+    
+  //   // Check balance (with fallback if API fails)
+  //   // Check balance using the same calculation that UI shows
+  //   console.log('=== BALANCE CHECK ===');
+  //   console.log('Total Required (from UI calculation):', totalRequiredSol);
+  //   console.log('User Balance:', userBalance);
+
+  //   // Use the same calculation that's displayed in UI
+  //   const uiTotalRequired = totalRequiredSol;
+
+  //   if (userBalance < uiTotalRequired) {
+  //     alert(`Insufficient SOL. Required: ${uiTotalRequired.toFixed(2)} SOL | Available: ${userBalance.toFixed(2)} SOL`);
+  //     return;
+  //   }
+
+  //   // Also check with backend estimation as fallback
+  //   try {
+  //     const balanceData = await tokenLaunchService.getCreatorBalance();
+  //     console.log('Backend balance data:', balanceData);
+      
+  //     if (balanceData.balance_sufficient === false) {
+  //       const confirmLaunch = window.confirm(
+  //         `Backend recommends ${balanceData.required_balance.toFixed(2)} SOL but UI shows ${uiTotalRequired.toFixed(2)} SOL.\n\n` +
+  //         `Your balance: ${userBalance.toFixed(2)} SOL\n` +
+  //         `Proceed anyway?`
+  //       );
+        
+  //       if (!confirmLaunch) {
+  //         return;
+  //       }
+  //     }
+  //   } catch (balanceError) {
+  //     console.warn('Backend balance check failed, using UI calculation:', balanceError);
+  //   }
+
+  //   // ✅ Add metadata validation
+  //   if (!validateMetadataForLaunch()) {
+  //     return;
+  //   }
+ 
+  //   // Check if we should use pre-funded bots
+  //   const shouldUsePreFunded = usePreFundedBots && atomicLaunchMode;
+    
+  //   if (shouldUsePreFunded) {
+  //     // Execute atomic launch with pre-funded bots
+  //     await executeAtomicLaunch();
+  //   } else {
+  //     // Execute regular launch (with auto pre-funding)
+  //     await executeRegularLaunch();
+  //   }
+  // };
+
+  // ============================================
+  // REGULAR LAUNCH (Existing code moved here)
+  // ============================================
+  
   const startOrchestratedLaunch = async () => {
     console.log('=== DEBUG LAUNCH START ===');
     console.log('UI Display Values:');
@@ -1370,7 +1728,7 @@ const TokenCreator: React.FC = () => {
     console.log('- User Balance:', userBalance);
     console.log('- Atomic Mode:', atomicLaunchMode);
     console.log('- Use Pre-funded:', usePreFundedBots);
-
+    console.log('Image check:', { imageFile, imageUrl: launchConfig.imageUrl });
 
     // Use the UI calculation that the user sees
     if (userBalance < totalRequiredSol) {
@@ -1404,6 +1762,12 @@ const TokenCreator: React.FC = () => {
     const validationErrors = validateLaunchConfig();
     if (validationErrors.length > 0) {
       alert(`Please fix the following errors:\n\n${validationErrors.join('\n')}`);
+      return;
+    }
+
+    // Check for image
+    if (!imageFile && !launchConfig.imageUrl) {
+      alert('Please upload an image or generate one with AI before launching');
       return;
     }
 
@@ -1469,23 +1833,618 @@ const TokenCreator: React.FC = () => {
     if (!validateMetadataForLaunch()) {
       return;
     }
- 
+
+    // ✅ Check if we have an uploaded image
+    let finalImageUrl = launchConfig.imageUrl;
+    let customMetadata = launchConfig.customMetadata; // Get stored custom metadata
+    
+    if (imageFile && !finalImageUrl) {
+      // Upload image first
+      setIsLoading(true);
+      setLaunchStatus({
+        phase: 'setup',
+        progress: 5,
+        message: 'Uploading token image to IPFS...',
+        currentStep: 'Image Upload',
+        estimatedTimeRemaining: 30
+      });
+      
+      const uploadedUrl = await uploadImageToIpfs();
+      if (!uploadedUrl) {
+        alert('Failed to upload image. Please try again.');
+        setIsLoading(false);
+        return;
+      }
+      finalImageUrl = uploadedUrl;
+
+      // ✅ Get the custom metadata from state (it was set by uploadImageToIpfs)
+      customMetadata = launchConfig.customMetadata;
+      
+      // Update config with uploaded image URL
+      setLaunchConfig(prev => ({
+        ...prev,
+        imageUrl: finalImageUrl
+      }));
+      
+      // Show success message
+      setLaunchStatus({
+        phase: 'setup',
+        progress: 10,
+        message: '✅ Image uploaded to IPFS successfully',
+        currentStep: 'Setup',
+        estimatedTimeRemaining: 180
+      });
+    }
+  
     // Check if we should use pre-funded bots
     const shouldUsePreFunded = usePreFundedBots && atomicLaunchMode;
     
     if (shouldUsePreFunded) {
       // Execute atomic launch with pre-funded bots
-      await executeAtomicLaunch();
+      await executeAtomicLaunch(finalImageUrl);
     } else {
       // Execute regular launch (with auto pre-funding)
-      await executeRegularLaunch();
+      await executeRegularLaunch(finalImageUrl);
     }
   };
+  
+
+  // const executeRegularLaunch = async (finalImageUrl?: string) => {
+  //   setIsLoading(true);
+    
+  //   setLaunchStatus({
+  //     phase: 'setup',
+  //     progress: 0,
+  //     message: 'Starting regular launch...',
+  //     currentStep: 'Initialization',
+  //     estimatedTimeRemaining: 180
+  //   });
+    
+  //   try {
+  //     // ✅ CRITICAL: Prepare launch config with proper metadata structure
+  //     const backendConfig: Partial<LaunchConfig> = {
+  //       tokenName: launchConfig.tokenName,
+  //       tokenSymbol: launchConfig.tokenSymbol,
+  //       tokenDescription: launchConfig.tokenDescription,
+  //       imageUrl: finalImageUrl || launchConfig.imageUrl,
+  //       creatorWallet: launchConfig.creatorWallet || (userWallet ? userWallet.publicKey.toBase58() : ''),
+  //       botCount: launchConfig.botCount,
+  //       creatorBuyAmount: launchConfig.creatorBuyAmount,
+  //       botWalletBuyAmount: launchConfig.botWalletBuyAmount,
+  //       targetProfitPercentage: launchConfig.targetProfitPercentage,
+  //       sellTiming: launchConfig.sellTiming,
+
+  //       // Ensure minimum values even for 'immediate' strategy
+  //       sellVolumeTrigger: launchConfig.sellTiming === 'volume_based' ? 
+  //         Math.max(launchConfig.sellVolumeTrigger, 5.0) : 5.0,
+          
+  //       sellTimeTrigger: launchConfig.sellTiming === 'time_based' ? 
+  //         Math.max(launchConfig.sellTimeTrigger, 1) : 1,
+          
+  //       sellPriceTarget: launchConfig.sellTiming === 'price_target' ? 
+  //         Math.max(launchConfig.sellPriceTarget, 1.1) : 1.1,
+        
+  //       useAIForMetadata: launchConfig.useAIForMetadata,
+  //       metadataStyle: launchConfig.metadataStyle,
+  //       metadataKeywords: launchConfig.metadataKeywords,
+  //       useDalle: launchConfig.useDalle,
+  //       useJitoBundle: launchConfig.useJitoBundle !== false,
+  //       priority: launchConfig.priority || 10,
+  //       botSpread: launchConfig.botSpread || 'random',
+  //     };
+      
+  //     // ✅ If we have custom metadata from image upload, use it
+  //     if (launchConfig.customMetadata) {
+  //       console.log('✅ Using custom metadata from image upload for launch');
+        
+  //       // ✅ Ensure metadata_uri is not a string "null"
+  //       if (launchConfig.customMetadata.metadata_uri === "null" || 
+  //           launchConfig.customMetadata.metadata_uri === null) {
+  //         console.error('❌ Invalid metadata_uri in customMetadata:', launchConfig.customMetadata.metadata_uri);
+  //         throw new Error('Invalid metadata URI - cannot proceed with launch');
+  //       }
+        
+  //       backendConfig.customMetadata = launchConfig.customMetadata;
+  //     }
+
+  //     // ✅ If user manually entered token info with uploaded image
+  //     else if (finalImageUrl && launchConfig.tokenName && launchConfig.tokenSymbol) {
+  //       console.log('✅ Creating custom metadata for uploaded image');
+  //       backendConfig.customMetadata = {
+  //         name: launchConfig.tokenName,
+  //         symbol: launchConfig.tokenSymbol,
+  //         description: launchConfig.tokenDescription || `Token ${launchConfig.tokenName} (${launchConfig.tokenSymbol})`,
+  //         image_url: finalImageUrl,
+  //         image: finalImageUrl,
+  //         skip_ai_generation: true,
+  //         existing_metadata: {
+  //           name: launchConfig.tokenName,
+  //           symbol: launchConfig.tokenSymbol,
+  //           description: launchConfig.tokenDescription || `Token ${launchConfig.tokenName} (${launchConfig.tokenSymbol})`,
+  //           image: finalImageUrl,
+  //           skip_ai_generation: true
+  //         }
+  //       };
+  //     }
+  //     // ✅ If we have ai metadata
+  //     else if (generatedMetadata && generatedMetadata.metadata_uri) {
+  //       console.log('✅ Using ai metadata URI:', generatedMetadata.metadata_uri);
+  //       backendConfig.customMetadata = {
+  //         name: generatedMetadata.name,
+  //         symbol: generatedMetadata.symbol,
+  //         description: generatedMetadata.description,
+  //         metadata_uri: generatedMetadata.metadata_uri,
+  //         uri: generatedMetadata.metadata_uri,
+  //         image: generatedMetadata.image,
+  //         image_url: generatedMetadata.image
+  //       };
+  //     }
+      
+  //     console.log('📤 Sending launch config to backend:', {
+  //       ...backendConfig,
+  //       customMetadata: backendConfig.customMetadata ? {
+  //         ...backendConfig.customMetadata,
+  //         metadata_uri: backendConfig.customMetadata.metadata_uri 
+  //           ? `${backendConfig.customMetadata.metadata_uri.substring(0, 50)}...` 
+  //           : 'null',
+  //         skip_ai_generation: backendConfig.customMetadata?.skip_ai_generation || false
+  //       } : 'none'
+  //     });
+      
+  //     // Call backend to create launch
+  //     const response = await tokenLaunchService.createLaunch(backendConfig);
+          
+  //     console.log('📥 Launch response:', response);
+      
+  //     if (response.success) {
+  //       const launchId = response.launch_id;
+  //       setActiveLaunchId(launchId);
+        
+  //       // Setup WebSocket connection for real-time updates
+  //       launchWebSocket.connect(launchId);
+        
+  //       launchWebSocket.on('update', (data: LaunchStatus) => {
+  //         setLaunchStatus({
+  //           phase: data.status.toLowerCase().replace(/_/g, '-') as any,
+  //           progress: data.progress,
+  //           message: data.message,
+  //           currentStep: data.current_step,
+  //           estimatedTimeRemaining: data.estimated_time_remaining
+  //         });
+  //       });
+        
+  //       launchWebSocket.on('complete', (data: any) => {
+  //         setLaunchStatus({
+  //           phase: 'complete',
+  //           progress: 100,
+  //           message: '🎉 Launch completed successfully!',
+  //           currentStep: 'Complete',
+  //           estimatedTimeRemaining: 0
+  //         });
+          
+  //         // Add to results
+  //         setLaunchResults(prev => [...prev, {
+  //           success: data.success || true,
+  //           mintAddress: data.mint_address,
+  //           creatorTransaction: data.creator_tx_hash,
+  //           botBuyBundleId: data.bot_buy_bundle_id,
+  //           botSellBundleId: data.bot_sell_bundle_id,
+  //           totalProfit: data.total_profit || 0,
+  //           roi: data.roi || 0,
+  //           duration: data.duration || 0
+  //         }]);
+  //       });
+        
+  //       launchWebSocket.on('failed', (data: any) => {
+  //         setLaunchStatus({
+  //           phase: 'failed',
+  //           progress: 0,
+  //           message: `❌ Launch failed: ${data.error || 'Unknown error'}`,
+  //           currentStep: 'Failed',
+  //           estimatedTimeRemaining: 0
+  //         });
+  //       });
+        
+  //       // Also poll for status updates (fallback)
+  //       const pollStatus = async () => {
+  //         try {
+  //           const status = await tokenLaunchService.getLaunchStatus(launchId);
+  //           setLaunchStatus({
+  //             phase: status.status.toLowerCase().replace(/_/g, '-') as any,
+  //             progress: status.progress,
+  //             message: status.message,
+  //             currentStep: status.current_step,
+  //             estimatedTimeRemaining: status.estimated_time_remaining
+  //           });
+            
+  //           if (status.status !== 'COMPLETE' && status.status !== 'FAILED') {
+  //             setTimeout(pollStatus, 2000);
+  //           }
+  //         } catch (error) {
+  //           console.error('Polling failed:', error);
+  //         }
+  //       };
+        
+  //       pollStatus();
+        
+  //     } else {
+  //       throw new Error(response.error || 'Failed to start launch');
+  //     }
+      
+  //   } catch (error: any) {
+  //     console.error('Launch failed:', error);
+  //     setLaunchStatus({
+  //       phase: 'failed',
+  //       progress: 0,
+  //       message: `❌ Regular launch failed: ${error.message}`,
+  //       currentStep: 'Failed',
+  //       estimatedTimeRemaining: 0
+  //     });
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
+  
+  // const executeAtomicLaunch = async () => {
+  //   setIsLoading(true);
+    
+  //   setLaunchStatus({
+  //     phase: 'setup',
+  //     progress: 0,
+  //     message: 'Starting atomic launch with pre-funded bots...',
+  //     currentStep: 'Atomic Launch Setup',
+  //     estimatedTimeRemaining: 120
+  //   });
+
+  //   try {
+  //     // FIX: Get ALL bots and filter by actual balance, not just database flag
+  //     const allBotsResponse = await tokenLaunchService.getBotWallets();
+  //     const allBots: BotWallet[] = allBotsResponse.bot_wallets || [];
+      
+  //     // Count bots with actual balance
+  //     const botsWithBalance = allBots.filter((bot: BotWallet) => (bot.current_balance || 0) > 0);
+  //     const hasSufficientBots = botsWithBalance.length >= launchConfig.botCount;
+      
+  //     if (!hasSufficientBots) {
+  //       const confirm = window.confirm(
+  //         `Need ${launchConfig.botCount} funded bots but only have ${botsWithBalance.length} with balance. ` +
+  //         `Would you like to pre-fund ${launchConfig.botCount - botsWithBalance.length} more bots first?`
+  //       );
+        
+  //       if (confirm) {
+  //         setShowPreFundingPanel(true);
+  //         setIsLoading(false);
+  //         return;
+  //       } else {
+  //         // Option: Use what we have and adjust bot count
+  //         setLaunchConfig(prev => ({
+  //           ...prev,
+  //           botCount: botsWithBalance.length
+  //         }));
+  //       }
+  //     }
+
+  //     // Use adjusted bot count if needed
+  //     const usableBotCount = hasSufficientBots ? launchConfig.botCount : botsWithBalance.length;
+  //     const usableBots = botsWithBalance.slice(0, usableBotCount);
+      
+  //     // Generate or use existing metadata
+  //     let metadata = generatedMetadata;
+  //     if (launchConfig.useAIForMetadata && !metadata) {
+  //       await generateAIMetadata();
+  //       metadata = generatedMetadata;
+  //     }
+      
+  //     // CRITICAL FIX: Use the ai metadata or fallback
+  //     let tokenMetadata: {
+  //       name: string;
+  //       symbol: string;
+  //       description: string;
+  //       image: string;
+  //     };
+  //     if (metadata) {
+  //       tokenMetadata = {
+  //         name: metadata.name,
+  //         symbol: metadata.symbol,
+  //         description: metadata.description,
+  //         image: metadata.image
+  //       };
+  //     } else {
+  //       // Fallback to manually entered values
+  //       tokenMetadata = {
+  //         name: launchConfig.tokenName || `Token_${Date.now()}`,
+  //         symbol: launchConfig.tokenSymbol || 'TKN',
+  //         description: launchConfig.tokenDescription || 'Token created via Flash Sniper',
+  //         image: launchConfig.imageUrl || 'https://placehold.co/600x400'
+  //       };
+  //     }
+
+  //     // Prepare atomic payload with proper typing
+  //     const atomicPayload = {
+  //       user_wallet: launchConfig.creatorWallet,
+  //       metadata: tokenMetadata,
+  //       creator_buy_amount: launchConfig.creatorBuyAmount,
+  //       bot_wallets: usableBots.map((bot: BotWallet) => ({
+  //         public_key: bot.public_key,
+  //         amount_sol: launchConfig.botWalletBuyAmount
+  //       })),
+  //       use_jito: true,
+  //       atomic_bundle: true,
+  //       sell_strategy: {
+  //         type: launchConfig.sellTiming,
+  //         volume_target: launchConfig.sellVolumeTrigger,
+  //         time_minutes: launchConfig.sellTimeTrigger,
+  //         price_target: launchConfig.sellPriceTarget
+  //       }
+  //     };
+
+  //     console.log('Sending atomic payload:', atomicPayload);
+  //     console.log('Using bots with balance:', usableBots.length);
+      
+  //     // Call the new atomic create+buy endpoint in YOUR backend (not on-chain service directly)
+  //     const response = await tokenLaunchService.executeAtomicCreateAndBuy(atomicPayload);
+      
+  //     console.log('Atomic launch response:', response);
+      
+  //     if (response.success) {
+  //       const launchId = response.launch_id;
+  //       setActiveLaunchId(launchId);
+        
+  //       // Setup WebSocket connection for atomic launch
+  //       launchWebSocket.connect(launchId);
+
+  //       // ✅ CORRECTED: Add all the proper event handlers
+  //       // In the WebSocket connection setup, add:
+  //       launchWebSocket.on('launch_started', (data: any) => {
+  //         console.log('Launch started event received:', data);
+  //         setLaunchStatus(prev => ({
+  //           ...prev,
+  //           phase: 'launching',
+  //           progress: 40,
+  //           message: 'Starting atomic launch...',
+  //           currentStep: 'Launch Started'
+  //         }));
+  //       });
+
+  //       launchWebSocket.on('token_creation_started', (data: any) => {
+  //         console.log('Token creation started:', data);
+  //         setLaunchStatus(prev => ({
+  //           ...prev,
+  //           phase: 'creating',
+  //           progress: 50,
+  //           message: 'Creating token on blockchain...',
+  //           currentStep: 'Token Creation'
+  //         }));
+  //       });
+
+  //       launchWebSocket.on('token_created', (data: any) => {
+  //         console.log('✅ Token created event received:', data);
+          
+  //         // ✅ IMMEDIATE update - don't wait for backend
+  //         setLaunchStatus(prev => ({
+  //           ...prev,
+  //           phase: 'creating',
+  //           progress: 60,
+  //           message: `Token created: ${data.name} (${data.symbol})`,
+  //           currentStep: 'Token Created'
+  //         }));
+          
+  //         // Show the dashboard immediately
+  //         setShowLaunchDashboard(true);
+          
+  //         // Update local state with token details
+  //         if (data.mint_address) {
+  //           // Store in results immediately
+  //           setLaunchResults(prev => [...prev, {
+  //             success: true,
+  //             mintAddress: data.mint_address,
+  //             creatorTransaction: data.creator_tx_hash,
+  //             botBuyBundleId: data.bot_buy_bundle_id,
+  //             botSellBundleId: data.bot_sell_bundle_id,
+  //             totalProfit: 0, // Will be updated later
+  //             roi: 0,
+  //             duration: 0
+  //           }]);
+  //         }
+          
+  //         // Start monitoring bot buys
+  //         setLaunchStatus(prev => ({
+  //           ...prev,
+  //           phase: 'funding',
+  //           progress: 70,
+  //           message: 'Executing bot buys...',
+  //           currentStep: 'Bot Execution'
+  //         }));
+  //       });
+
+  //       launchWebSocket.on('token_creation_confirmed', (data: any) => {
+  //         // Backend has confirmed and updated database
+  //         console.log('Backend confirmed token creation:', data);
+  //       });
+        
+  //       launchWebSocket.on('launch_error', (data: any) => {
+  //         console.error('Launch error event received:', data);
+  //         setLaunchStatus({
+  //           phase: 'failed',
+  //           progress: 0,
+  //           message: `❌ Launch error: ${data.error || data.message}`,
+  //           currentStep: 'Failed',
+  //           estimatedTimeRemaining: 0
+  //         });
+  //       });
+        
+  //       launchWebSocket.on('token_creation_failed', (data: any) => {
+  //         console.error('Token creation failed event received:', data);
+  //         setLaunchStatus({
+  //           phase: 'failed',
+  //           progress: 0,
+  //           message: `❌ Token creation failed: ${data.error}`,
+  //           currentStep: 'Failed',
+  //           estimatedTimeRemaining: 0
+  //         });
+  //       });
+
+  //       launchWebSocket.on('payload_sent', (data: any) => {
+  //         console.log('Payload sent event received:', data);
+  //         setLaunchStatus(prev => ({
+  //           ...prev,
+  //           phase: 'launching',
+  //           progress: 45,
+  //           message: 'Sending transaction to blockchain...',
+  //           currentStep: 'Sending Transaction'
+  //         }));
+  //       });
+
+  //       // For bot execution events
+  //       launchWebSocket.on('bot_buy_start', (data: any) => {
+  //         console.log('Bot buy started:', data);
+  //         setLaunchStatus(prev => ({
+  //           ...prev,
+  //           phase: 'funding',
+  //           progress: 70,
+  //           message: 'Executing bot buys...',
+  //           currentStep: 'Bot Execution'
+  //         }));
+  //       });
+
+  //       launchWebSocket.on('launch_completed', (data: any) => {
+  //         console.log('Launch completed event received:', data);
+  //         setLaunchStatus({
+  //           phase: 'complete',
+  //           progress: 100,
+  //           message: '🎉 Launch completed successfully!',
+  //           currentStep: 'Complete',
+  //           estimatedTimeRemaining: 0
+  //         });
+          
+  //         // Update results with final data
+  //         if (data.results) {
+  //           setLaunchResults(prev => [...prev, {
+  //             success: true,
+  //             mintAddress: data.mint_address || prev[prev.length - 1]?.mintAddress,
+  //             creatorTransaction: data.creator_tx_hash,
+  //             botBuyBundleId: data.bot_buy_bundle_id,
+  //             botSellBundleId: data.bot_sell_bundle_id,
+  //             totalProfit: data.results.total_profit || 0,
+  //             roi: data.results.roi || 0,
+  //             duration: data.results.duration || 0
+  //           }]);
+  //         }
+  //       });
+
+  //       // Keep existing handlers as fallbacks
+  //       launchWebSocket.on('update', (data: LaunchStatus) => {
+  //         setLaunchStatus({
+  //           phase: data.status.toLowerCase().replace(/_/g, '-') as any,
+  //           progress: data.progress,
+  //           message: data.message,
+  //           currentStep: data.current_step,
+  //           estimatedTimeRemaining: data.estimated_time_remaining
+  //         });
+  //       });
+        
+  //       // Add atomic-specific events
+  //       launchWebSocket.on('atomic_launch_start', (data: any) => {
+  //         setLaunchStatus({
+  //           phase: 'launching',
+  //           progress: 70,
+  //           message: 'Building atomic bundle with pre-funded bots...',
+  //           currentStep: 'Atomic Bundle',
+  //           estimatedTimeRemaining: 60
+  //         });
+  //       });
+        
+  //       launchWebSocket.on('complete', (data: any) => {
+  //         setLaunchStatus({
+  //           phase: 'complete',
+  //           progress: 100,
+  //           message: '🎉 Atomic launch completed successfully!',
+  //           currentStep: 'Complete',
+  //           estimatedTimeRemaining: 0
+  //         });
+          
+  //         // Add to results
+  //         setLaunchResults(prev => [...prev, {
+  //           success: data.success || true,
+  //           mintAddress: data.mint_address,
+  //           creatorTransaction: data.creator_tx_hash,
+  //           botBuyBundleId: data.bot_buy_bundle_id,
+  //           botSellBundleId: data.bot_sell_bundle_id,
+  //           totalProfit: data.total_profit || 0,
+  //           roi: data.roi || 0,
+  //           duration: data.duration || 0,
+  //           atomic_bundle: true
+  //         }]);
+  //       });
+        
+  //       launchWebSocket.on('failed', (data: any) => {
+  //         setLaunchStatus({
+  //           phase: 'failed',
+  //           progress: 0,
+  //           message: `❌ Atomic launch failed: ${data.error || 'Unknown error'}`,
+  //           currentStep: 'Failed',
+  //           estimatedTimeRemaining: 0
+  //         });
+  //       });
+
+        
+  //       // Also poll for status updates (fallback)
+  //       const pollStatus = async () => {
+  //         try {
+  //           const status = await tokenLaunchService.getLaunchStatus(launchId);
+  //           setLaunchStatus({
+  //             phase: status.status.toLowerCase().replace(/_/g, '-') as any,
+  //             progress: status.progress,
+  //             message: status.message,
+  //             currentStep: status.current_step,
+  //             estimatedTimeRemaining: status.estimated_time_remaining
+  //           });
+            
+  //           if (status.status !== 'COMPLETE' && status.status !== 'FAILED') {
+  //             setTimeout(pollStatus, 2000);
+  //           } else if (status.status === 'COMPLETE') {
+  //             // Update results
+  //             setLaunchResults(prev => [...prev, {
+  //               success: true,
+  //               mintAddress: status.mint_address || '',
+  //               creatorTransaction: status.creator_tx_hash || '',
+  //               botBuyBundleId: status.bot_buy_bundle_id,
+  //               botSellBundleId: status.bot_sell_bundle_id,
+  //               totalProfit: status.total_profit || 0,
+  //               roi: status.roi || 0,
+  //               duration: status.duration || 0,
+  //               atomic_bundle: true
+  //             }]);
+  //           }
+  //         } catch (error) {
+  //           console.error('Polling failed:', error);
+  //         }
+  //       };
+        
+  //       pollStatus();
+  //     } else {
+  //       throw new Error(response.error || 'Atomic launch failed');
+  //     }
+  //   } catch (error: any) {
+  //     console.error('Atomic launch failed:', error);
+  //     setLaunchStatus({
+  //       phase: 'failed',
+  //       progress: 0,
+  //       message: `❌ Atomic launch failed: ${error.message}`,
+  //       currentStep: 'Failed',
+  //       estimatedTimeRemaining: 0
+  //     });
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
+
 
   // ============================================
-  // REGULAR LAUNCH (Existing code moved here)
+  // ORCHESTRATED LAUNCH (Auto pre-fund + atomic)
   // ============================================
-  const executeRegularLaunch = async () => {
+  
+  const executeRegularLaunch = async (finalImageUrl?: string) => {
     setIsLoading(true);
     
     setLaunchStatus({
@@ -1497,35 +2456,27 @@ const TokenCreator: React.FC = () => {
     });
     
     try {
-      // Generate or use existing metadata
-      let metadata = generatedMetadata;
-      if (launchConfig.useAIForMetadata && !metadata) {
-        await generateAIMetadata();
-        metadata = generatedMetadata;
-      }
-      
       // ✅ CRITICAL: Prepare launch config with proper metadata structure
       const backendConfig: Partial<LaunchConfig> = {
         tokenName: launchConfig.tokenName,
         tokenSymbol: launchConfig.tokenSymbol,
         tokenDescription: launchConfig.tokenDescription,
-        imageUrl: launchConfig.imageUrl,
+        imageUrl: finalImageUrl || launchConfig.imageUrl,
         creatorWallet: launchConfig.creatorWallet || (userWallet ? userWallet.publicKey.toBase58() : ''),
         botCount: launchConfig.botCount,
         creatorBuyAmount: launchConfig.creatorBuyAmount,
         botWalletBuyAmount: launchConfig.botWalletBuyAmount,
         targetProfitPercentage: launchConfig.targetProfitPercentage,
         sellTiming: launchConfig.sellTiming,
-
         // Ensure minimum values even for 'immediate' strategy
         sellVolumeTrigger: launchConfig.sellTiming === 'volume_based' ? 
           Math.max(launchConfig.sellVolumeTrigger, 5.0) : 5.0,
           
         sellTimeTrigger: launchConfig.sellTiming === 'time_based' ? 
-          Math.max(launchConfig.sellTimeTrigger, 1) : 1, // Minimum 1 even for immediate
+          Math.max(launchConfig.sellTimeTrigger, 1) : 1,
           
         sellPriceTarget: launchConfig.sellTiming === 'price_target' ? 
-          Math.max(launchConfig.sellPriceTarget, 1.1) : 1.1, // Minimum 1.1 even for immediate
+          Math.max(launchConfig.sellPriceTarget, 1.1) : 1.1,
         
         useAIForMetadata: launchConfig.useAIForMetadata,
         metadataStyle: launchConfig.metadataStyle,
@@ -1536,45 +2487,82 @@ const TokenCreator: React.FC = () => {
         botSpread: launchConfig.botSpread || 'random',
       };
       
-      // ✅ If we have ai metadata, use the metadata_uri
-      if (metadata && metadata.metadata_uri) {
-        console.log('✅ Using ai metadata URI:', metadata.metadata_uri);
+      // ✅ DEBUG: Check what we have in launchConfig.customMetadata
+      console.log('🔍 DEBUG launchConfig.customMetadata:', launchConfig.customMetadata);
+      console.log('🔍 DEBUG generatedMetadata:', generatedMetadata);
+      
+      // ✅ FIXED LOGIC: Handle metadata in proper order
+      // 1. First check if we have uploaded image metadata
+      if (launchConfig.customMetadata && launchConfig.customMetadata.metadata_uri && launchConfig.customMetadata.metadata_uri !== "null") {
+        console.log('✅ Using custom metadata from uploaded image with metadata_uri:', launchConfig.customMetadata.metadata_uri);
+        
+        // Ensure all required fields are present
         backendConfig.customMetadata = {
-          name: metadata.name,
-          symbol: metadata.symbol,
-          description: metadata.description,
-          metadata_uri: metadata.metadata_uri, // ✅ Use metadata_uri field
-          uri: metadata.metadata_uri, // ✅ Also include uri for compatibility
-          image: metadata.image,
-          image_url: metadata.image
+          name: launchConfig.customMetadata.name || launchConfig.tokenName,
+          symbol: launchConfig.customMetadata.symbol || launchConfig.tokenSymbol,
+          description: launchConfig.customMetadata.description || launchConfig.tokenDescription,
+          metadata_uri: launchConfig.customMetadata.metadata_uri,
+          uri: launchConfig.customMetadata.metadata_uri, // ✅ Add uri field for compatibility
+          image_url: launchConfig.customMetadata.image_url || finalImageUrl || launchConfig.imageUrl,
+          image: launchConfig.customMetadata.image_url || finalImageUrl || launchConfig.imageUrl,
+          skip_ai_generation: true
         };
       }
-      
-      // ✅ If user manually entered token info (no AI generation)
-      else if (launchConfig.tokenName && launchConfig.tokenSymbol) {
-        console.log('⚠️ Using manually entered token info (no IPFS URI)');
+      // 2. Check if we have AI-generated metadata with URI
+      else if (generatedMetadata && generatedMetadata.metadata_uri) {
+        console.log('✅ Using AI metadata URI:', generatedMetadata.metadata_uri);
+        backendConfig.customMetadata = {
+          name: generatedMetadata.name,
+          symbol: generatedMetadata.symbol,
+          description: generatedMetadata.description,
+          metadata_uri: generatedMetadata.metadata_uri,
+          uri: generatedMetadata.metadata_uri, // ✅ Add uri field for compatibility
+          image: generatedMetadata.image,
+          image_url: generatedMetadata.image
+        };
+      }
+      // 3. Check if we have manual entry with uploaded image
+      else if (finalImageUrl && launchConfig.tokenName && launchConfig.tokenSymbol) {
+        console.log('⚠️ Creating metadata for manual entry with uploaded image (no IPFS URI)');
         backendConfig.customMetadata = {
           name: launchConfig.tokenName,
           symbol: launchConfig.tokenSymbol,
-          description: launchConfig.tokenDescription || 'Token created via Flash Sniper',
-          // For manual tokens without IPFS, we need to handle this differently
-          metadata_uri: null // Will need fallback in backend
+          description: launchConfig.tokenDescription || `Token ${launchConfig.tokenName} (${launchConfig.tokenSymbol})`,
+          image_url: finalImageUrl,
+          image: finalImageUrl,
+          skip_ai_generation: true,
+          existing_metadata: {
+            name: launchConfig.tokenName,
+            symbol: launchConfig.tokenSymbol,
+            description: launchConfig.tokenDescription || `Token ${launchConfig.tokenName} (${launchConfig.tokenSymbol})`,
+            image: finalImageUrl,
+            skip_ai_generation: true
+          }
         };
       }
+      // 4. Fallback - should not happen but just in case
+      else {
+        console.error('❌ No valid metadata found for launch');
+        throw new Error('No valid metadata found. Please generate or upload metadata first.');
+      }
       
-      console.log('📤 Sending launch config to backend:', {
+      // ✅ DEBUG: Show what we're sending
+      console.log('📤 FINAL Sending launch config to backend:', {
         ...backendConfig,
         customMetadata: backendConfig.customMetadata ? {
           ...backendConfig.customMetadata,
           metadata_uri: backendConfig.customMetadata.metadata_uri 
             ? `${backendConfig.customMetadata.metadata_uri.substring(0, 50)}...` 
-            : 'null'
+            : 'null or undefined',
+          uri: backendConfig.customMetadata.uri 
+            ? `${backendConfig.customMetadata.uri.substring(0, 50)}...` 
+            : 'null or undefined'
         } : 'none'
       });
       
       // Call backend to create launch
       const response = await tokenLaunchService.createLaunch(backendConfig);
-      
+          
       console.log('📥 Launch response:', response);
       
       if (response.success) {
@@ -1665,11 +2653,8 @@ const TokenCreator: React.FC = () => {
       setIsLoading(false);
     }
   };
-
-  // ============================================
-  // ATOMIC LAUNCH (New function)
-  // ============================================
-  const executeAtomicLaunch = async () => {
+  
+  const executeAtomicLaunch = async (finalImageUrl?: string) => {
     setIsLoading(true);
     
     setLaunchStatus({
@@ -1719,19 +2704,32 @@ const TokenCreator: React.FC = () => {
         metadata = generatedMetadata;
       }
       
-      // CRITICAL FIX: Use the ai metadata or fallback
+      // ✅ CRITICAL: Use uploaded image if available, otherwise use AI metadata or manual
       let tokenMetadata: {
         name: string;
         symbol: string;
         description: string;
         image: string;
+        uri?: string;
       };
-      if (metadata) {
+      
+      if (finalImageUrl) {
+        // Use uploaded image
+        tokenMetadata = {
+          name: launchConfig.tokenName || `Token_${Date.now()}`,
+          symbol: launchConfig.tokenSymbol || 'TKN',
+          description: launchConfig.tokenDescription || 'Token created via Flash Sniper',
+          image: finalImageUrl,
+          uri: finalImageUrl // Use the same URL for both image and URI
+        };
+        console.log('✅ Using uploaded image for atomic launch:', finalImageUrl);
+      } else if (metadata) {
         tokenMetadata = {
           name: metadata.name,
           symbol: metadata.symbol,
           description: metadata.description,
-          image: metadata.image
+          image: metadata.image,
+          uri: metadata.metadata_uri || metadata.ipfs_uri || metadata.image
         };
       } else {
         // Fallback to manually entered values
@@ -1739,7 +2737,8 @@ const TokenCreator: React.FC = () => {
           name: launchConfig.tokenName || `Token_${Date.now()}`,
           symbol: launchConfig.tokenSymbol || 'TKN',
           description: launchConfig.tokenDescription || 'Token created via Flash Sniper',
-          image: launchConfig.imageUrl || 'https://placehold.co/600x400'
+          image: launchConfig.imageUrl || 'https://placehold.co/600x400',
+          uri: launchConfig.imageUrl || 'https://placehold.co/600x400'
         };
       }
 
@@ -1767,7 +2766,7 @@ const TokenCreator: React.FC = () => {
       
       // Call the new atomic create+buy endpoint in YOUR backend (not on-chain service directly)
       const response = await tokenLaunchService.executeAtomicCreateAndBuy(atomicPayload);
-      
+        
       console.log('Atomic launch response:', response);
       
       if (response.success) {
@@ -2022,11 +3021,7 @@ const TokenCreator: React.FC = () => {
       setIsLoading(false);
     }
   };
-
-
-  // ============================================
-  // ORCHESTRATED LAUNCH (Auto pre-fund + atomic)
-  // ============================================
+  
   const executeOrchestratedLaunch = async () => {
     setIsLoading(true);
     setLaunchStatus({
@@ -4813,7 +5808,7 @@ const TokenCreator: React.FC = () => {
                           <div className="space-y-4">
                             {/* Token Name */}
                             <div>
-                              <label className="block text-gray-400 text-sm mb-2">Token Name</label>
+                              <label className="block text-gray-400 text-sm mb-2">Token Name*</label>
                               <input
                                 type="text"
                                 value={launchConfig.tokenName}
@@ -4825,7 +5820,7 @@ const TokenCreator: React.FC = () => {
                             
                             {/* Token Symbol */}
                             <div>
-                              <label className="block text-gray-400 text-sm mb-2">Token Symbol</label>
+                              <label className="block text-gray-400 text-sm mb-2">Token Symbol*</label>
                               <input
                                 type="text"
                                 value={launchConfig.tokenSymbol}
@@ -4834,47 +5829,95 @@ const TokenCreator: React.FC = () => {
                                 placeholder="Enter token symbol (3-6 chars)"
                               />
                             </div>
+
+                            {/* Token Description */}
+                            <div>
+                              <label className="block text-gray-400 text-sm mb-2">Token Description (Optional)</label>
+                              <input
+                                type="text"
+                                value={launchConfig.tokenDescription}
+                                onChange={(e) => setLaunchConfig(prev => ({ ...prev, tokenDescription: e.target.value }))}
+                                className="w-full bg-gray-900/50 border border-gray-700/50 rounded-xl p-3 text-white placeholder-gray-500 focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all"
+                                placeholder="Enter token description (max 30 chars)"
+                              />
+                            </div>
     
-                            {/* Metadata Source */}
-                            {/* <div>
-                              <label className="block text-gray-400 text-sm mb-2">Metadata Source</label>
-                              <div className="grid grid-cols-2 gap-2">
-                                <button
-                                  onClick={() => setLaunchConfig(prev => ({ ...prev, metadataSource: 'ai' }))}
-                                  className={`py-3 rounded-lg border transition-all ${
-                                    launchConfig.metadataSource === 'ai'
-                                      ? 'bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border-blue-500/30 text-white'
-                                      : 'bg-gray-900/50 border-gray-700/50 text-gray-400 hover:text-white hover:border-gray-600/50'
-                                  }`}
-                                >
-                                  <div className="flex flex-col items-center gap-1">
-                                    <img
-                                      src="/images/openai.png"
-                                      alt="Logo"
-                                      className="w-7 h-7"
+
+                            {/* Image Upload Section */}
+                            <div className="mt-6">
+                              <label className="block text-gray-400 text-sm mb-2">Token Image*</label>
+                              
+                              <div className="flex flex-col sm:flex-row gap-4">
+                                {/* Upload Button */}
+                                <div className="flex-1">
+                                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-700/50 border-dashed rounded-xl cursor-pointer bg-gray-900/50 hover:bg-gray-900/70 hover:border-blue-500/50 transition-all group">
+                                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                      {isUploading ? (
+                                        <>
+                                          <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mb-2"></div>
+                                          <p className="text-sm text-blue-400">Uploading...</p>
+                                        </>
+                                      ) : imagePreview ? (
+                                        <>
+                                          <svg className="w-8 h-8 text-green-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                          </svg>
+                                          <p className="text-sm text-green-400">Image uploaded</p>
+                                          <p className="text-xs text-gray-500 mt-1">Click to change</p>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <svg className="w-8 h-8 text-gray-400 mb-2 group-hover:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                          </svg>
+                                          <p className="text-sm text-gray-400 group-hover:text-white">Click to upload</p>
+                                          <p className="text-xs text-gray-500 mt-1">JPEG, PNG, GIF, WebP (max 5MB)</p>
+                                        </>
+                                      )}
+                                    </div>
+                                    <input 
+                                      type="file" 
+                                      className="hidden" 
+                                      accept=".jpg,.jpeg,.png,.gif,.webp"
+                                      onChange={handleImageUpload}
+                                      disabled={isUploading}
                                     />
-                                    <span className="text-sm font-medium">Generate using OpenAI</span>
-                                  </div>
-                                </button>
-                                <button
-                                  onClick={() => setLaunchConfig(prev => ({ ...prev, metadataSource: 'trending' }))}
-                                  className={`py-3 rounded-lg border transition-all ${
-                                    launchConfig.metadataSource === 'trending'
-                                      ? 'bg-gradient-to-r from-red-500/20 to-orange-500/20 border-red-500/30 text-white'
-                                      : 'bg-gray-900/50 border-gray-700/50 text-gray-400 hover:text-white hover:border-gray-600/50'
-                                  }`}
-                                >
-                                  <div className="flex flex-col items-center gap-1">
-                                    <img
-                                      src="/images/x.png"
-                                      alt="Logo"
-                                      className="w-6 h-6"
+                                  </label>
+                                </div>
+                                
+                                {/* Preview */}
+                                {imagePreview && (
+                                  <div className="relative w-32 h-32 rounded-xl overflow-hidden border border-gray-700/50 bg-gray-900/50">
+                                    <img 
+                                      src={imagePreview} 
+                                      alt="Token preview" 
+                                      className="w-full h-full object-cover"
                                     />
-                                    <span className="text-sm font-medium">Generate using X Trends</span>
+                                    <button
+                                      onClick={() => {
+                                        setImageFile(null);
+                                        setImagePreview('');
+                                        setLaunchConfig(prev => ({ ...prev, imageUrl: '' }));
+                                      }}
+                                      className="absolute top-1 right-1 w-6 h-6 bg-red-500/80 hover:bg-red-600 rounded-full flex items-center justify-center"
+                                    >
+                                      <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                      </svg>
+                                    </button>
                                   </div>
-                                </button>
+                                )}
                               </div>
-                            </div> */}
+                              
+                              {/* Helper text */}
+                              {!imagePreview && (
+                                <p className="text-xs text-gray-500 mt-2">
+                                  Upload a custom image or use AI generation below. Recommended: 600x600px square image.
+                                </p>
+                              )}
+                            </div>
+
+
                             {/* Metadata Source */}
                             <div>
                               <label className="block text-gray-400 text-sm mb-2">Metadata Source</label>
@@ -5354,8 +6397,8 @@ const TokenCreator: React.FC = () => {
                   
                     {/* Action Buttons */}
                     <div className="flex flex-col sm:flex-row gap-4 mt-8">
-                      {/* Launch button - only show when metadata is ready */}
-                      {metadataGenerated ? (
+                      {/* Launch button - only show when metadata is ready AND image is uploaded */}
+                      {metadataGenerated && (imageFile || launchConfig.imageUrl) ? (
                         <button
                           onClick={startOrchestratedLaunch}
                           disabled={isLoading || userBalance < totalRequiredSol}
@@ -5396,10 +6439,15 @@ const TokenCreator: React.FC = () => {
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                             </svg>
-                            <span className="font-bold">Metadata Required</span>
+                            <span className="font-bold">Launch Requirements</span>
                           </div>
                           <p className="text-amber-300/80 text-sm text-center">
-                            Generate metadata first using AI or X Trends
+                            {!metadataGenerated 
+                              ? "Generate metadata first using AI or X Trends"
+                              : !(imageFile || launchConfig.imageUrl)
+                              ? "Upload an image or generate one with AI to proceed"
+                              : "Complete all requirements above"
+                            }
                           </p>
                         </div>
                       )}

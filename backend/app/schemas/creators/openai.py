@@ -34,6 +34,11 @@ class MetadataRequest(BaseModel):
         description="Trending context for the token generation"
     )
     
+    existing_metadata: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Existing metadata to upload directly to IPFS (skips AI generation)"
+    )
+    
 class Attribute(BaseModel):
     """Single attribute for token metadata"""
     trait_type: str 

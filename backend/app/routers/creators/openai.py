@@ -324,11 +324,6 @@ class SimpleXAnalyzer:
         else:
             return 'viral'
 
-
-
-
-
-
     async def get_latest_from_accounts(self, accounts: List[str] = None, max_per_account: int = 2) -> List[Dict]:
         """
         Get latest tweets from specified accounts
@@ -411,10 +406,6 @@ class SimpleXAnalyzer:
             logger.error(f"Error getting user ID for @{username}: {e}")
             return None
 
-
-
-
-    # Update the _get_user_tweets method to fix the max_results issue
     async def _get_user_tweets(self, session, user_id: str, max_results: int = 5) -> List[Dict]:
         """Get recent tweets from a user with media"""
         try:
@@ -1236,10 +1227,6 @@ async def generate_metadata_from_latest_account(
             detail=f"Failed to generate metadata from latest account tweet: {str(e)}"
         )
 
-
- 
-
-
 @router.post("/quick-generate-from-accounts")
 async def quick_generate_from_accounts(
     style: str = "professional",
@@ -1441,10 +1428,64 @@ async def generate_metadata(
         # logger.info(f"🔍 DEBUG: use_dalle = {request.use_dalle}")
         # logger.info(f"🔍 DEBUG: existing_image = {request.existing_image}")
         # logger.info(f"🔍 DEBUG: source = {source}")
+        
+        # ✅ CHECK: If custom metadata is provided, skip AI generation
+        if request.existing_metadata and request.existing_metadata.get("skip_ai_generation"):
+            logger.info("🔍 Using existing metadata, skipping AI generation")
+            
+            # Extract metadata from existing_metadata
+            metadata_dict = request.existing_metadata
+            
+            # Ensure image URL exists
+            image_url = request.existing_image or metadata_dict.get("image", "")
+            
+            if not image_url:
+                image_url = "https://placehold.co/600x400/6366f1/ffffff?text=" + metadata_dict.get("name", "Token").replace(" ", "+")
+            
+            # ✅ CRITICAL: Prepare complete metadata
+            complete_metadata = {
+                "name": metadata_dict.get("name", "Token"),
+                "symbol": metadata_dict.get("symbol", "TKN"),
+                "description": metadata_dict.get("description", "Token created via Flash Sniper"),
+                "image": image_url,
+                "external_url": "https://pump.fun",
+                "showName": True,
+                "createdOn": "https://pump.fun",
+                "twitter": "",
+                "website": "https://pump.fun",
+            }
+            
+            # ✅ Upload to IPFS (this will use the existing image and metadata)
+            logger.info("Uploading existing metadata to IPFS...")
+            ipfs_result = await ipfs_service.upload_metadata_with_image(complete_metadata)
+            
+            if not ipfs_result["success"]:
+                logger.warning(f"IPFS upload failed: {ipfs_result.get('error')}")
+                metadata_uri = None
+                image_url_for_onchain = image_url
+            else:
+                metadata_uri = ipfs_result["metadata_uri"]
+                image_url_for_onchain = ipfs_result["full_metadata"]["image"]
+                logger.info(f"✅ Metadata uploaded to IPFS: {metadata_uri}")
+            
+            generation_time = int((time.time() - start_time) * 1000)
+            
+            logger.info(f"✅ Existing metadata processed successfully in {generation_time}ms")
+            
+            return SimpleMetadataResponse(
+                success=True,
+                name=metadata_dict.get("name", "Token"),
+                symbol=metadata_dict.get("symbol", "TKN"),
+                metadata_uri=metadata_uri,
+                image_url=image_url_for_onchain,
+                description=metadata_dict.get("description", ""),
+                request_id=f"custom_{int(time.time())}",
+                generation_time_ms=generation_time
+            )
 
         # CHOOSE SOURCE: AI or Trending
         if source == "trending":
-            # logger.info(f"Generating metadata from X Trends...")
+            logger.info(f"Generating metadata from X Trends...")
             
             # Step 1: Get trending topics WITH IMAGES
             trends = await simple_x_analyzer.get_usa_trending_for_tokens()
@@ -1505,7 +1546,7 @@ async def generate_metadata(
         
         # For AI source or fallback
         else:
-            # logger.info(f"Generating AI metadata with style: {request.style}")
+            logger.info(f"Generating AI metadata with style: {request.style}")
             if not request.keywords:
                 request.keywords = "crypto, blockchain, innovation"
             if not request.theme:
@@ -1683,320 +1724,6 @@ async def generate_metadata(
         )
        
 # Frontend will call this
-# @router.post("/generate-metadata-unified")
-# async def generate_metadata_unified(
-#     style: str = "trending",
-#     keywords: str = "",
-#     source: str = "trending",
-#     use_images: bool = True,
-#     category: str = "meme",
-#     use_dalle: bool = False
-# ):
-#     """
-#     Unified endpoint for frontend - supports both AI and Trending generation
-#     """
-#     try:
-#         # logger.info(f"📡 Unified metadata generation called with source: {source}")
-        
-#         if source == "trending":
-#             logger.info("🚀 Generating metadata from X Trends...")
-            
-#             # Call the trending endpoint with proper parameters
-#             async with httpx.AsyncClient(timeout=60.0) as client:
-#                 response = await client.post(
-#                     f"{settings.BACKEND_BASE_URL}/ai/generate-from-trending-simple",
-#                     json={
-#                         "style": style,
-#                         "use_x_image": use_images  # ✅ Fixed: Correct parameter name
-#                     },
-#                     headers={"X-API-Key": settings.ONCHAIN_API_KEY}
-#                 )
-                
-#                 if response.status_code != 200:
-#                     logger.error(f"Trending API error: {response.status_code}")
-#                     return {
-#                         "success": False,
-#                         "error": f"Trending API error: {response.status_code}",
-#                         "source": "trending"
-#                     }
-                
-#                 result = response.json()  # ✅ This should be a dict
-                
-#                 # ✅ FIX: Handle the SimpleMetadataResponse object properly
-#                 if isinstance(result, dict) and result.get("success"):
-#                     return {
-#                         "success": True,
-#                         "source": "trending",
-#                         "metadata": {
-#                             "name": result["name"],
-#                             "symbol": result["symbol"],
-#                             "description": result.get("description", ""),
-#                             "metadata_uri": result["metadata_uri"],
-#                             "image_url": result["image_url"]
-#                         },
-#                         "generated_from_trend": True
-#                     }
-#                 else:
-#                     logger.error(f"Trending generation failed: {result}")
-#                     return {
-#                         "success": False,
-#                         "error": "Trending generation failed",
-#                         "source": "trending"
-#                     }
-                    
-#         elif source == "ai":
-#             # logger.info("🤖 Generating AI metadata...")
-            
-#             # Call the AI endpoint with correct parameters
-#             metadata_request = MetadataRequest(
-#                 style=style,
-#                 keywords=keywords,
-#                 category=category,
-#                 use_dalle=use_dalle, 
-#                 theme=f"Token created via Flash Sniper"
-#             )
-            
-#             # ✅ FIX: Call generate_metadata directly instead of HTTP
-#             response = await generate_metadata(metadata_request, source="ai")
-            
-#             if not response or not response.success:
-#                 return {
-#                     "success": False,
-#                     "error": "AI metadata generation failed",
-#                     "source": "ai"
-#                 }
-            
-#             return {
-#                 "success": True,
-#                 "source": "ai",
-#                 "metadata": {
-#                     "name": response.name,
-#                     "symbol": response.symbol,
-#                     "description": response.description,
-#                     "metadata_uri": response.metadata_uri,
-#                     "image_url": response.image_url
-#                 },
-#                 "generated_from_trend": False
-#             }
-        
-#         elif source == "tweet_accounts":
-#             logger.info("📈 Generating metadata from latest crypto account tweet...")
-            
-#             # Call the account-based endpoint
-#             async with httpx.AsyncClient(timeout=60.0) as client:
-#                 response = await client.post(
-#                     f"{settings.BACKEND_BASE_URL}/ai/generate-from-latest-account",
-#                     json={
-#                         "style": style,
-#                         "use_tweet_image": use_images
-#                     },
-#                     headers={"X-API-Key": settings.ONCHAIN_API_KEY}
-#                 )
-                
-#                 if response.status_code != 200:
-#                     logger.error(f"Accounts API error: {response.status_code}")
-#                     return {
-#                         "success": False,
-#                         "error": f"Accounts API error: {response.status_code}",
-#                         "source": "accounts"
-#                     }
-                
-#                 result = response.json()
-                
-#                 if isinstance(result, dict) and result.get("success"):
-#                     return {
-#                         "success": True,
-#                         "source": "accounts",
-#                         "metadata": {
-#                             "name": result["metadata"]["name"],
-#                             "symbol": result["metadata"]["symbol"],
-#                             "description": result["metadata"]["description"],
-#                             "metadata_uri": result["metadata"]["metadata_uri"],
-#                             "image_url": result["metadata"]["image_url"]
-#                         },
-#                         "tweet_info": result.get("tweet_info"),
-#                         "generated_from_account": True
-#                     }
-#                 else:
-#                     logger.error(f"Account generation failed: {result}")
-#                     return {
-#                         "success": False,
-#                         "error": "Account generation failed",
-#                         "source": "accounts"
-#                     }   
-            
-#         else:
-#             pass 
-        
-#     except Exception as e:
-#         logger.error(f"Unified generation failed: {e}", exc_info=True)
-#         return {
-#             "success": False,
-#             "error": str(e),
-#             "source": source
-#         }
-  
-# @router.post("/generate-metadata-unified")
-# async def generate_metadata_unified(
-#     request: UnifiedRequest = Body(...)
-# ):
-#     """
-#     Unified endpoint for frontend - supports AI, Trending, and Crypto Accounts generation
-#     """
-#     try:
-#         source = request.source
-#         style = request.style
-#         use_images = request.use_images
-#         keywords=request.keywords
-#         category=request.category
-#         use_dalle=request.use_dalle
-        
-#         logger.info(f"📡 Unified metadata generation called with source: {source}")
-        
-#         if source == "trending":
-#             logger.info("🚀 Generating metadata from X Trends...")
-            
-#             # Call the trending endpoint
-#             async with httpx.AsyncClient(timeout=60.0) as client:
-#                 response = await client.post(
-#                     f"{settings.BACKEND_BASE_URL}/ai/generate-from-trending-simple",
-#                     json={
-#                         "style": style,
-#                         "use_x_image": use_images
-#                     },
-#                     headers={"X-API-Key": settings.ONCHAIN_API_KEY}
-#                 )
-                
-#                 if response.status_code != 200:
-#                     logger.error(f"Trending API error: {response.status_code}")
-#                     return {
-#                         "success": False,
-#                         "error": f"Trending API error: {response.status_code}",
-#                         "source": "trending"
-#                     }
-                
-#                 result = response.json()
-                
-#                 if isinstance(result, dict) and result.get("success"):
-#                     return {
-#                         "success": True,
-#                         "source": "trending",
-#                         "metadata": {
-#                             "name": result["name"],
-#                             "symbol": result["symbol"],
-#                             "description": result.get("description", ""),
-#                             "metadata_uri": result["metadata_uri"],
-#                             "image_url": result["image_url"]
-#                         },
-#                         "generated_from_trend": True
-#                     }
-#                 else:
-#                     logger.error(f"Trending generation failed: {result}")
-#                     return {
-#                         "success": False,
-#                         "error": "Trending generation failed",
-#                         "source": "trending"
-#                     }
-                    
-#         elif source == "tweet_accounts":
-#             logger.info("📈 Generating metadata from latest crypto account tweet...")
-            
-#             # Call the account-based endpoint
-#             async with httpx.AsyncClient(timeout=60.0) as client:
-#                 response = await client.post(
-#                     f"{settings.BACKEND_BASE_URL}/ai/generate-from-latest-account",
-#                     json={
-#                         "style": "professional",
-#                         "use_tweet_image": use_images,  # FIXED: Correct parameter name
-#                         "method": "search"
-#                     },
-#                     headers={"X-API-Key": settings.ONCHAIN_API_KEY}
-#                 )
-                
-#                 if response.status_code != 200:
-#                     # Log the actual error response
-#                     error_text = await response.text()
-#                     logger.error(f"Accounts API error: {response.status_code} - {error_text}")
-#                     return {
-#                         "success": False,
-#                         "error": f"Accounts API error: {response.status_code} - {error_text}",
-#                         "source": "tweet_accounts"
-#                     }
-                
-#                 result = response.json()
-#                 logger.info(f"Accounts generation result: {result}")
-                
-#                 if isinstance(result, dict) and result.get("success"):
-#                     return {
-#                         "success": True,
-#                         "source": "tweet_accounts",
-#                         "metadata": {
-#                             "name": result["metadata"]["name"],
-#                             "symbol": result["metadata"]["symbol"],
-#                             "description": result["metadata"]["description"],
-#                             "metadata_uri": result["metadata"]["metadata_uri"],
-#                             "image_url": result["metadata"]["image_url"]
-#                         },
-#                         "tweet_info": result.get("tweet_info"),
-#                         "generated_from_account": True
-#                     }
-#                 else:
-#                     logger.error(f"Account generation failed: {result}")
-#                     return {
-#                         "success": False,
-#                         "error": "Account generation failed",
-#                         "source": "tweet_accounts"
-#                     }
-                    
-#         elif source == "ai":
-#             logger.info("🤖 Generating AI metadata...")
-            
-#             # Call the AI endpoint with correct parameters
-#             metadata_request = MetadataRequest(
-#                 style=style,
-#                 keywords=keywords,
-#                 category=category,
-#                 use_dalle=use_dalle, 
-#                 theme=f"Token created via Flash Sniper"
-#             )
-            
-#             # Call generate_metadata directly
-#             response = await generate_metadata(metadata_request, source="ai")
-            
-#             if not response or not response.success:
-#                 return {
-#                     "success": False,
-#                     "error": "AI metadata generation failed",
-#                     "source": "ai"
-#                 }
-            
-#             return {
-#                 "success": True,
-#                 "source": "ai",
-#                 "metadata": {
-#                     "name": response.name,
-#                     "symbol": response.symbol,
-#                     "description": response.description,
-#                     "metadata_uri": response.metadata_uri,
-#                     "image_url": response.image_url
-#                 },
-#                 "generated_from_trend": False
-#             }
-#         else:
-#             return {
-#                 "success": False,
-#                 "error": f"Unknown source: {source}",
-#                 "source": source
-#             }
-        
-#     except Exception as e:
-#         logger.error(f"Unified generation failed: {e}", exc_info=True)
-#         return {
-#             "success": False,
-#             "error": str(e),
-#             "source": source
-#         }
-   
 @router.post("/generate-metadata-unified")
 async def generate_metadata_unified(
     request: UnifiedRequest = Body(...)
@@ -2164,6 +1891,65 @@ async def generate_metadata_unified(
             "source": source
         }
           
+@router.post("/upload-custom-metadata")
+async def upload_custom_metadata_to_ipfs(
+    metadata: Dict[str, Any]
+):
+    """
+    Upload custom metadata to IPFS (for when users provide their own metadata)
+    """
+    try:
+        # Extract required fields
+        name = metadata.get("name", "Custom Token")
+        symbol = metadata.get("symbol", "CTKN")
+        description = metadata.get("description", "Token created via Flash Sniper")
+        image_url = metadata.get("image_url", metadata.get("image", ""))
+        
+        logger.info(f"Uploading custom metadata to IPFS: {name} ({symbol})")
+        
+        if not image_url:
+            raise HTTPException(
+                status_code=400,
+                detail="Image URL is required for custom metadata"
+            )
+        
+        # Prepare clean metadata for pump.fun
+        pumpfun_metadata = {
+            "name": name,
+            "symbol": symbol,
+            "description": description[:100] if len(description) > 100 else description,
+            "image": image_url,  # This will be uploaded to IPFS
+            "showName": True,
+            "createdOn": "https://pump.fun",
+        }
+        
+        # Upload to IPFS using the existing service
+        ipfs_result = await ipfs_service.upload_metadata_with_image(pumpfun_metadata)
+        
+        if not ipfs_result["success"]:
+            raise HTTPException(
+                status_code=500,
+                detail=f"IPFS upload failed: {ipfs_result.get('error')}"
+            )
+        
+        return {
+            "success": True,
+            "name": name,
+            "symbol": symbol,
+            "metadata_uri": ipfs_result["metadata_uri"],
+            "image_url": ipfs_result["full_metadata"]["image"],
+            "metadata_cid": ipfs_result["metadata_cid"],
+            "message": "Custom metadata uploaded to IPFS successfully"
+        }
+        
+    except Exception as e:
+        logger.error(f"Custom metadata upload failed: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Custom metadata upload failed: {str(e)}"
+        )
+
+
 # ✅ Working    
 @router.post("/generate-metadata-batch", response_model=BatchMetadataResponse)
 async def generate_metadata_batch(request: BatchMetadataRequest) -> BatchMetadataResponse:

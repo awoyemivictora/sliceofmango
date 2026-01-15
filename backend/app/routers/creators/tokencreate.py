@@ -244,7 +244,7 @@ class LaunchCoordinator:
                 "launch_id": self.launch_id,
                 "error": str(e)
             }
-            
+
     # async def _ensure_metadata(self):
     #     """Ensure metadata exists, generate if not"""
     #     try:
@@ -252,72 +252,57 @@ class LaunchCoordinator:
     #             logger.info(f"No metadata found for launch {self.launch_id}, generating...")
                 
     #             if self.launch_config:
-    #                 # Try to get from custom_metadata
-    #                 custom_metadata = self.launch_config.get("custom_metadata")
-    #                 if custom_metadata:
-    #                     self.metadata_for_token = custom_metadata
-    #                     logger.info(f"Using custom metadata from config")
-                        
-    #                     # ✅ Ensure URI exists
-    #                     if "uri" not in self.metadata_for_token and "metadata_uri" not in self.metadata_for_token:
-    #                         # Try to use image as fallback URI
-    #                         if "image_url" in self.metadata_for_token:
-    #                             self.metadata_for_token["uri"] = self.metadata_for_token["image_url"]
-    #                         elif "image" in self.metadata_for_token:
-    #                             self.metadata_for_token["uri"] = self.metadata_for_token["image"]
-    #                         else:
-    #                             self.metadata_for_token["uri"] = "https://placehold.co/600x400"
-    #                         logger.info(f"Added fallback URI: {self.metadata_for_token['uri']}")
-    #                 elif self.launch_config.get("use_ai_metadata", True):
+    #                 # Get metadata source from config
+    #                 metadata_source = self.launch_config.get("metadata_source", "ai")
+    #                 use_images = self.launch_config.get("use_images", True)
+    #                 style = self.launch_config.get("metadata_style", "trending")
+                    
+    #                 if metadata_source == "trending":
+    #                     # Generate from trending
+    #                     async with httpx.AsyncClient(timeout=60.0) as client:
+    #                         response = await client.post(
+    #                             f"{settings.BACKEND_BASE_URL}/ai/generate-from-trending-simple",
+    #                             json={
+    #                                 "style": style,
+    #                                 "use_x_image": use_images
+    #                             },
+    #                             headers={"X-API-Key": settings.ONCHAIN_API_KEY}
+    #                         )
+                            
+    #                         if response.status_code == 200:
+    #                             result = response.json()
+    #                             if result.get("success"):
+    #                                 self.metadata_for_token = {
+    #                                     "name": result["name"],
+    #                                     "symbol": result["symbol"],
+    #                                     "metadata_uri": result["metadata_uri"],
+    #                                     "image_url": result["image_url"],
+    #                                     "description": result.get("description", ""),
+    #                                     "source": "trending"
+    #                                 }
+    #                 else:
     #                     # Generate AI metadata
-    #                     from app.schemas.creators.openai import MetadataRequest
-                        
     #                     metadata_request = MetadataRequest(
-    #                         style=self.launch_config.get("metadata_style", "meme"),
+    #                         style=style,
     #                         keywords=self.launch_config.get("metadata_keywords", ""),
     #                         category=self.launch_config.get("metadata_category", "meme"),
-    #                         theme=f"Launch by {self.user.wallet_address[:8]}...",
-    #                         use_dalle=self.launch_config.get("use_dalle_generation", False)
+    #                         use_dalle=use_images,
+    #                         theme=f"Launch by {self.user.wallet_address[:8]}..."
     #                     )
                         
-    #                     # Call the OpenAI metadata generation function
-    #                     from app.routers.creators.openai import generate_metadata
-    #                     response = await generate_metadata(metadata_request)
+    #                     response = await generate_metadata(metadata_request, source="ai")
                         
-    #                     if not response or not response.success:
-    #                         raise Exception("AI metadata generation failed")
-                        
-    #                     # ✅ Use the simplified response directly
-    #                     self.metadata_for_token = {
-    #                         "name": response.name,
-    #                         "symbol": response.symbol,
-    #                         "metadata_uri": response.metadata_uri,  # This is what goes on-chain
-    #                         "image_url": response.image_url,
-    #                         "description": response.description
-    #                     }
-    #                     logger.info(f"AI metadata generated via _ensure_metadata")
-                        
-    #                 else:
-    #                     # Generate basic metadata
-    #                     timestamp = int(datetime.utcnow().timestamp())
-    #                     self.metadata_for_token = {
-    #                         "name": f"Token_{timestamp}",
-    #                         "symbol": f"TKN{timestamp % 10000:04d}",
-    #                         "image": "https://placehold.co/600x400",
-    #                         "uri": "https://placehold.co/600x400",
-    #                         "description": "Token created via Flash Sniper",
-    #                         "attributes": [
-    #                             {"trait_type": "Platform", "value": "Flash Sniper"},
-    #                             {"trait_type": "Created", "value": datetime.utcnow().strftime("%Y-%m-%d")},
-    #                         ]
-    #                     }
-    #                     logger.info(f"Created fallback metadata: {self.metadata_for_token['name']}")
-            
-    #         # ✅ Log what we have
-    #         logger.info(f"Final metadata keys: {list(self.metadata_for_token.keys())}")
-    #         logger.info(f"Metadata URI: {self.metadata_for_token.get('uri', 'No URI found')}")
-    #         logger.info(f"Metadata URI alternative: {self.metadata_for_token.get('metadata_uri', 'No metadata_uri found')}")
-            
+    #                     if response and response.success:
+    #                         self.metadata_for_token = {
+    #                             "name": response.name,
+    #                             "symbol": response.symbol,
+    #                             "metadata_uri": response.metadata_uri,
+    #                             "image_url": response.image_url,
+    #                             "description": response.description,
+    #                             "source": "ai"
+    #                         }
+                            
+                            
     #     except Exception as e:
     #         logger.error(f"Failed to ensure metadata: {e}", exc_info=True)
     #         # Fallback metadata
@@ -329,7 +314,7 @@ class LaunchCoordinator:
     #             "uri": "https://placehold.co/600x400",
     #             "description": "Token created via Flash Sniper"
     #         }
-
+          
     async def _ensure_metadata(self):
         """Ensure metadata exists, generate if not"""
         try:
@@ -337,6 +322,57 @@ class LaunchCoordinator:
                 logger.info(f"No metadata found for launch {self.launch_id}, generating...")
                 
                 if self.launch_config:
+                    # Check if we should skip AI generation (user provided custom metadata)
+                    custom_metadata = self.launch_config.get("custom_metadata")
+                    
+                    if custom_metadata and custom_metadata.get("skip_ai_generation"):
+                        logger.info("Using existing metadata, skipping AI generation")
+                        
+                        # Use the existing metadata from custom_metadata
+                        self.metadata_for_token = custom_metadata
+                        
+                        # ✅ CRITICAL FIX: Check if we already have metadata_uri
+                        if not self.metadata_for_token.get("metadata_uri"):
+                            # We need to upload complete metadata to IPFS
+                            logger.info("No metadata_uri found, uploading complete metadata to IPFS...")
+                            
+                            # Prepare complete metadata for IPFS upload
+                            complete_metadata = {
+                                "name": self.metadata_for_token.get("name", "Custom Token"),
+                                "symbol": self.metadata_for_token.get("symbol", "CTKN"),
+                                "description": self.metadata_for_token.get("description", "Token created via Flash Sniper"),
+                                "image": self.metadata_for_token.get("image_url", ""),  # Use the uploaded image URL
+                                "showName": True,
+                                "createdOn": "https://pump.fun",
+                            }
+                            
+                            # Upload to IPFS
+                            async with httpx.AsyncClient(timeout=30.0) as client:
+                                response = await client.post(
+                                    f"{settings.BACKEND_BASE_URL}/ipfs/upload-metadata",
+                                    json=complete_metadata,
+                                    headers={"X-API-Key": settings.ONCHAIN_API_KEY}
+                                )
+                                
+                                if response.status_code == 200:
+                                    result = response.json()
+                                    if result.get("success"):
+                                        metadata_uri = result.get("metadata_uri")
+                                        image_url = result.get("image_url")
+                                        
+                                        # Update metadata_for_token with IPFS URLs
+                                        self.metadata_for_token["metadata_uri"] = metadata_uri
+                                        self.metadata_for_token["image_url"] = image_url
+                                        logger.info(f"✅ Custom metadata uploaded to IPFS: {metadata_uri}")
+                                    else:
+                                        raise Exception(f"IPFS upload failed: {result.get('error')}")
+                                else:
+                                    raise Exception(f"IPFS upload failed: HTTP {response.status_code}")
+                        
+                        logger.info(f"✅ Using custom metadata: {self.metadata_for_token.get('name')}")
+                        logger.info(f"✅ Metadata URI: {self.metadata_for_token.get('metadata_uri')}")
+                        return  # Exit early, we have custom metadata
+                    
                     # Get metadata source from config
                     metadata_source = self.launch_config.get("metadata_source", "ai")
                     use_images = self.launch_config.get("use_images", True)
@@ -387,7 +423,6 @@ class LaunchCoordinator:
                                 "source": "ai"
                             }
                             
-                            
         except Exception as e:
             logger.error(f"Failed to ensure metadata: {e}", exc_info=True)
             # Fallback metadata
@@ -396,9 +431,10 @@ class LaunchCoordinator:
                 "name": f"Token_{timestamp}",
                 "symbol": f"TKN{timestamp % 10000:04d}",
                 "image": "https://placehold.co/600x400",
-                "uri": "https://placehold.co/600x400",
+                "metadata_uri": "https://placehold.co/600x400",
                 "description": "Token created via Flash Sniper"
-            }
+            }   
+            
                         
     async def _calculate_results(self) -> Dict[str, Any]:
         """Calculate launch results"""
@@ -461,6 +497,95 @@ class LaunchCoordinator:
         
         return bot_cost + creator_cost + fees
     
+    # async def _get_metadata(self, config: LaunchConfigCreate):
+    #     """Get or generate metadata using OpenAI"""
+    #     try:
+    #         logger.info(f"Generating metadata for launch {self.launch_id}")
+            
+    #         # Convert config to dict for easier access
+    #         config_dict = config.model_dump()
+            
+    #         if config_dict.get("custom_metadata"):
+    #             # Use custom metadata provided by user
+    #             custom_data = config_dict["custom_metadata"]
+                
+    #             # ✅ Check if custom metadata already has a URI
+    #             if custom_data.get("metadata_uri"):
+    #                 # User provided complete metadata including URI
+    #                 self.metadata_for_token = {
+    #                     "name": custom_data.get("name"),
+    #                     "symbol": custom_data.get("symbol"),
+    #                     "metadata_uri": custom_data.get("metadata_uri"),
+    #                     "image_url": custom_data.get("image_url", custom_data.get("image"))
+    #                 }
+    #             else:
+    #                 # Generate metadata for custom token
+    #                 # You might want to call generate_metadata here with custom data
+    #                 raise Exception("Custom metadata must include metadata_uri for on-chain use")
+                    
+    #         elif config_dict.get("use_ai_metadata", True):
+    #             # Generate AI metadata
+    #             metadata_request = MetadataRequest(
+    #                 style=config_dict.get("metadata_style", "meme"),
+    #                 keywords=config_dict.get("metadata_keywords", ""),
+    #                 category=config_dict.get("metadata_category", "meme"),
+    #                 theme=f"Launch by {self.user.wallet_address[:8]}...",
+    #                 use_dalle=config_dict.get("use_dalle_generation", False)
+    #             )
+                
+    #             # Call the OpenAI metadata generation function
+    #             response = await generate_metadata(metadata_request)
+                
+    #             if not response or not response.success:
+    #                 raise Exception("AI metadata generation failed")
+                
+    #             # ✅ Use the simplified response directly
+    #             self.metadata_for_token = {
+    #                 "name": response.name,
+    #                 "symbol": response.symbol,
+    #                 "metadata_uri": response.metadata_uri,  # This is what goes on-chain
+    #                 "image_url": response.image_url,
+    #                 "description": response.description
+    #             }
+                
+    #             logger.info(f"AI metadata generated: {self.metadata_for_token['name']} ({self.metadata_for_token['symbol']})")
+    #             logger.info(f"Metadata URI: {self.metadata_for_token['metadata_uri']}")
+                
+    #         else:
+    #             # Generate basic metadata
+    #             timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+    #             self.metadata_for_token = {
+    #                 "name": f"Token_{timestamp}",
+    #                 "symbol": f"TKN{timestamp[-4:]}",
+    #                 "description": "Token created via Flash Sniper",
+    #                 "image_url": "https://placehold.co/600x400",
+    #                 # For basic tokens without IPFS, we can use a data URI or placeholder
+    #                 "metadata_uri": f"data:application/json,{json.dumps({
+    #                     'name': f'Token_{timestamp}',
+    #                     'symbol': f'TKN{timestamp[-4:]}',
+    #                     'image': 'https://placehold.co/600x400'
+    #                 })}"
+    #             }
+            
+    #         logger.info(f"✅ Metadata ready: {self.metadata_for_token['name']}")
+    #         logger.info(f"✅ Metadata URI: {self.metadata_for_token.get('metadata_uri', 'No URI')}")
+            
+    #     except Exception as e:
+    #         logger.error(f"Failed to generate metadata: {e}", exc_info=True)
+    #         # Fallback to basic metadata
+    #         timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+    #         self.metadata_for_token = {
+    #             "name": f"Token_{timestamp}",
+    #             "symbol": f"TKN{timestamp[-4:]}",
+    #             "description": "Token created via Flash Sniper",
+    #             "image_url": "https://placehold.co/600x400",
+    #             "metadata_uri": f"data:application/json,{json.dumps({
+    #                 'name': f'Token_{timestamp}',
+    #                 'symbol': f'TKN{timestamp[-4:]}',
+    #                 'image': 'https://placehold.co/600x400'
+    #             })}"
+    #         }  
+    
     async def _get_metadata(self, config: LaunchConfigCreate):
         """Get or generate metadata using OpenAI"""
         try:
@@ -469,24 +594,52 @@ class LaunchCoordinator:
             # Convert config to dict for easier access
             config_dict = config.model_dump()
             
-            if config_dict.get("custom_metadata"):
-                # Use custom metadata provided by user
-                custom_data = config_dict["custom_metadata"]
+            # Check if we have custom metadata with skip_ai_generation flag
+            custom_metadata = config_dict.get("custom_metadata")
+            
+            if custom_metadata and custom_metadata.get("skip_ai_generation"):
+                logger.info("Skipping AI generation, using existing metadata")
                 
-                # ✅ Check if custom metadata already has a URI
-                if custom_data.get("metadata_uri"):
-                    # User provided complete metadata including URI
-                    self.metadata_for_token = {
-                        "name": custom_data.get("name"),
-                        "symbol": custom_data.get("symbol"),
-                        "metadata_uri": custom_data.get("metadata_uri"),
-                        "image_url": custom_data.get("image_url", custom_data.get("image"))
-                    }
-                else:
-                    # Generate metadata for custom token
-                    # You might want to call generate_metadata here with custom data
-                    raise Exception("Custom metadata must include metadata_uri for on-chain use")
+                # Use the custom metadata directly
+                self.metadata_for_token = custom_metadata
+                
+                # ✅ CRITICAL: Check if metadata already has metadata_uri
+                if not self.metadata_for_token.get("metadata_uri"):
+                    logger.info("Uploading custom metadata to IPFS...")
                     
+                    # Prepare complete metadata for IPFS upload
+                    complete_metadata = {
+                        "name": self.metadata_for_token.get("name", "Custom Token"),
+                        "symbol": self.metadata_for_token.get("symbol", "CTKN"),
+                        "description": self.metadata_for_token.get("description", "Token created via Flash Sniper"),
+                        "image": self.metadata_for_token.get("image_url", ""),
+                        "showName": True,
+                        "createdOn": "https://pump.fun",
+                    }
+                    
+                    # Call IPFS upload endpoint
+                    async with httpx.AsyncClient(timeout=30.0) as client:
+                        response = await client.post(
+                            f"{settings.BACKEND_BASE_URL}/ipfs/upload-metadata",
+                            json=complete_metadata,
+                            headers={"X-API-Key": settings.ONCHAIN_API_KEY}
+                        )
+                        
+                        if response.status_code == 200:
+                            result = response.json()
+                            if result.get("success"):
+                                self.metadata_for_token["metadata_uri"] = result.get("metadata_uri")
+                                self.metadata_for_token["image_url"] = result.get("image_url")
+                                logger.info(f"✅ Custom metadata uploaded to IPFS: {result.get('metadata_uri')}")
+                            else:
+                                raise Exception(f"IPFS upload failed: {result.get('error')}")
+                        else:
+                            raise Exception(f"IPFS upload failed: HTTP {response.status_code}")
+                
+                logger.info(f"✅ Using custom metadata: {self.metadata_for_token.get('name')}")
+                logger.info(f"✅ Metadata URI: {self.metadata_for_token.get('metadata_uri')}")
+                return
+                
             elif config_dict.get("use_ai_metadata", True):
                 # Generate AI metadata
                 metadata_request = MetadataRequest(
@@ -548,7 +701,7 @@ class LaunchCoordinator:
                     'symbol': f'TKN{timestamp[-4:]}',
                     'image': 'https://placehold.co/600x400'
                 })}"
-            }  
+            }
     
     async def _get_available_funded_bots(self, count: int, min_balance: float = 0.0001):
         """Get bot wallets that have sufficient balance for buying"""
@@ -1950,6 +2103,12 @@ async def create_token_launch(
         
         # Create launch coordinator
         coordinator = LaunchCoordinator(launch_id, current_user, db)
+        
+        # Log metadata info if using existing metadata
+        if launch_request.config.custom_metadata and launch_request.config.custom_metadata.get("skip_ai_generation"):
+            logger.info(f"Launch {launch_id}: Using existing metadata, skipping AI generation")
+            logger.info(f"Token name: {launch_request.config.custom_metadata.get('name')}")
+            logger.info(f"Token symbol: {launch_request.config.custom_metadata.get('symbol')}")
         
         # Prepare launch
         success = await coordinator.prepare_launch(launch_request.config)
