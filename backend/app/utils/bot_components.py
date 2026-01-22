@@ -1700,6 +1700,14 @@ class ConnectionManager:
             "timestamp": datetime.utcnow().isoformat()
         }
         await self.send_to_launch(launch_id, message)
+        
+    async def send_personal_message(self, message: str, wallet_address: str):
+        ws = self.active_connections.get(wallet_address)
+        if ws:
+            try:
+                await ws.send_text(message)
+            except:
+                self.disconnect(wallet_address)
 
 
 # Update the global instance

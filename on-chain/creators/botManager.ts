@@ -168,11 +168,6 @@ export async function fundBots(
   }
 }
 
-// function getBotAmount(bot: any): number {
-//     return bot.amount_sol || bot.buy_amount || 0.0001;
-// }
-
-// In botManager.ts, update the getBotAmount function:
 function getBotAmount(bot: any): number {
     // ✅ Prioritize amount_sol (dynamic amount)
     if (bot.amount_sol !== undefined) {
@@ -527,6 +522,336 @@ export async function executeAtomicLaunch(
   }
 }
 
+// export async function createCompleteLaunchBundle(
+//   connection: Connection,
+//   request: {
+//     user_wallet: string;
+//     metadata: any;
+//     creator_buy_amount: number;
+//     bot_buys: Array<{public_key: string, amount_sol: number}>;
+//     use_jito?: boolean;
+//     slippage_bps?: number;
+//     use_advanced_strategy?: boolean;  // Enable advanced strategy
+//     launch_id?: string;
+//   }
+// ): Promise<ExecuteBotBuysResponse & { advanced_results?: any }> {
+//   let mint: PublicKey;
+//   let createSignature: string | undefined;
+//   let botSignatures: string[] = [];
+//   let advancedResults: any = null;
+  
+//   try {
+//     console.log('🚀 createCompleteLaunchBundle called');
+//     console.log(`   User: ${request.user_wallet}`);
+    
+//     // ✅ FORCE ADVANCED STRATEGY TO RUN ALWAYS
+//     const useAdvancedStrategy = true; // <-- CHANGE THIS LINE
+//     console.log(`   Advanced Strategy: ${useAdvancedStrategy ? 'ENABLED (Forced)' : 'Disabled'}`);
+    
+//     console.log(`   Bot buys count: ${request.bot_buys?.length || 0}`);
+    
+//     // ✅ ADD DETAILED LOGGING OF BOT BUYS
+//     if (request.bot_buys && request.bot_buys.length > 0) {
+//       console.log('📋 Bot details received:');
+//       request.bot_buys.slice(0, 3).forEach((bot, i) => {
+//         console.log(`   Bot ${i+1}: ${bot.public_key.slice(0, 8)}..., Amount: ${bot.amount_sol} SOL`);
+//       });
+//       if (request.bot_buys.length > 3) {
+//         console.log(`   ... and ${request.bot_buys.length - 3} more bots`);
+//       }
+//     } else {
+//       console.log('⚠️ WARNING: No bot buys received!');
+//       console.log('Request keys:', Object.keys(request));
+//       console.log('Full request:', JSON.stringify(request, null, 2));
+//     }
+    
+//     // ============================================
+//     // STEP 1: PREPARE BOTS
+//     // ============================================
+//     console.log(`🤖 STEP 1: Preparing ${request.bot_buys.length} bots for launch...`);
+    
+//     const botsReadyToSnipe = request.bot_buys; // Use ALL bots
+    
+//     // ============================================
+//     // STEP 2: CREATE TOKEN WITH CREATOR BUY
+//     // ============================================
+//     console.log(`🎯 STEP 2: Creating token with creator buy...`);
+    
+//     // Get user private key
+//     const userPrivateKey = await getDecryptedPrivateKey(
+//       request.user_wallet,
+//       process.env.ONCHAIN_API_KEY || ''
+//     );
+//     const secretKey = bs58.decode(userPrivateKey);
+//     const userKeypair = Keypair.fromSecretKey(secretKey);
+    
+//     // Generate mint keypair
+//     const mintKeypair = Keypair.generate();
+//     mint = mintKeypair.publicKey;
+    
+//     console.log(`🔑 Mint: ${mint.toBase58()}`);
+    
+//     // Get blockhash
+//     const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized');
+    
+//     // Build token creation transaction
+//     const createTx = await buildSimpleTokenCreationWithBuyTx(
+//       connection,
+//       userKeypair,
+//       mintKeypair,
+//       request.metadata,
+//       request.creator_buy_amount,
+//       blockhash
+//     );
+    
+//     // Send transaction
+//     console.log(`📤 Sending token creation transaction...`);
+//     createSignature = await connection.sendTransaction(createTx, {
+//       skipPreflight: true,
+//       maxRetries: 3,
+//       preflightCommitment: 'confirmed'
+//     });
+    
+//     console.log(`✅ Token creation sent: ${createSignature.slice(0, 16)}...`);
+//     console.log(`⏳ Waiting for confirmation...`);
+    
+//     // Wait for confirmation
+//     const confirmation = await Promise.race([
+//       connection.confirmTransaction({
+//         signature: createSignature,
+//         blockhash,
+//         lastValidBlockHeight
+//       }, 'confirmed'),
+//       new Promise(resolve => setTimeout(resolve, 3000))
+//     ]);
+    
+//     console.log(`🎉 Token created: ${mint.toBase58()}`);
+//     console.log(`🔗 Explorer: https://solscan.io/tx/${createSignature}`);
+
+//     // ✅ IMMEDIATE: Notify backend ASYNCHRONOUSLY (don't wait)
+//     const notifyBackend = async () => {
+//         try {
+//             const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
+//             await axios.post(`${backendUrl}/creators/token/notify-creation`, {
+//                 launch_id: request.launch_id,  // PASS launch_id from request
+//                 mint_address: mint.toBase58(),
+//                 success: true,
+//                 signature: createSignature,
+//                 timestamp: new Date().toISOString()
+//             }, {
+//                 headers: { 'X-API-Key': process.env.ONCHAIN_API_KEY },
+//                 timeout: 5000 // Short timeout
+//             });
+//         } catch (notifyError) {
+//             // Silent fail - don't block the launch
+//             console.warn('⚠️ Backend notification failed (non-critical):', notifyError.message);
+//         }
+//     };
+
+//     // Fire and forget - don't await
+//     notifyBackend();
+
+
+//     // ============================================
+//     // STEP 3: EXECUTE INITIAL BOT BUYS
+//     // ============================================
+//     if (botsReadyToSnipe.length > 0) {
+//       console.log(`⚡ STEP 3: Executing bot buys (bots already funded in backend earlier)...`);
+      
+//       // ✅ SKIP FUNDING - JUST EXECUTE BUYS
+//       // Wait a bit for bonding curve to initialize
+//       await new Promise(resolve => setTimeout(resolve, 2000));
+      
+//       console.log(`🤖 Calling executeBotBuys with ${botsReadyToSnipe.length} bots`);
+      
+//       // Execute initial bot buys using the executeBotBuys function
+//       const botBuyResult = await executeBotBuys(connection, {
+//         action: 'execute_bot_buys',
+//         mint_address: mint.toBase58(),
+//         user_wallet: request.user_wallet,
+//         bot_wallets: botsReadyToSnipe.map(bot => ({
+//           public_key: bot.public_key,
+//           amount_sol: bot.amount_sol // ✅ Use the dynamic amount from request
+//         })),
+//         use_jito: request.use_jito !== false,
+//         slippage_bps: request.slippage_bps || 500
+//       });
+      
+//       if (botBuyResult.success) {
+//         console.log(`✅ Initial bot buys successful`);
+//         if (botBuyResult.signatures) {
+//           botSignatures.push(...botBuyResult.signatures);
+//         }
+        
+//         // ============================================
+//         // STEP 5a: EXECUTE ADVANCED STRATEGY (ALWAYS RUN!)
+//         // ============================================
+//         if (useAdvancedStrategy) { // <-- Use the forced variable
+//           console.log(`\n🎯 STEP 5a: Executing advanced bot strategy...`);
+          
+//           try {
+//             // Import AdvancedBotOrchestrator
+//             const { AdvancedBotOrchestrator } = require('./advancedBotManager');
+            
+//             // Create orchestrator instance
+//             const orchestrator = new AdvancedBotOrchestrator(connection, request.user_wallet);
+
+//             // Cache the metadata in the orchestrator
+//             orchestrator.cacheTokenMetadata(mint, {
+//               name: request.metadata.name,
+//               symbol: request.metadata.symbol,
+//               uri: request.metadata.uri 
+//             });
+
+//             // ============================================
+//             // STEP 5b: EXECUTE ADVANCED STRATEGY (ALWAYS RUN!)
+//             // ============================================
+//             console.log(`\n📢 STEP 5b: Posting launch announcment to X...`);
+
+//             try {
+//               const announcementResult = await orchestrator.postTokenLaunchAnnouncement(mint);
+//               if (announcementResult.success) {
+//                 console.log(`✅ Launch announcement posted successfully!`);
+//                 console.log(`🔗 Tweet: https://x.com/user/status/${announcementResult.tweetId}`);
+//               } else {
+//                 console.log(`⚠️ Failed to post launch announcement`);
+//               }
+//             } catch (announcementError) {
+//               console.error(`❌ Error posting announcement:`, announcementError);
+//               // Don't fail the whole launch if announcment fails, just continue
+//             }
+              
+//             // Prepare bots for advanced strategy (with private keys)
+//             const preparedBots = await orchestrator['prepareBotWallets'](
+//               botsReadyToSnipe.map(bot => ({
+//                 public_key: bot.public_key,
+//                 amount_sol: bot.amount_sol,
+//                 private_key: undefined // Will be fetched from backend
+//               }))
+//             );
+            
+//             if (preparedBots.length > 0) {
+//               // Get creator from bonding curve
+//               const bondingCurve = await require('../pumpfun/pumpfun-idl-client').BondingCurveFetcher.fetch(
+//                 connection,
+//                 mint,
+//                 false
+//               );
+              
+//               const creatorWallet = bondingCurve?.creator.toBase58() || request.user_wallet;
+              
+//               // Calculate total budget
+//               const totalBudget = request.creator_buy_amount + 
+//                 botsReadyToSnipe.reduce((sum, bot) => sum + bot.amount_sol, 0);
+              
+//               // Execute advanced strategy
+//               console.log(`📊 Starting advanced strategy with:`);
+//               console.log(`   • ${preparedBots.length} prepared bots`);
+//               console.log(`   • ${totalBudget.toFixed(4)} SOL total budget`);
+//               console.log(`   • Creator: ${creatorWallet}`);
+              
+//               const advancedResult = await orchestrator.execute2HourOrganicLaunch(
+//                 mint,
+//                 preparedBots,
+//                 creatorWallet,
+//                 totalBudget
+//               );
+              
+//               advancedResults = advancedResult;
+              
+//               console.log(`\n✅ Advanced strategy completed!`);
+//               console.log(`📊 Results:`);
+//               console.log(`   • Success: ${advancedResult.success}`);
+//               console.log(`   • Total Profit: ${advancedResult.totalProfit?.toFixed(4)} SOL`);
+//               console.log(`   • ROI: ${advancedResult.roi?.toFixed(2)}%`);
+//               console.log(`   • Volume Generated: ${advancedResult.volumeGenerated?.toFixed(4)} SOL`);
+//               console.log(`   • Exit Reason: ${advancedResult.exitReason}`);
+              
+//               // Collect any additional signatures from advanced strategy
+//               if (advancedResult.phaseResults) {
+//                 const advancedSignatures = advancedResult.phaseResults.flatMap((phase: any) => 
+//                   phase.signatures || []
+//                 );
+//                 if (advancedSignatures.length > 0) {
+//                   botSignatures.push(...advancedSignatures);
+//                 }
+//               }
+//             } else {
+//               console.warn(`⚠️ No bots prepared for advanced strategy`);
+//             }
+            
+//           } catch (error: any) {
+//             console.error(`❌ Advanced strategy failed: ${error.message}`);
+//             console.error(`Stack: ${error.stack}`);
+//             // Continue with basic launch even if advanced strategy fails
+//           }
+//         } else {
+//           console.log(`⏭️  Skipping advanced strategy (disabled)`);
+//         }
+//       } else {
+//         console.error(`❌ Bot buys failed: ${botBuyResult.error}`);
+//       }
+//     } else {
+//       console.log(`⚠️ No bot buys to execute`);
+//     }
+    
+//     // ============================================
+//     // STEP 6: RETURN RESULTS
+//     // ============================================
+//     const totalCost = request.creator_buy_amount + 
+//                      botsReadyToSnipe.reduce((sum, bot) => sum + bot.amount_sol, 0);
+    
+//     // Build response
+//     const response: ExecuteBotBuysResponse & { advanced_results?: any } = {
+//       success: true,
+//       mint_address: mint.toBase58(),
+//       signatures: createSignature ? [createSignature, ...botSignatures] : [...botSignatures],
+//       estimated_cost: totalCost,
+//       stats: botsReadyToSnipe.length > 0 ? {
+//         total_bots: request.bot_buys.length,
+//         bots_with_balance: 0, // We don't check anymore
+//         bots_without_balance: request.bot_buys.length - botsReadyToSnipe.length,
+//         total_sol_spent: totalCost
+//       } : undefined
+//     };
+    
+//     // Add advanced results if available
+//     if (advancedResults) {
+//       response.advanced_results = advancedResults;
+//     }
+    
+//     console.log(`\n🎉 Launch Complete!`);
+//     console.log(`📊 Summary:`);
+//     console.log(`   • Mint: ${mint.toBase58()}`);
+//     console.log(`   • Total Cost: ${totalCost.toFixed(4)} SOL`);
+//     console.log(`   • Transactions: ${response.signatures?.length || 0}`);
+//     console.log(`   • Advanced Strategy: ${useAdvancedStrategy ? 'Used (Forced)' : 'Not used'}`); // <-- Updated
+    
+//     if (advancedResults) {
+//       console.log(`   • Advanced Profit: ${advancedResults.totalProfit?.toFixed(4)} SOL`);
+//       console.log(`   • Advanced ROI: ${advancedResults.roi?.toFixed(2)}%`);
+//     }
+    
+//     return response;
+
+//   } catch (error: any) {
+//     console.error(`❌ Atomic launch failed:`, error.message);
+//     console.error(`Stack:`, error.stack);
+    
+//     const errorResponse: ExecuteBotBuysResponse = {
+//       success: false,
+//       error: error.message
+//     };
+    
+//     // Add advanced results if partial execution happened
+//     if (advancedResults) {
+//       (errorResponse as any).advanced_results = advancedResults;
+//     }
+    
+//     return errorResponse;
+//   }
+// }
+
 export async function createCompleteLaunchBundle(
   connection: Connection,
   request: {
@@ -689,10 +1014,10 @@ export async function createCompleteLaunchBundle(
         }
         
         // ============================================
-        // STEP 5: EXECUTE ADVANCED STRATEGY (ALWAYS RUN!)
+        // STEP 5a: EXECUTE ADVANCED STRATEGY (ALWAYS RUN!)
         // ============================================
         if (useAdvancedStrategy) { // <-- Use the forced variable
-          console.log(`\n🎯 STEP 5: Executing advanced bot strategy...`);
+          console.log(`\n🎯 STEP 5a: Executing advanced bot strategy...`);
           
           try {
             // Import AdvancedBotOrchestrator
@@ -700,64 +1025,128 @@ export async function createCompleteLaunchBundle(
             
             // Create orchestrator instance
             const orchestrator = new AdvancedBotOrchestrator(connection, request.user_wallet);
-            
-            // Prepare bots for advanced strategy (with private keys)
-            const preparedBots = await orchestrator['prepareBotWallets'](
-              botsReadyToSnipe.map(bot => ({
-                public_key: bot.public_key,
-                amount_sol: bot.amount_sol,
-                private_key: undefined // Will be fetched from backend
-              }))
-            );
-            
-            if (preparedBots.length > 0) {
-              // Get creator from bonding curve
-              const bondingCurve = await require('../pumpfun/pumpfun-idl-client').BondingCurveFetcher.fetch(
-                connection,
-                mint,
-                false
-              );
+
+            // Cache the metadata in the orchestrator
+            orchestrator.cacheTokenMetadata(mint, {
+              name: request.metadata.name,
+              symbol: request.metadata.symbol,
+              uri: request.metadata.uri 
+            });
+
+            // ============================================
+            // STEP 5b: POST LAUNCH ANNOUNCEMENT (OPTIONAL)
+            // ============================================
+            console.log(`\n📢 STEP 5b: Posting launch announcement to X...`);
+
+            try {
+              const announcementResult = await orchestrator.postTokenLaunchAnnouncement(mint);
+              if (announcementResult.success) {
+                console.log(`✅ Launch announcement posted successfully!`);
+                console.log(`🔗 Tweet: https://x.com/user/status/${announcementResult.tweetId}`);
+              } else {
+                console.log(`⚠️ Failed to post launch announcement`);
+              }
+            } catch (announcementError) {
+              console.error(`❌ Error posting announcement:`, announcementError);
+              // Don't fail the whole launch if announcement fails, just continue
+            }
               
-              const creatorWallet = bondingCurve?.creator.toBase58() || request.user_wallet;
-              
-              // Calculate total budget
-              const totalBudget = request.creator_buy_amount + 
-                botsReadyToSnipe.reduce((sum, bot) => sum + bot.amount_sol, 0);
-              
-              // Execute advanced strategy
-              console.log(`📊 Starting advanced strategy with:`);
-              console.log(`   • ${preparedBots.length} prepared bots`);
-              console.log(`   • ${totalBudget.toFixed(4)} SOL total budget`);
-              console.log(`   • Creator: ${creatorWallet}`);
-              
-              const advancedResult = await orchestrator.executeProfitableLaunch(
-                mint,
-                preparedBots,
-                creatorWallet,
-                totalBudget
-              );
-              
-              advancedResults = advancedResult;
-              
-              console.log(`\n✅ Advanced strategy completed!`);
-              console.log(`📊 Results:`);
-              console.log(`   • Success: ${advancedResult.success}`);
-              console.log(`   • Total Profit: ${advancedResult.totalProfit?.toFixed(4)} SOL`);
-              console.log(`   • ROI: ${advancedResult.roi?.toFixed(2)}%`);
-              console.log(`   • Volume Generated: ${advancedResult.volumeGenerated?.toFixed(4)} SOL`);
-              console.log(`   • Exit Reason: ${advancedResult.exitReason}`);
-              
-              // Collect any additional signatures from advanced strategy
-              if (advancedResult.phaseResults) {
-                const advancedSignatures = advancedResult.phaseResults.flatMap((phase: any) => 
-                  phase.signatures || []
+            // ============================================
+            // STEP 5c: FETCH BOT PRIVATE KEYS FOR ADVANCED STRATEGY
+            // ============================================
+            console.log(`\n🔑 STEP 5c: Fetching bot private keys for advanced strategy...`);
+            const botsWithPrivateKeys = [];
+
+            for (const bot of botsReadyToSnipe) {
+              try {
+                // Fetch private key for each bot
+                const botResponse = await axios.post(
+                  `${process.env.BACKEND_URL || 'http://localhost:8000'}/creators/user/get-bot-private-key`,
+                  {
+                    bot_wallet: bot.public_key,
+                    user_wallet: request.user_wallet
+                  },
+                  {
+                    headers: {
+                      'X-API-Key': process.env.ONCHAIN_API_KEY,
+                      'Content-Type': 'application/json'
+                    },
+                    timeout: 5000
+                  }
                 );
-                if (advancedSignatures.length > 0) {
-                  botSignatures.push(...advancedSignatures);
+                
+                if (botResponse.data.success && botResponse.data.private_key) {
+                  botsWithPrivateKeys.push({
+                    public_key: bot.public_key,
+                    amount_sol: bot.amount_sol,
+                    private_key: botResponse.data.private_key
+                  });
+                  console.log(`  ✅ Got key for ${bot.public_key.slice(0, 8)}...`);
+                } else {
+                  console.log(`  ❌ No key for ${bot.public_key.slice(0, 8)}...`);
                 }
+              } catch (error) {
+                console.log(`  ❌ Error getting key for ${bot.public_key.slice(0, 8)}...: ${error.message}`);
+              }
+            }
+
+            if (botsWithPrivateKeys.length > 0) {
+              console.log(`✅ Got ${botsWithPrivateKeys.length}/${botsReadyToSnipe.length} bot private keys`);
+              
+              // Now prepare bots WITH private keys
+              const preparedBots = await orchestrator['prepareBotWallets'](botsWithPrivateKeys);
+              
+              if (preparedBots.length > 0) {
+                // Get creator from bonding curve
+                const bondingCurve = await require('../pumpfun/pumpfun-idl-client').BondingCurveFetcher.fetch(
+                  connection,
+                  mint,
+                  false
+                );
+                
+                const creatorWallet = bondingCurve?.creator.toBase58() || request.user_wallet;
+                
+                // Calculate total budget
+                const totalBudget = request.creator_buy_amount + 
+                  botsReadyToSnipe.reduce((sum, bot) => sum + bot.amount_sol, 0);
+                
+                // Execute advanced strategy
+                console.log(`\n📊 Starting advanced strategy with:`);
+                console.log(`   • ${preparedBots.length} prepared bots`);
+                console.log(`   • ${totalBudget.toFixed(4)} SOL total budget`);
+                console.log(`   • Creator: ${creatorWallet}`);
+                
+                const advancedResult = await orchestrator.execute2HourOrganicLaunch(
+                  mint,
+                  preparedBots,
+                  creatorWallet,
+                  totalBudget
+                );
+                
+                advancedResults = advancedResult;
+                
+                console.log(`\n✅ Advanced strategy completed!`);
+                console.log(`📊 Results:`);
+                console.log(`   • Success: ${advancedResult.success}`);
+                console.log(`   • Total Profit: ${advancedResult.totalProfit?.toFixed(4)} SOL`);
+                console.log(`   • ROI: ${advancedResult.roi?.toFixed(2)}%`);
+                console.log(`   • Volume Generated: ${advancedResult.volumeGenerated?.toFixed(4)} SOL`);
+                console.log(`   • Exit Reason: ${advancedResult.exitReason}`);
+                
+                // Collect any additional signatures from advanced strategy
+                if (advancedResult.phaseResults) {
+                  const advancedSignatures = advancedResult.phaseResults.flatMap((phase: any) => 
+                    phase.signatures || []
+                  );
+                  if (advancedSignatures.length > 0) {
+                    botSignatures.push(...advancedSignatures);
+                  }
+                }
+              } else {
+                console.warn(`⚠️ No bots prepared even with private keys - skipping advanced strategy`);
               }
             } else {
-              console.warn(`⚠️ No bots prepared for advanced strategy`);
+              console.log(`❌ No bots have private keys, skipping advanced strategy`);
             }
             
           } catch (error: any) {
@@ -831,8 +1220,6 @@ export async function createCompleteLaunchBundle(
     return errorResponse;
   }
 }
-
-
 
 async function buildSimpleTokenCreationWithBuyTx(
   connection: Connection,
@@ -991,7 +1378,6 @@ async function buildSimpleTokenCreationWithBuyTx(
   return tx;
 }
 
-
 export async function executeAdvancedLaunchStrategy(
   connection: Connection,
   request: {
@@ -1025,7 +1411,8 @@ export async function executeAdvancedLaunchStrategy(
     const creatorWallet = bondingCurve.creator.toBase58();
     
     // Execute the advanced strategy
-    const result = await orchestrator.executeProfitableLaunch(
+    // const result = await orchestrator.executeProfitableLaunch(
+    const result = await orchestrator.execute2HourOrganicLaunch(
       mint,
       request.bot_wallets.map(bot => ({
         public_key: bot.public_key,
