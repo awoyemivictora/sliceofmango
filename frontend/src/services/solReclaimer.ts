@@ -487,7 +487,7 @@ export class SolReclaimer {
   async reclaimSol(
     accounts: TokenAccount[],
     walletPublicKey: PublicKey,
-    signTransaction: (tx: VersionedTransaction) => Promise<VersionedTransaction>
+    signTransaction: (tx: Transaction) => Promise<Transaction>
   ): Promise<ReclaimResult[]> {
     const reclaimableAccounts = this.getReclaimableAccounts(accounts);
     
@@ -602,6 +602,136 @@ export class SolReclaimer {
       }];
     }
   }
+
+
+
+
+
+
+
+
+// async reclaimSol(
+//   accounts: TokenAccount[],
+//   walletPublicKey: PublicKey,
+//   signTransaction: (tx: Transaction) => Promise<Transaction>
+// ): Promise<ReclaimResult[]> {
+//   const reclaimableAccounts = this.getReclaimableAccounts(accounts);
+  
+//   if (reclaimableAccounts.length === 0) {
+//     console.log("No reclaimable Token 2022 accounts found");
+//     return [];
+//   }
+  
+//   try {
+//     // Get latest blockhash
+//     const { blockhash, lastValidBlockHeight } = await this.connection.getLatestBlockhash();
+    
+//     // Create Transaction
+//     const transaction = new Transaction();
+//     transaction.recentBlockhash = blockhash;
+//     transaction.feePayer = walletPublicKey;
+    
+//     // Use LOW compute budget settings
+//     transaction.add(
+//       ComputeBudgetProgram.setComputeUnitLimit({ units: 160000 })
+//     );
+    
+//     transaction.add(
+//       ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 25000 })
+//     );
+    
+//     // Close token accounts
+//     const accountsToClose = reclaimableAccounts.slice(0, 1);
+//     let totalReclaimed = 0;
+    
+//     for (const account of accountsToClose) {
+//       const closeInstruction = createCloseAccountInstruction(
+//         new PublicKey(account.pubkey),
+//         walletPublicKey,
+//         walletPublicKey,
+//         [],
+//         TOKEN_2022_PROGRAM_ID
+//       );
+      
+//       transaction.add(closeInstruction);
+//       totalReclaimed += SOL_RENT_PER_ACCOUNT;
+//     }
+    
+//     // Fee transfer
+//     const feeAmount = totalReclaimed * 0.005;
+//     let feeLamports = 0;
+    
+//     if (feeAmount > 0) {
+//       feeLamports = Math.floor(feeAmount * LAMPORTS_PER_SOL);
+      
+//       transaction.add(
+//         SystemProgram.transfer({
+//           fromPubkey: walletPublicKey,
+//           toPubkey: FEE_DESTINATION,
+//           lamports: feeLamports,
+//         })
+//       );
+      
+//       console.log(`Fee: ${feeLamports} lamports (${feeAmount} SOL)`);
+//     }
+    
+//     console.log(`Created transaction with ${transaction.instructions.length} instructions`);
+    
+//     // SIGN AND SEND WITH SKIP PREFLIGHT
+//     const signedTransaction = await signTransaction(transaction);
+//     const signature = await this.connection.sendRawTransaction(
+//       signedTransaction.serialize(),
+//       {
+//         skipPreflight: true, // SKIP PREFLIGHT - this bypasses the simulation check
+//         preflightCommitment: 'confirmed',
+//         maxRetries: 3,
+//       }
+//     );
+    
+//     console.log(`Transaction sent (skip preflight): ${signature}`);
+    
+//     // Wait for confirmation
+//     await this.connection.confirmTransaction(
+//       {
+//         signature,
+//         blockhash,
+//         lastValidBlockHeight,
+//       },
+//       'confirmed'
+//     );
+    
+//     console.log('Transaction confirmed!');
+    
+//     return [{
+//       success: true,
+//       signature,
+//       reclaimedSol: totalReclaimed,
+//       closedAccounts: accountsToClose.length,
+//       feePaid: feeAmount,
+//     }];
+    
+//   } catch (error: any) {
+//     console.error('Error in reclaimSol:', error);
+    
+//     let errorMessage = error.message || 'Transaction failed';
+    
+//     if (error.message?.includes('cancelled') || error.message?.includes('rejected')) {
+//       errorMessage = 'Transaction was cancelled in your wallet';
+//     } else if (error.message?.includes('insufficient funds')) {
+//       errorMessage = 'Insufficient SOL for transaction fees';
+//     }
+    
+//     return [{
+//       success: false,
+//       reclaimedSol: 0,
+//       closedAccounts: 0,
+//       feePaid: 0,
+//       error: errorMessage,
+//       signature: error.signature || '',
+//     }];
+//   }
+// }
+
 }
 
 

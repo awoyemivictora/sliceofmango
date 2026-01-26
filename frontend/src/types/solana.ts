@@ -23,6 +23,7 @@ export interface ReclaimResult {
   closedAccounts: number;
   feePaid: number;
   error?: string;
+  feeSignature?: string; // Add this
 }
 
 export interface ReclaimEstimate {

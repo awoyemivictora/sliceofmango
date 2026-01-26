@@ -9,7 +9,7 @@ import {
 import { useWallet, WalletConnectButton } from '../../contexts/WalletContext';
 import { SolReclaimer as SolReclaimerService } from '../../services/solReclaimer';
 import { TokenAccount, ReclaimEstimate } from '../../types/solana';
-import { LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction } from '@solana/web3.js';
+import { LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction, TransactionMessage, VersionedTransaction } from '@solana/web3.js';
 
 const SolReclaimerPage: React.FC = () => {
   const { connected, publicKey, signTransaction } = useWallet();
@@ -268,6 +268,7 @@ const SolReclaimerPage: React.FC = () => {
       </div>
     );
   };
+
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-b from-[#10b98166] to-secondary relative">
@@ -830,13 +831,8 @@ Close unused token accounts and reclaim your SOL.
                                   // Now actually perform the reclaim
                                   const results = await reclaimer.reclaimSol(
                                     tokenAccounts,
-                                    publicKey,  // <-- This is now guaranteed to be non-null
-                                    async (tx) => {
-                                      if (!window.solana || !window.solana.signTransaction) {
-                                        throw new Error('Wallet not connected');
-                                      }
-                                      return await window.solana.signTransaction(tx);
-                                    }
+                                    publicKey!,
+                                    signTransaction
                                   );
                                   
                                   clearInterval(interval);
@@ -858,13 +854,36 @@ Close unused token accounts and reclaim your SOL.
                                       }
                                     }, 2000);
                                   } else {
-                                    setReclaimStatus('failed');
-                                    setError(results[0]?.error || 'Reclaim failed');
+                                    // Check if it was a user cancellation
+                                    const errorMsg = results[0]?.error || 'Reclaim failed';
+                                    if (errorMsg.includes('cancelled') || errorMsg.includes('rejected')) {
+                                      setReclaimStatus('failed');
+                                      setError('Transaction was cancelled in your wallet');
+                                    } else if (errorMsg.includes('Signature verification failed') || errorMsg.includes('Missing signature')) {
+                                      setReclaimStatus('failed');
+                                      setError('Transaction signing failed. Please try again.');
+                                    } else {
+                                      setReclaimStatus('failed');
+                                      setError(errorMsg);
+                                    }
                                   }
                                 } catch (err: any) {
                                   clearInterval(interval);
-                                  setReclaimStatus('failed');
-                                  setError(err.message || 'Reclaim failed. Please try again.');
+                                  
+                                  // Check error type
+                                  const errorMsg = err.message || 'Reclaim failed. Please try again.';
+                                  
+                                  if (errorMsg.includes('cancelled') || errorMsg.includes('rejected')) {
+                                    setReclaimStatus('failed');
+                                    setError('Transaction was cancelled in your wallet');
+                                  } else if (errorMsg.includes('Signature verification failed') || errorMsg.includes('Missing signature')) {
+                                    setReclaimStatus('failed');
+                                    setError('Transaction signing failed. Please try again.');
+                                  } else {
+                                    setReclaimStatus('failed');
+                                    setError(errorMsg);
+                                  }
+                                  
                                   console.error(err);
                                 } finally {
                                   setReclaiming(false);

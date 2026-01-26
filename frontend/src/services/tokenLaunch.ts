@@ -451,10 +451,12 @@ class TokenLaunchService {
     });
   }
 
-  async generateBotWallets(count: number = 5) {
+  async generateBotWallets(count: number) {
+    console.log('🔍 generateBotWallets called with count:', count, '(should be desired TOTAL)');
+
     return await apiService.request('/creators/user/generate-bot-wallets', {
       method: 'POST',
-      body: JSON.stringify({ count }),
+      body: JSON.stringify({ count: count }),
     });
   }
 
